@@ -1,0 +1,354 @@
+Отлично. Тогда фиксируем как часть архитектуры. Я вшиваю это в систему как жёсткие правила, не как пожелания.
+
+Ниже обновлённая версия архитектуры с учётом:
+
+• ровно 5 каналов лидов
+• Stripe основной
+• резервный провайдер
+• ручной fallback
+• единая таймзона London на уровне всей системы
+
+---
+
+# 1. Каналы лидов. Жёсткая нормализация
+
+Разрешено только 5 источников:
+
+* web_form
+* whatsapp
+* telegram
+* phone
+* partner
+
+## 1.1 ENUM в базе
+
+В PostgreSQL:
+
+```
+CREATE TYPE inquiry_source AS ENUM (
+  'web_form',
+  'whatsapp',
+  'telegram',
+  'phone',
+  'partner'
+);
+```
+
+В таблице inquiries:
+
+```
+source inquiry_source NOT NULL
+```
+
+Никаких свободных текстов.
+
+---
+
+## 1.2 Валидация на уровне API
+
+POST /inquiries
+
+Если source не входит в 5 значений — 400 ошибка.
+
+Никаких “unknown”, “manual”, “other”.
+
+---
+
+## 1.3 Partner обязателен к детализации
+
+Если source = partner:
+
+обязательное поле:
+
+partner_code text not null
+
+Отдельная таблица:
+
+### partners
+
+* id uuid pk
+* code text unique
+* name text
+* commission_percent numeric
+* status text
+* created_at
+
+inquiries.partner_code → fk partners.code
+
+---
+
+## 1.4 WhatsApp / Telegram
+
+Для них добавляем:
+
+* external_chat_id
+* external_message_id
+* webhook_event_id
+* idempotency_key
+
+Чтобы не было дублей.
+
+Unique constraint:
+
+unique(source, external_message_id)
+
+---
+
+# 2. Платёжная архитектура. Без отказов.
+
+## 2.1 Провайдеры
+
+Фиксируем:
+
+PRIMARY: stripe
+SECONDARY: например revolut_business или checkout_com
+FALLBACK: manual
+
+---
+
+## 2.2 ENUM провайдера
+
+```
+CREATE TYPE payment_provider AS ENUM (
+  'stripe',
+  'secondary',
+  'manual'
+);
+```
+
+---
+
+## 2.3 Таблица payments обновлённая
+
+### payments
+
+* id uuid pk
+* booking_id uuid fk bookings
+* provider payment_provider
+* provider_payment_id text
+* type text, deposit, full, refund
+* status text
+* amount numeric(10,2)
+* currency text
+* attempt_number int default 1
+* is_fallback bool default false
+* created_at
+* updated_at
+* raw jsonb
+
+---
+
+## 2.4 Логика резервирования
+
+Если:
+
+Stripe → status failed
+ИЛИ timeout
+ИЛИ webhook не пришёл X минут
+
+Automation rule:
+
+1. Создать payment attempt #2
+2. provider = secondary
+3. is_fallback = true
+4. создать task "Payment switched to backup"
+
+Если secondary тоже failed:
+
+создать task: "Manual payment required"
+
+---
+
+## 2.5 Manual способ
+
+manual — это не кнопка “считаем оплачено”.
+
+Это:
+
+* загрузка подтверждения
+* обязательный комментарий
+* обязательный approval менеджером
+* audit_log
+
+Таблица:
+
+### manual_payment_approvals
+
+* id uuid
+* payment_id uuid
+* approved_by uuid
+* approved_at
+* note text
+
+---
+
+# 3. London Time как системное правило
+
+Это очень важно. Не просто UI.
+
+## 3.1 В базе
+
+Все timestamptz храним в UTC.
+
+Но:
+
+Application level timezone = Europe/London.
+
+---
+
+## 3.2 На уровне API
+
+Любой datetime:
+
+* принимается в ISO формате
+* если без timezone → автоматически трактуется как Europe/London
+
+---
+
+## 3.3 На уровне отчетов
+
+Все:
+
+* SLA дедлайны
+* due_at
+* booking start_at
+* created_at в аналитике
+
+Отображаются строго в Europe/London.
+
+---
+
+## 3.4 В коде фиксируем
+
+ENV:
+
+APP_TIMEZONE=Europe/London
+
+И запрещаем использование system default.
+
+---
+
+# 4. Строгая логика дедлайнов по London
+
+SLA deadline =
+
+created_at AT TIME ZONE Europe/London
+
+* deadline_minutes
+  перевод обратно в UTC
+  сохранить в sla_deadline_at
+
+Никаких плясок.
+
+---
+
+# 5. Matching engine с учётом каналов
+
+Каждый inquiry получает:
+
+source_weight
+
+Пример:
+
+* web_form = 1.0
+* whatsapp = 1.1
+* telegram = 1.1
+* phone = 1.2
+* partner = 0.9
+
+Это влияет на приоритет.
+
+---
+
+# 6. Отчёты по каналам
+
+Analytics таблица:
+
+### inquiry_metrics_daily
+
+* date_london date
+* source inquiry_source
+* total_count int
+* converted_count int
+* revenue numeric
+
+Индексы:
+(date_london, source)
+
+Дата считается по London timezone.
+
+---
+
+# 7. Архитектура обработки лидов по каналам
+
+## 7.1 Web form
+
+* API endpoint
+* rate limiting
+* captcha
+* webhook event created
+
+## 7.2 WhatsApp
+
+* webhook
+* idempotency
+* mapping номер → client
+* auto-create inquiry
+
+## 7.3 Telegram
+
+* webhook
+* external_chat_id
+* автоответ через automation
+
+## 7.4 Phone
+
+Создаётся вручную оператором
+source = phone
+обязательно заполнить:
+
+* duration
+* call_result
+* operator_id
+
+---
+
+# 8. System Health
+
+Добавляем dashboard виджеты:
+
+* Stripe health
+* Secondary provider health
+* Webhook failures
+* Queue lag
+* Availability mismatches
+* SLA breaches
+
+---
+
+# 9. Почему это будет быстрее рынка
+
+Потому что:
+
+1. Нет “unknown source”
+2. Нет single payment dependency
+3. Нет timezone путаницы
+4. Нет ручного переключения без логов
+5. Все дедлайны считаются одинаково
+6. Все события проходят через event layer
+
+---
+
+# 10. Что дальше я могу сделать
+
+Следующий шаг, если хочешь совсем production:
+
+* Sequence diagram: inquiry → booking → deposit → confirmation
+* Sequence diagram: payment fail → fallback → manual
+* SLA escalation flow
+* Matching algorithm формула
+* Схема очередей и retry policy
+* Формализация в виде OpenAPI spec
+
+
+

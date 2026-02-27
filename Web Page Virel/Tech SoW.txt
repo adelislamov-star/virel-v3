@@ -1,0 +1,1173 @@
+---
+
+# ТЕХНИЧЕСКОЕ ЗАДАНИЕ
+
+## Проект: Premium Escort Agency Website (UK, London)
+
+## Версия: FINAL 1.0 (по итогам аудитов и текущего ТЗ)
+
+---
+
+## 0. Статус документа, термины, правила
+
+### 0.1 Статус и приоритет
+
+* Этот документ является основным артефактом для разработки, тестирования, релиза и приемки.
+* Любая функциональность, не описанная в ТЗ, считается out of scope, пока не согласована отдельным допсоглашением.
+
+### 0.2 Термины
+
+* Публичная часть: сайт, доступный клиентам.
+* Админка: закрытая часть для персонала агентства.
+* Профиль модели: публичная карточка модели с медиа, текстом и параметрами.
+* Листинг: каталог моделей и любые SEO листинги (районы, услуги, атрибуты).
+* Indexable: страница индексируется и попадает в sitemap.
+* Non-indexable: страница не индексируется и не попадает в sitemap.
+* Whitelist листинги: заранее определенный список SEO страниц, которые разрешено индексировать.
+* PII: персональные данные клиента (телефон, email, мессенджер, IP и т.д.).
+
+### 0.3 Неформальные требования к качеству
+
+* Никаких “потом поправим SEO”. Ошибки уровня Aura считаются блокером релиза. 
+
+---
+
+## 1. Общая информация
+
+### 1.1 Цель проекта
+
+Сделать premium сайт, который:
+
+* обеспечивает стабильный поток заявок из органики и брендового трафика
+* технически соответствует современным стандартам Google (Core Web Vitals, индексируемость, structured data)
+* защищен от ботов, утечек, дублей данных, случайной индексации служебных страниц
+* интегрирован с текущими процессами: Telegram боты и AppSheet. 
+
+### 1.2 ЦА
+
+* Основная: клиенты premium, London, возраст 28–60, business и travel intent.
+* Вторичная: international, repeat, corporate concierge.
+
+### 1.3 География
+
+* Старт: London, UK.
+* Структура должна позволять расширение на города UK без ломки URL и БД.
+
+### 1.4 Конкурентная логика
+
+* Рынок выигрывается не “дизайном”, а технике+структуре спроса+скорости+индексации.
+* В нише много сайтов с дырками: отсутствие Schema, плохая скорость, хаотичная индексация. У Aura это выражено максимально жестко, и это наша анти-модель. 
+
+---
+
+## 2. KPI и критерии успеха
+
+### 2.1 KPI на приемку релиза (обязательные)
+
+Требования уже зафиксированы в твоем ТЗ и остаются обязательными:
+
+* Performance Score (PSI) >= 90 (целевое)
+* LCP mobile < 2.5s
+* CLS < 0.1
+* INP < 200ms
+* SEO Score PSI = 100 (целевое)
+* Canonical tags: 100% страниц
+* Unique Title/Meta: 100% страниц
+* Schema markup: 100% по плану
+* WebP/AVIF coverage: 100% целевое в релизе (минимум 90% допускается только в MVP при фиксированном плане доведения) 
+
+Пояснение: это не “хотелки”. У Aura провалы именно по этим пунктам и они приводят к нулевому SEO эффекту. 
+
+### 2.2 SEO KPI (3–6 месяцев)
+
+* минимум 3 позиции в Top-10 по money запросам
+* минимум 1 позиция в Top-3
+* DR >= 30 через ссылочное развитие
+* SEO Maturity Score >= 8/10
+* органика +300% от текущего уровня 
+
+---
+
+## 3. Скоуп проекта
+
+### 3.1 Публичные разделы
+
+* Главная
+* Каталог London
+* SEO листинги:
+
+  * районы
+  * услуги
+  * атрибуты
+* Профиль модели
+* Book now (форма бронирования)
+* FAQ
+* About
+* Contact / Concierge
+* Blog (платформа, даже если контента мало на старте)
+* Юридические страницы: Privacy, Terms, Cookies
+* Системные: 404, 410, 500, sitemap, robots
+
+### 3.2 Админка
+
+* роли и права
+* управление моделями и медиа
+* управление заявками
+* SEO управление листингами (whitelist)
+* модерация
+* аудит действий
+* интеграции (Telegram, AppSheet)
+
+---
+
+## 4. Информационная архитектура и URL стратегия
+
+Это раздел, который предотвращает главную SEO катастрофу: бесконечные комбинации фильтров, дубли и мусор в индексе.
+
+### 4.1 Базовые правила URL
+
+* Публичные URL только человекочитаемые.
+* UUID запрещены в публичных URL (у Aura это критическая ошибка). 
+* Изменение slug после публикации запрещено по умолчанию. Если менять, то только через админку с автоматическим 301.
+
+### 4.2 Структура URL
+
+Обязательная структура (финальная подтверждается на IA этапе, но логика фиксирована):
+
+1. Главный листинг:
+
+* /london-escorts
+
+2. Пагинация:
+
+* /london-escorts/page/2
+* /london-escorts/page/3
+
+3. Geo страницы:
+
+* /escorts-in-mayfair
+* /escorts-in-kensington
+  и т.д.
+
+Список приоритетных районов из твоего ТЗ на запуск:
+Mayfair, Kensington, Knightsbridge, Chelsea, Belgravia, Marylebone, Westminster, Notting Hill, Soho, Covent Garden, Canary Wharf, City of London. 
+
+4. Services:
+
+* /services/{service-slug}
+
+5. Attributes:
+
+* /{attribute}-escorts-london
+  пример:
+* /blonde-escorts-london
+
+6. Профиль модели:
+
+* /catalog/{slug} (как в твоем ТЗ) 
+
+### 4.3 Политика индексируемости (строго)
+
+#### 4.3.1 Indexable (в sitemap)
+
+* Главная
+* /london-escorts и ее пагинация
+* Geo страницы из whitelist
+* Services страницы из whitelist
+* Attributes страницы из whitelist
+* Профили моделей в статусе Published
+* Блоговые статьи (если включены)
+* FAQ, About, Contact, Legal
+
+#### 4.3.2 Non-indexable (не в sitemap)
+
+* любые произвольные комбинации фильтров, не входящие в whitelist
+* админка и служебные маршруты
+* поиск, избранное, любые персональные страницы
+* query параметрные страницы, если они не утверждены в whitelist
+
+Механика:
+
+* Non-index страницы получают meta robots: noindex,follow
+* canonical указывает на базовую indexable страницу (обычно /london-escorts или соответствующий whitelist листинг)
+* такие страницы не попадают в sitemap.
+
+Важно: у Aura некорректная SEO пагинация (infinite scroll без ссылок) и это убивает crawl. У нас так быть не может. 
+
+### 4.4 Пагинация
+
+Требования:
+
+* пагинация обязана иметь HTML ссылки <a href> на страницы.
+* страницы пагинации должны быть доступны без JS.
+* стратегия canonical:
+
+  * canonical каждой page/N указывает на саму себя
+  * index,follow для page/N
+  * запрет canonical page/N на page/1, чтобы не потерять обнаружение карточек через глубину каталога.
+
+Причина: если canonical всех page/N на page/1 и при этом карточки “висят” глубоко, ты теряешь часть профилей по crawl discoverability.
+
+### 4.5 Редиректы и миграция
+
+По твоему ТЗ:
+
+* нужна mapping table UUID -> slug и 301 редиректы /catalog/{UUID} -> /catalog/{slug}. 
+  Требование:
+* таблица редиректов хранится в БД
+* выгружается в файл на сервере и/или применяется на уровне edge (Cloudflare rules) по согласованию.
+
+---
+
+## 5. Функциональные требования публичной части
+
+### 5.1 Главная
+
+Состав блоков:
+
+1. Hero
+
+* H1 содержит основной ключ (London escorts / escort agency london) в естественной форме.
+* CTA: View Models, Book Now.
+
+2. Featured models
+
+* 8–12 карточек (флаг featured).
+
+3. Быстрая навигация по кластерам
+
+* районы (whitelist)
+* услуги (whitelist)
+* атрибуты (whitelist)
+
+4. Trust блок
+
+* discretion, verification, concierge
+
+5. FAQ блок
+
+* минимум 8 вопросов
+* отдельная FAQ страница и FAQ блок на главной допускаются.
+
+6. Последние статьи блога
+
+* 3–6 карточек.
+
+Критерии приемки:
+
+* LCP < 2.5s
+* hero изображение оптимизировано и preloaded
+* Schema Organization/WebSite + FAQPage
+
+### 5.2 Каталог /london-escorts
+
+Функции:
+
+* список моделей карточками
+* фильтры (см ниже)
+* сортировки
+
+Фильтры:
+
+* возраст (range)
+* рост (range)
+* параметры
+* район (multi)
+* национальность
+* языки
+* услуги
+* incall/outcall
+* бюджет (range)
+
+Правило SEO для фильтров:
+
+* Фильтры НЕ создают индексируемые страницы автоматически.
+* Индексируемые листинги создаются только как отдельные SEO страницы из whitelist в админке.
+
+Пагинация:
+
+* /page/N
+* явные ссылки.
+
+Критерии приемки:
+
+* нет infinite scroll “в одиночку” без ссылок, как у Aura. 
+* страницы каталога не весят 14MB как у Aura. Цель: < 2MB на initial load. 
+
+### 5.3 Geo страницы
+
+В твоем ТЗ прописана структура geo страницы, но есть риск в пункте “Schema LocalBusiness с адресом района”. 
+
+Финальная корректная реализация:
+
+* Geo страница описывает “area served”, а не “фейковый адрес”.
+* Разметка:
+
+  * CollectionPage + ItemList + FAQPage + BreadcrumbList
+  * LocalBusiness допускается только если:
+
+    * указан реальный адрес бизнеса, а не адрес района “для красоты”.
+  * Рекомендуемая модель: Organization + Service + areaServed (в JSON-LD).
+
+Контент:
+
+* минимум 800–1200 слов (200–300 слов из твоего ТЗ недостаточно для топа, оставляем как минимум для MVP, но в Full обязателен расширенный формат).
+* список моделей
+* FAQ
+* внутренние ссылки на услуги и соседние районы.
+
+### 5.4 Services страницы
+
+* описание услуги
+* правила бронирования
+* модели, где услуга доступна
+* FAQ 6–10 вопросов
+* перелинковка на geo и каталог
+
+Schema:
+
+* Service + FAQPage + BreadcrumbList
+
+### 5.5 Attributes страницы
+
+* только whitelist
+* уникальный текст
+* FAQ
+* листинг моделей
+
+Schema:
+
+* CollectionPage + ItemList + FAQPage + BreadcrumbList
+
+### 5.6 Профиль модели /catalog/{slug}
+
+Функции:
+
+* галерея фото
+* видео (опционально)
+* параметры (возраст, рост, measurements, районы, языки)
+* услуги
+* rate
+* availability календарь (если включено)
+* CTA бронирования
+* похожие модели
+* отзывы (опционально по фазе)
+
+SEO:
+
+* уникальные Title/Meta
+* canonical обязательный
+* хлебные крошки
+* alt у всех изображений
+
+Schema:
+
+* ProfilePage + Person
+* Offer (если показываем цены)
+* BreadcrumbList
+* ImageObject (минимум cover)
+* FAQPage (если есть блок FAQ в профиле)
+* Review/AggregateRating только при строгих правилах (см Schema карту ниже)
+
+Критерии приемки:
+
+* нет дублей Title/Meta (у Aura было 134+ дублей). 
+* медиа lazy loading обязателен (у Aura 0% lazy loading). 
+
+### 5.7 Book now и процесс бронирования
+
+Процесс бронирования по твоему ТЗ:
+
+* выбор модели и услуг
+* проверка доступности через AppSheet
+* выбор даты/времени через календарь
+* заполнение контактов и дедупликация
+* подтверждение с уведомлениями reception и записью в AppSheet
+* напоминания и эскалация Tommy. 
+
+Форма:
+
+* минимум 1 контакт обязателен: Telegram или WhatsApp
+* имя optional
+* дата/время
+* длительность
+* район
+* incall/outcall
+* комментарий
+
+Антиспам:
+
+* rate limit
+* honeypot
+* captcha (invisible)
+
+События:
+
+* booking_created
+* booking_status_changed
+* booking_assigned
+* booking_confirmed
+
+---
+
+## 6. Интеграции и протоколы
+
+Этот раздел специально “закручиваю”, чтобы не было дублей и потерянных статусов.
+
+### 6.1 Telegram боты (как в твоем ТЗ)
+
+Компоненты:
+
+* DivaReceptionBot: уведомления reception, 30 минутные напоминания, эскалация Tommy при отсутствии ответа. 
+* Kesha ZeroGap Bot: синхронизация бронирований с AppSheet, карточки, парсинг datetime/duration, read-only внешние данные и локальное хранение в SQLite. 
+
+Требования:
+
+* Все уведомления идут через очередь (Redis) с retry.
+* Идемпотентность: на одно событие 1 сообщение в 1 канал. Повторный вызов не создает дубль.
+* Логирование доставки: sent/failed, reason, attempts.
+
+### 6.2 AppSheet API
+
+В твоем ТЗ указано:
+
+* двусторонняя синхронизация бронирований
+* webhook для обновления статусов в реальном времени
+* авто обновление календаря занятости. 
+
+Фиксируем источник истины:
+
+* Источник истины по бронированиям: AppSheet (если это текущая операционная база).
+* Сайт создает “заявку” и передает в AppSheet как запись.
+* AppSheet меняет статусы, сайт подтягивает изменения.
+
+Протокол синхронизации:
+
+1. Create:
+
+* сайт отправляет booking_create в AppSheet
+* получает external_id (appsheet_booking_id)
+* сохраняет mapping.
+
+2. Update:
+
+* AppSheet вызывает webhook на сайт при изменении статуса или календаря.
+* если webhook недоступен, сайт раз в X минут (настраиваемо) делает reconciliation pull.
+
+3. Idempotency:
+
+* все запросы имеют request_id
+* повторный request_id не создает новую запись.
+
+4. Failover:
+
+* если AppSheet недоступен:
+
+  * сайт сохраняет заявку локально со статусом “queued_for_sync”
+  * уведомляет reception
+  * при восстановлении делает sync.
+
+### 6.3 CRM (опционально)
+
+* если CRM включаем: webhook события booking_created и booking_confirmed
+* дедупликация по телефону/мессенджеру
+* экспорт CSV/Excel из админки обязателен. 
+
+---
+
+## 7. Админка и роли
+
+Роли из твоего ТЗ:
+
+* Administrator
+* Manager (Tommy)
+* Reception (Lukas, Sasha, Adam, Donald)
+* Model (личный кабинет). 
+
+Обязательные модули:
+
+1. Модели:
+
+* CRUD
+* статусы: Active, On Holiday, Archived
+* генерация slug
+* SEO поля: title, description, alt
+* календарь доступности. 
+
+2. Медиа:
+
+* массовая загрузка
+* автоматическая оптимизация (WebP и AVIF)
+* порядок, cover
+* доступ public/members/admin
+* модерация approve/reject с причиной
+
+3. SEO листинги (Whitelist)
+
+* создание geo/service/attribute страниц
+* редактирование URL, title/meta, H1, контента, FAQ
+* robots index/follow
+* canonical override (редкий случай)
+
+4. Бронирования:
+
+* dashboard, фильтры, статусы, история, экспорт. 
+
+5. Интеграции:
+
+* chat_id для уведомлений Telegram
+* настройки AppSheet ключей
+* тест кнопка “send test notification”
+* мониторинг статуса синхронизации
+
+6. Audit log
+
+* логируются: публикации, изменение SEO, статусы бронирований, права и доступы.
+
+---
+
+## 8. SEO и техническая оптимизация
+
+### 8.1 Canonical
+
+* canonical на 100% страниц обязателен. 
+* для whitelist страниц canonical на себя
+* для non-index фильтров canonical на базовую страницу
+
+У Aura canonical отсутствует на 100% страниц, это причина дублей и проблем индексации. 
+
+### 8.2 Sitemap
+
+* автогенерация
+* sitemap index + разбиение по типам
+* включает все indexable URL и только их
+* обновляется при публикации/архивировании профиля
+
+У Aura sitemap содержит 5 URL вместо 144 и это прямой провал индексации. 
+
+### 8.3 Robots.txt
+
+* корректный домен .co.uk
+* запрет админки и служебных
+* ссылка на sitemap index
+
+У Aura были доменные ошибки Host/sitemap. Это запрещено. 
+
+### 8.4 Structured Data (Schema) обязательна
+
+У Aura Schema отсутствует на всех типах страниц. 
+
+---
+
+## 9. Техническая карта Schema (полевая спецификация)
+
+Формат: JSON-LD, желательно @graph.
+
+### 9.1 Home
+
+Типы:
+
+* Organization
+* WebSite (SearchAction)
+* FAQPage (если есть FAQ блок)
+
+Обязательные поля Organization:
+
+* name
+* url
+* logo (ImageObject)
+* sameAs (если есть соцсети, иначе не выдумывать)
+* contactPoint (только если реально есть публичный канал)
+
+WebSite:
+
+* url
+* name
+* potentialAction SearchAction:
+
+  * target: /search?q={search_term_string}
+  * query-input
+
+FAQPage:
+
+* mainEntity: массив Question/Answer
+
+### 9.2 Листинги (catalog, geo, service, attribute)
+
+Типы:
+
+* CollectionPage
+* ItemList
+* BreadcrumbList
+
+ItemList:
+
+* itemListElement: ListItem
+* position
+* url на профиль
+* name (optional)
+
+### 9.3 Профиль модели
+
+Типы:
+
+* ProfilePage
+* Person
+* BreadcrumbList
+* Offer (если цены публичны)
+* ImageObject (cover)
+
+Person:
+
+* name
+* url
+* image
+* description
+* knowsLanguage (если есть)
+* height (QuantitativeValue) опционально
+* areaServed (если применимо, осторожно)
+
+Offer:
+
+* priceCurrency
+* price или priceRange
+* availability (если есть календарь, можно ограниченно)
+* url
+
+Отзывы:
+
+* Review и AggregateRating включаются только если:
+
+  * reviews минимум N (например 5) на модель
+  * reviews проходят модерацию
+  * нет искусственных рейтингов
+  * тексты реально отображаются на странице
+
+### 9.4 Blog
+
+Тип:
+
+* Article
+  Поля:
+* headline
+* description
+* image
+* datePublished
+* dateModified
+* author (Organization)
+* publisher (Organization)
+
+---
+
+## 10. Производительность, CWV и фронтенд правила
+
+Цели CWV закреплены в твоем ТЗ:
+LCP < 2.5s, INP < 200ms, CLS < 0.1. 
+
+Что именно делаем, чтобы не повторить Aura:
+
+* медиа:
+
+  * 100% WebP и AVIF (AVIF обязателен, у Aura 0%) 
+  * lazy loading для всех изображений ниже первого экрана (у Aura 0%) 
+  * фиксированные размеры для предотвращения CLS
+* JS:
+
+  * минимизация бандла, code splitting
+  * запрет тяжелых трекеров на первых миллисекундах
+* SSR/ISR:
+
+  * money pages и профили только SSR/ISR, без “пустой страницы пока JS загрузится”
+* веса страниц:
+
+  * никакого 7–14MB, как у Aura. Цель initial < 2–3MB. 
+
+Mobile UX:
+
+* запрещено user-scalable=no и maximum-scale=1 (у Aura это было проблемой) 
+* sticky CTA на mobile обязателен (у Aura отсутствовал) 
+
+---
+
+## 11. Безопасность и конфиденциальность
+
+Требования из твоего ТЗ:
+
+* SSL, HSTS
+* AES-256 для PII
+* rate limiting
+* GDPR compliance
+* Cloudflare DDoS/bot
+* логирование действий админов. 
+
+Фиксируем детально, чтобы не было “на словах”:
+
+### 11.1 Политика PII
+
+Храним:
+
+* telegram/whatsapp/email/телефон (если введены)
+* даты, длительность, выбранная модель
+* internal notes
+
+Не храним в логах:
+
+* сырые телефоны
+* сырые usernames
+* тексты заявок целиком в системных логах
+* IP в чистом виде (только hash или truncated)
+
+Retention:
+
+* PII в booking_requests хранится N дней (настраиваемо, по умолчанию 180)
+* после срока: обезличивание, оставляем только агрегаты.
+
+### 11.2 Админка
+
+* отдельный домен или маршрут /admin закрыт от индексации
+* 2FA желательно
+* rate limit login
+* audit log на изменения
+
+### 11.3 WAF
+
+* Cloudflare Bot Management минимум
+* правила против массового скачивания медиа
+* ограничения на API.
+
+---
+
+## 12. Технический стек и инфраструктура
+
+Стек из твоего ТЗ фиксируем как рекомендуемый:
+
+* Frontend: Next.js 14+ (App Router), React 18+, TypeScript, Tailwind, shadcn/ui
+* Backend: Node.js + Express или NestJS
+* DB: PostgreSQL + Redis
+* ORM: Prisma или TypeORM
+* Image: Sharp, CDN (Cloudinary/Uploadcare опционально)
+* Hosting: Vercel/Railway/Render + Cloudflare
+* CI/CD: GitHub Actions
+* Monitoring: Sentry, Vercel Analytics, GA4
+* Integrations: Telegram Bot API, AppSheet API, Google Calendar API, Stripe/PayPal (опционально). 
+
+Обязательные окружения:
+
+* dev
+* staging
+* prod
+
+---
+
+## 13. Этапы разработки и результаты на выходе
+
+Таймлайн из твоего ТЗ:
+
+* Discovery, Design, Frontend, Backend, Integration, SEO&Performance, Testing, Deploy
+* MVP 8 недель, Full 14 недель. 
+
+Фиксируем deliverables по этапам:
+
+### 13.1 Discovery
+
+* IA карта страниц и финальная URL структура
+* whitelist SEO страниц на запуск (районы, услуги, атрибуты)
+* ERD БД
+* протокол интеграций Telegram/AppSheet (idempotency, source of truth)
+
+Приемка:
+
+* подписанный whitelist, без него нельзя начинать SEO листинги.
+
+### 13.2 Design
+
+* UI kit
+* макеты desktop/mobile для ключевых страниц
+* интерактивные прототипы
+
+### 13.3 Frontend
+
+* SSR/ISR шаблоны страниц
+* фильтры + пагинация
+* i18n каркас
+* performance бюджет
+
+### 13.4 Backend
+
+* API
+* роли и права
+* очередь уведомлений
+* админка
+* audit log
+* интеграции
+
+### 13.5 SEO&Performance
+
+* canonical везде
+* sitemap полный
+* robots правильный домен
+* schema на шаблонах валидируется
+* PSI/CWV достигаются
+
+### 13.6 QA
+
+* тест-кейсы (см ниже)
+* кроссбраузер
+* мобильные сценарии
+* проверка индексации и SEO
+
+### 13.7 Deploy
+
+* миграция данных
+* включение редиректов UUID -> slug
+* подключение GA4, GSC, Sentry
+* мониторинг и алерты
+
+---
+
+## 14. Тест-кейсы приемки (обязательные)
+
+### 14.1 SEO и индексируемость
+
+1. Опубликован профиль модели:
+
+* URL доступен
+* canonical есть
+* в sitemap появился
+* schema валидна
+
+2. Архивирован профиль:
+
+* удален из sitemap
+* URL отдает 410 или 404 по выбранной стратегии (фиксируется в Discovery)
+* внутренние ссылки на него не показываются в листингах
+
+3. Любая non-whitelist комбинация фильтров:
+
+* noindex,follow
+* canonical на базовый листинг
+* не попадает в sitemap
+
+4. Пагинация:
+
+* есть <a href> на page/2 и обратно
+* page/2 индексируется
+* canonical на себя
+
+### 14.2 Performance
+
+* PSI mobile >= 90 на главной, каталоге, типовом профиле, geo странице
+* LCP/CLS/INP в цели. 
+
+### 14.3 Booking end-to-end
+
+* create booking на сайте
+* запись в AppSheet создана или очередь на sync
+* уведомление reception отправлено
+* отсутствие дубля при повторной отправке с тем же request_id
+* webhook update меняет статус в админке
+
+### 14.4 Безопасность
+
+* rate limit на форму
+* защита от простого бот-спама
+* /admin закрыт от индексации
+* audit log пишет изменения SEO полей
+
+---
+
+## 15. Чеклист запуска
+
+Используем твой чеклист как базу и расширяем пунктами whitelist и протоколов. Твой чеклист уже включает:
+
+* Performance Score ≥ 90
+* CWV green
+* Canonical 100%
+* Unique meta 100%
+* Schema validation
+* Sitemap отправлен в GSC
+* 301 редиректы
+* SSL
+* интеграции ботов и AppSheet
+* backup
+* GA4 и Sentry
+* кроссбраузер и мобильные тесты. 
+
+Добавляем обязательные пункты:
+
+* whitelist SEO страниц зафиксирован и реализован
+* non-whitelist фильтры = noindex,follow + canonical
+* доменные редиректы http->https, non-www->www или наоборот, единый канонический хост
+* проверка robots и sitemap на правильный домен, чтобы не повторить ошибку Aura. 
+
+---
+
+## 16. Примечания по рискам и запреты
+
+Запрещено выпускать релиз, если:
+
+* sitemap неполный (случай Aura 5 URL вместо 144) 
+* canonical отсутствует на любых indexable страницах 
+* страницы грузятся мегабайтами как Aura (7–14MB) 
+* нет lazy loading на галереях 
+* infinite scroll без SEO пагинации 
+* Schema отсутствует на шаблонах страниц 
+* UUID в публичных URL 
+
+---
+
+## 17. Что команда должна получить дополнительно (обязательные приложения)
+
+1. ERD + DDL PostgreSQL
+2. OpenAPI спецификация REST (и GraphQL только если реально нужен)
+3. Whitelist таблица SEO страниц (районы, услуги, атрибуты) на запуск
+4. Таблица шаблонов Title/Meta/H1
+5. Таблица редиректов UUID -> slug для миграции
+6. План контента на первые 60 дней (geo+services минимум)
+
+---
+
+
+1. **Whitelist SEO страниц на запуск — таблицей**
+2. **API эндпоинты — четко, без философии**
+3. Логику, чтобы бэкенд и фронт не спорили
+
+---
+
+# ЧАСТЬ 1. WHITELIST SEO СТРАНИЦ НА ЗАПУСК
+
+Принцип:
+
+* индексируются только утверждённые страницы
+* никаких “все фильтры в индекс”
+* каждая страница имеет понятную роль
+* каждая страница имеет Schema
+* min words задан сразу
+
+---
+
+## 1.1 Основной каталог
+
+| Тип          | URL             | Title Template | H1             | Min Words | Schema                                     |
+| ------------ | --------------- | -------------- | -------------- | --------- | ------------------------------------------ |
+| Main Catalog | /london-escorts | London Escorts | London Escorts | 800       | CollectionPage + ItemList + BreadcrumbList |
+
+---
+
+## 1.2 GEO страницы (районы London)
+
+Стартовый whitelist:
+
+| Район         | URL                       | Title Template           | H1                       | Min Words | Schema                                               |
+| ------------- | ------------------------- | ------------------------ | ------------------------ | --------- | ---------------------------------------------------- |
+| Mayfair       | /escorts-in-mayfair       | Escorts in Mayfair       | Escorts in Mayfair       | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Kensington    | /escorts-in-kensington    | Escorts in Kensington    | Escorts in Kensington    | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Knightsbridge | /escorts-in-knightsbridge | Escorts in Knightsbridge | Escorts in Knightsbridge | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Chelsea       | /escorts-in-chelsea       | Escorts in Chelsea       | Escorts in Chelsea       | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Belgravia     | /escorts-in-belgravia     | Escorts in Belgravia     | Escorts in Belgravia     | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Marylebone    | /escorts-in-marylebone    | Escorts in Marylebone    | Escorts in Marylebone    | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Westminster   | /escorts-in-westminster   | Escorts in Westminster   | Escorts in Westminster   | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Soho          | /escorts-in-soho          | Escorts in Soho          | Escorts in Soho          | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+| Canary Wharf  | /escorts-in-canary-wharf  | Escorts in Canary Wharf  | Escorts in Canary Wharf  | 1000      | CollectionPage + ItemList + FAQPage + BreadcrumbList |
+
+Правила:
+
+* каждая страница имеет уникальный текст
+* не менее 8 моделей в листинге, иначе noindex
+* обязательно FAQ блок (минимум 6 вопросов)
+
+---
+
+## 1.3 Services страницы
+
+Whitelist на старт:
+
+| Услуга           | URL                        | Title                           | H1                       | Min Words | Schema                             |
+| ---------------- | -------------------------- | ------------------------------- | ------------------------ | --------- | ---------------------------------- |
+| GFE              | /services/gfe              | GFE Escorts London              | GFE Escorts in London    | 1200      | Service + FAQPage + BreadcrumbList |
+| Dinner Date      | /services/dinner-date      | Dinner Date Escorts London      | Dinner Date Escorts      | 1000      | Service + FAQPage + BreadcrumbList |
+| Travel Companion | /services/travel-companion | Travel Companion Escorts London | Travel Companion Escorts | 1000      | Service + FAQPage + BreadcrumbList |
+| VIP Escort       | /services/vip              | VIP Escorts London              | VIP Escorts London       | 1200      | Service + FAQPage + BreadcrumbList |
+
+---
+
+## 1.4 Attributes страницы
+
+| Атрибут  | URL                      | Title                   | H1                      | Min Words | Schema                              |
+| -------- | ------------------------ | ----------------------- | ----------------------- | --------- | ----------------------------------- |
+| Blonde   | /blonde-escorts-london   | Blonde Escorts London   | Blonde Escorts London   | 800       | CollectionPage + ItemList + FAQPage |
+| Brunette | /brunette-escorts-london | Brunette Escorts London | Brunette Escorts London | 800       | CollectionPage + ItemList + FAQPage |
+| Petite   | /petite-escorts-london   | Petite Escorts London   | Petite Escorts London   | 800       | CollectionPage + ItemList + FAQPage |
+| VIP      | /vip-escorts-london      | VIP Escorts London      | VIP Escorts London      | 1000      | CollectionPage + ItemList + FAQPage |
+
+---
+
+## 1.5 Профиль модели
+
+URL:
+
+```
+/catalog/{slug}
+```
+
+Min Words:
+
+* 1500+ слов (английский)
+* FAQ минимум 4 вопроса
+
+Schema:
+
+* ProfilePage
+* Person
+* Offer
+* BreadcrumbList
+* ImageObject
+
+---
+
+## 1.6 Что НЕ индексируется
+
+* Любые комбинации фильтров типа:
+
+  * /catalog?age=22&district=mayfair&hair=blonde
+* search
+* избранное
+* внутренние технические страницы
+
+Эти страницы:
+
+* meta robots noindex,follow
+* canonical на базовый листинг
+
+---
+
+# ЧАСТЬ 2. API ЭНДПОИНТЫ
+
+Без лишнего. Только то, что нужно.
+
+---
+
+# 2.1 AUTH
+
+POST /api/auth/login
+POST /api/auth/logout
+POST /api/auth/refresh
+POST /api/auth/2fa/verify
+
+---
+
+# 2.2 MODELS
+
+GET /api/models
+GET /api/models/{id}
+POST /api/models
+PUT /api/models/{id}
+PATCH /api/models/{id}/status
+DELETE /api/models/{id}
+
+Slug:
+
+* генерируется автоматически
+* уникальность проверяется
+* изменение slug создаёт 301 redirect запись
+
+---
+
+# 2.3 MEDIA
+
+POST /api/media/upload
+DELETE /api/media/{id}
+PATCH /api/media/{id}/order
+PATCH /api/media/{id}/visibility
+
+Авто:
+
+* конвертация в WebP
+* конвертация в AVIF
+* генерация размеров
+
+---
+
+# 2.4 SEO PAGES (Whitelist управление)
+
+GET /api/seo-pages
+POST /api/seo-pages
+PUT /api/seo-pages/{id}
+PATCH /api/seo-pages/{id}/publish
+DELETE /api/seo-pages/{id}
+
+Поля:
+
+* url
+* title
+* description
+* h1
+* robots_index
+* canonical_override
+* content
+* faq_json
+
+---
+
+# 2.5 BOOKINGS
+
+POST /api/bookings
+GET /api/bookings
+GET /api/bookings/{id}
+PATCH /api/bookings/{id}/status
+POST /api/bookings/{id}/assign
+
+Idempotency:
+Header:
+
+```
+Idempotency-Key: {uuid}
+```
+
+Повторный запрос с тем же ключом не создаёт дубль.
+
+---
+
+# 2.6 INTEGRATIONS
+
+POST /api/integrations/telegram/test
+POST /api/integrations/appsheet/sync
+POST /api/integrations/appsheet/webhook
+
+Webhook защищён:
+
+* secret token
+* signature validation
+
+---
+
+# 2.7 AUDIT
+
+GET /api/audit
+GET /api/audit/{entity}/{id}
+
+Логируются:
+
+* публикации
+* изменение SEO
+* статус бронирования
+* login
+* смена ролей
+
+---
+
+# ЧАСТЬ 3. КРИТИЧЕСКИЕ ПРАВИЛА
+
+1. Никакого infinite scroll без SEO пагинации
+2. Canonical на 100% indexable страниц
+3. Sitemap полный, не 5 URL
+4. Slug вместо UUID
+5. Lazy loading 100%
+6. AVIF + WebP
+7. PSI mobile > 90
+8. Нет дублей Title
+
+---
+
+
+

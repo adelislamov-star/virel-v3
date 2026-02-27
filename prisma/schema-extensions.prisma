@@ -1,0 +1,137 @@
+// SCHEMA EXTENSIONS FOR MODEL PROFILE
+// Add to schema.prisma after Service model
+
+// Service Categories for grouping
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String   // "Basic", "Oral", "Massage", "Extras", "Fetish"
+  slug        String   @unique
+  sortOrder   Int      @default(0)
+  
+  services    Service[] @relation("CategoryServices")
+  
+  @@map("service_categories")
+}
+
+// Extended Service with category and extras
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  code        String?  @unique // "OWO", "DFK", "A-LEVEL"
+  description String?  @db.Text
+  
+  categoryId  String?
+  category    ServiceCategory? @relation("CategoryServices", fields: [categoryId], references: [id])
+  
+  hasExtraPrice Boolean @default(false)
+  requiresEquipment Boolean @default(false)
+  
+  status      String   @default("active")
+  isPopular   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  
+  // Relations
+  models      ModelService[]
+  bookings    BookingService[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("services")
+}
+
+// Extended ModelService with pricing
+model ModelService {
+  modelId     String
+  serviceId   String
+  isEnabled   Boolean  @default(true)
+  
+  extraPrice  Float?   // For services like A-Level, WS, etc
+  notes       String?  // Special conditions
+  sortOrder   Int      @default(0)
+  
+  model       Model    @relation(fields: [modelId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@id([modelId, serviceId])
+  @@map("model_services")
+}
+
+// Model Rates (pricing)
+model ModelRate {
+  id              String   @id @default(cuid())
+  modelId         String
+  model           Model    @relation("ModelRates", fields: [modelId], references: [id])
+  
+  locationId      String?
+  location        Location? @relation("LocationRates", fields: [locationId], references: [id])
+  
+  durationType    String   // "30min", "45min", "1hour", "90min", "2hours", "extra_hour", "overnight"
+  callType        String   // "incall", "outcall"
+  
+  price           Float
+  taxiFee         Float?   // For outcall
+  currency        String   @default("GBP")
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([modelId, locationId, durationType, callType])
+  @@index([modelId, isActive])
+  @@map("model_rates")
+}
+
+// Model Address (for outcall services)
+model ModelAddress {
+  id              String   @id @default(cuid())
+  modelId         String
+  model           Model    @relation("ModelAddress", fields: [modelId], references: [id])
+  
+  street          String
+  flatNumber      String?
+  flatFloor       Int?
+  postCode        String
+  tubeStation     String?
+  
+  // Airport outcalls
+  heathrowAvailable  Boolean @default(false)
+  gatwickAvailable   Boolean @default(false)
+  stanstedAvailable  Boolean @default(false)
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([modelId])
+  @@map("model_addresses")
+}
+
+// Model Work Preferences
+model ModelWorkPreferences {
+  id                    String   @id @default(cuid())
+  modelId               String
+  model                 Model    @relation("ModelPreferences", fields: [modelId], references: [id])
+  
+  workWithCouples       Boolean  @default(false)
+  workWithWomen         Boolean  @default(false)
+  blackClientsWelcome   Boolean  @default(true)
+  disabledClientsWelcome Boolean @default(true)
+  
+  @@unique([modelId])
+  @@map("model_work_preferences")
+}
+
+// Add to Model model:
+// rates           ModelRate[] @relation("ModelRates")
+// address         ModelAddress? @relation("ModelAddress")
+// workPreferences ModelWorkPreferences? @relation("ModelPreferences")
+
+// Add to Location model:
+// rates           ModelRate[] @relation("LocationRates")

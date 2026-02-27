@@ -1,0 +1,217 @@
+// VIREL v3 - OPERATIONS PLATFORM
+// Database Schema v3.1 - MODEL PROFILE EXTENSIONS
+// Date: 27 February 2026
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// NEW: SERVICE CATEGORIES
+// ============================================
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String   // "Basic", "Oral", "Massage", "Extras", "Fetish"
+  slug        String   @unique
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  status      String   @default("active")
+  
+  services    Service[] @relation("CategoryServices")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("service_categories")
+}
+
+// ============================================
+// EXTENDED: SERVICE (add to existing)
+// ============================================
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  code        String?  @unique // "OWO", "DFK", "A-LEVEL"
+  description String?  @db.Text
+  
+  // NEW FIELDS
+  categoryId  String?
+  category    ServiceCategory? @relation("CategoryServices", fields: [categoryId], references: [id])
+  
+  hasExtraPrice Boolean @default(false)
+  requiresEquipment Boolean @default(false)
+  sortOrder   Int      @default(0)
+  
+  status      String   @default("active")
+  isPopular   Boolean  @default(false)
+  
+  // Relations
+  models      ModelService[]
+  bookings    BookingService[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([categoryId, sortOrder])
+  @@map("services")
+}
+
+// ============================================
+// EXTENDED: MODEL SERVICE (add to existing)
+// ============================================
+
+model ModelService {
+  modelId     String
+  serviceId   String
+  isEnabled   Boolean  @default(true)
+  
+  // NEW FIELDS
+  extraPrice  Float?   // For A-Level, WS, Filming, etc
+  notes       String?  // Special conditions
+  sortOrder   Int      @default(0)
+  
+  model       Model    @relation(fields: [modelId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@id([modelId, serviceId])
+  @@index([modelId, isEnabled])
+  @@map("model_services")
+}
+
+// ============================================
+// NEW: MODEL RATES (PRICING)
+// ============================================
+
+model ModelRate {
+  id              String   @id @default(cuid())
+  modelId         String
+  model           Model    @relation("ModelRates", fields: [modelId], references: [id])
+  
+  locationId      String?
+  location        Location? @relation("LocationRates", fields: [locationId], references: [id])
+  
+  durationType    String   // "30min", "45min", "1hour", "90min", "2hours", "extra_hour", "overnight"
+  callType        String   // "incall", "outcall"
+  
+  price           Float
+  taxiFee         Float?   // For outcall
+  currency        String   @default("GBP")
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([modelId, locationId, durationType, callType])
+  @@index([modelId, isActive])
+  @@index([locationId, isActive])
+  @@map("model_rates")
+}
+
+// ============================================
+// NEW: MODEL ADDRESS (LOCATION DETAILS)
+// ============================================
+
+model ModelAddress {
+  id              String   @id @default(cuid())
+  modelId         String
+  model           Model    @relation("ModelAddress", fields: [modelId], references: [id])
+  
+  street          String
+  flatNumber      String?
+  flatFloor       Int?
+  postCode        String
+  tubeStation     String?
+  
+  // Airport outcalls availability
+  heathrowAvailable  Boolean @default(false)
+  gatwickAvailable   Boolean @default(false)
+  stanstedAvailable  Boolean @default(false)
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([modelId])
+  @@map("model_addresses")
+}
+
+// ============================================
+// NEW: MODEL WORK PREFERENCES
+// ============================================
+
+model ModelWorkPreferences {
+  id                    String   @id @default(cuid())
+  modelId               String
+  model                 Model    @relation("ModelPreferences", fields: [modelId], references: [id])
+  
+  workWithCouples       Boolean  @default(false)
+  workWithWomen         Boolean  @default(false)
+  blackClientsWelcome   Boolean  @default(true)
+  disabledClientsWelcome Boolean @default(true)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@unique([modelId])
+  @@map("model_work_preferences")
+}
+
+// ============================================
+// EXTENDED: MODEL STATS (add fields)
+// ============================================
+
+model ModelStats {
+  modelId         String   @id
+  model           Model    @relation(fields: [modelId], references: [id])
+  
+  age             Int?
+  height          Int?     // cm
+  weight          Int?     // kg
+  dressSize       String?  // UK size
+  feetSize        String?  // UK size (NEW)
+  bustSize        String?
+  bustType        String?  // natural, silicone
+  hairColour      String?
+  eyeColour       String?
+  smokingStatus   String?
+  tattooStatus    String?
+  piercingStatus  String?
+  orientation     String?
+  nationality     String?
+  languages       String[]
+  uniforms        String[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("model_stats")
+}
+
+// ============================================
+// ADD TO EXISTING MODEL
+// ============================================
+// Add these relations to Model:
+//
+//  rates           ModelRate[] @relation("ModelRates")
+//  address         ModelAddress? @relation("ModelAddress")
+//  workPreferences ModelWorkPreferences? @relation("ModelPreferences")
+
+// ============================================
+// ADD TO EXISTING LOCATION
+// ============================================
+// Add this relation to Location:
+//
+//  rates           ModelRate[] @relation("LocationRates")

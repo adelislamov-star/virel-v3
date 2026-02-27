@@ -1,0 +1,183 @@
+📚 VIREL PROJECT DOCUMENTATION
+Полная документация проекта Virel MVP v2
+Дата создания: 27 февраля 2026
+Версия: 2.0
+Статус: 🟢 Active Development
+
+📖 СОДЕРЖАНИЕ ДОКУМЕНТАЦИИ
+🏠 Основные документы:
+
+PROJECT OVERVIEW ⭐
+История проекта, команда, цели, статус
+TECHNICAL SPECIFICATIONS ⭐
+Функциональные требования, роли, бизнес-логика
+DATABASE SCHEMA
+17 таблиц, отношения, индексы, примеры
+API DOCUMENTATION
+Все endpoints, примеры запросов/ответов
+FRONTEND PAGES
+Структура страниц, компоненты, SEO
+INTEGRATIONS GUIDE
+Telegram боты, AppSheet, внешние API
+SEO STRATEGY
+Whitelist система, Schema markup, контент
+DEPLOYMENT GUIDE
+Production deploy, environment, мониторинг
+MUSE CMS ANALYSIS ⭐
+Анализ конкурента, рекомендации, UX
+
+
+🚀 QUICK START
+Для разработчиков:
+bash# 1. Clone repository
+git clone https://github.com/your-repo/virel.git
+cd virel
+
+# 2. Install dependencies
+npm install
+
+# 3. Setup environment
+cp .env.example .env
+# Edit .env with your credentials
+
+# 4. Generate Prisma Client
+npm run db:generate
+
+# 5. Push schema to database
+npm run db:push
+
+# 6. Seed database
+node prisma/seed-v2.js
+
+# 7. Run development server
+npm run dev
+Откройте http://localhost:3000
+
+Для менеджеров:
+Админ панель: http://localhost:3000/admin
+Login: admin@virel.com
+Password: (установите через Prisma Studio)
+Основные функции:
+
+Управление моделями
+Управление бронированиями
+Просмотр статистики
+Настройки системы
+
+
+📊 СТАТУС ПРОЕКТА
+✅ Completed (70%):
+
+Инфраструктура
+База данных (17 таблиц)
+API endpoints (Models, Bookings, SEO)
+Frontend pages (17 SEO страниц)
+Контент (15,000+ слов)
+Локальный деплой
+
+🚧 In Progress (20%):
+
+Admin UI (full CRUD)
+Telegram integration
+AppSheet sync
+Image upload
+Advanced filters
+
+📝 TODO (10%):
+
+Authentication
+Payment system
+Email/SMS notifications
+Production deployment
+Mobile app (PWA)
+
+
+🎯 ПРИОРИТЕТЫ
+🔴 Высокий (This week):
+
+Завершить Admin UI
+Интеграция Telegram ботов
+Production deployment
+Domain + SSL
+
+🟡 Средний (This month):
+
+Image upload система
+Email notifications
+Advanced search/filters
+Bulk actions
+
+🟢 Низкий (Next quarter):
+
+Payment integration
+Mobile app (PWA)
+AI recommendations
+Multi-language
+
+
+🛠️ TECH STACK
+yamlFrontend:
+  Framework: Next.js 14
+  Language: TypeScript 5
+  Styling: TailwindCSS 3.4
+  UI: Shadcn/ui
+  
+Backend:
+  Runtime: Node.js 20
+  Framework: Next.js API
+  ORM: Prisma 5
+  Database: PostgreSQL (Neon)
+  
+Integrations:
+  Telegram: Bot API
+  AppSheet: REST API
+  Email: SendGrid (future)
+  SMS: Twilio (future)
+
+👥 КОМАНДА
+Owner: Adel (admin@virel.com)
+Manager: Tommy (tommy@virel.com)
+Reception: Lukas, Sasha, Adam, Donald
+Developer: Claude + Adel
+Designer: (TBD)
+
+📞 SUPPORT
+Technical issues: Create GitHub issue
+Business questions: Adel (admin@virel.com)
+Feature requests: GitHub Discussions
+
+📝 CHANGELOG
+Version 2.0 (27 Feb 2026)
+
+✅ Professional version
+✅ 17 tables schema
+✅ SEO Whitelist system
+✅ API v2 with idempotency
+✅ 17 SEO pages with content
+✅ Neon database connected
+✅ Local deployment successful
+
+Version 1.0 (27 Feb 2026)
+
+✅ MVP version
+✅ Basic schema (5 tables)
+✅ Homepage
+✅ Catalog
+✅ Admin dashboard (basic)
+
+
+🔗 LINKS
+Repository: (GitHub URL)
+Production: (Domain URL)
+Staging: (Staging URL)
+Admin: /admin
+External Services:
+
+Neon Database: https://neon.tech
+Railway: https://railway.app
+Telegram Bot API: https://core.telegram.org/bots/api
+
+
+📄 LICENSE
+Proprietary - All rights reserved
+© 2026 Virel

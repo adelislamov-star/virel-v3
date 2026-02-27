@@ -1,0 +1,782 @@
+// VIREL v3 - OPERATIONS PLATFORM
+// Database Schema v3.0
+// 30+ Tables for Operations Platform
+// Date: 27 February 2026
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS & ACCESS (RBAC)
+// ============================================
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  phone           String?
+  name            String
+  passwordHash    String
+  
+  // Status
+  status          String    @default("active") // active, disabled
+  lastLoginAt     DateTime?
+  
+  // Telegram
+  telegramChatId  String?
+  
+  // Relations
+  roles           UserRole[]
+  sessions        Session[]
+  auditLogs       AuditLog[]
+  assignedTasks   Task[]     @relation("AssignedTasks")
+  assignedInquiries Inquiry[] @relation("AssignedInquiries")
+  assignedBookings Booking[]  @relation("AssignedBookings")
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  code        String   @unique // OWNER, OPS_MANAGER, OPERATOR, etc
+  name        String
+  description String?
+  
+  // Relations
+  users       UserRole[]
+  permissions RolePermission[]
+  
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // bookings.read, bookings.update
+  description String?
+  
+  // Relations
+  roles       RolePermission[]
+  
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId  String
+  roleId  String
+  
+  user    User @relation(fields: [userId], references: [id])
+  role    Role @relation(fields: [roleId], references: [id])
+  
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  
+  token        String   @unique
+  refreshToken String?  @unique
+  
+  ipAddress    String?
+  userAgent    String?  @db.Text
+  
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ============================================
+// MODELS (Companions)
+// ============================================
+
+model Model {
+  id              String   @id @default(cuid())
+  publicCode      String   @unique // Short code: "SOPHIA-MF"
+  name            String
+  slug            String   @unique
+  
+  // Location
+  primaryLocationId String?
+  primaryLocation   Location? @relation("PrimaryLocation", fields: [primaryLocationId], references: [id])
+  
+  // Status
+  status          String   @default("active") // active, inactive, suspended
+  visibility      String   @default("public") // public, private, unlisted
+  
+  // Internal
+  ratingInternal  Float?   // 0-5
+  notesInternal   String?  @db.Text
+  
+  // Relations
+  stats           ModelStats?
+  media           ModelMedia[]
+  services        ModelService[]
+  categories      ModelCategory[]
+  attributes      ModelAttribute[]
+  availabilitySlots AvailabilitySlot[]
+  availabilityMismatches AvailabilityMismatch[]
+  inquiryMatches  InquiryMatch[]
+  bookings        Booking[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([status])
+  @@index([visibility])
+  @@index([primaryLocationId])
+  @@map("models")
+}
+
+model ModelStats {
+  modelId         String   @id
+  model           Model    @relation(fields: [modelId], references: [id])
+  
+  age             Int?
+  height          Int?
+  weight          Int?
+  dressSize       String?
+  bustSize        String?
+  bustType        String?
+  hairColour      String?
+  eyeColour       String?
+  smokingStatus   String?
+  tattooStatus    String?
+  piercingStatus  String?
+  orientation     String?
+  nationality     String?
+  languages       String[]
+  uniforms        String[]
+  
+  @@map("model_stats")
+}
+
+model ModelMedia {
+  id          String   @id @default(cuid())
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [id])
+  
+  type        String   // photo, video
+  storageKey  String
+  url         String
+  checksum    String?
+  
+  isPrimary   Boolean  @default(false)
+  isPublic    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([modelId])
+  @@index([modelId, isPrimary])
+  @@map("model_media")
+}
+
+model ModelService {
+  modelId     String
+  serviceId   String
+  isEnabled   Boolean  @default(true)
+  
+  model       Model    @relation(fields: [modelId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  @@id([modelId, serviceId])
+  @@map("model_services")
+}
+
+model ModelCategory {
+  modelId     String
+  categoryId  String
+  
+  model       Model    @relation(fields: [modelId], references: [id])
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  @@id([modelId, categoryId])
+  @@map("model_categories")
+}
+
+model ModelAttribute {
+  modelId           String
+  attributeValueId  String
+  
+  model             Model          @relation(fields: [modelId], references: [id])
+  attributeValue    AttributeValue @relation(fields: [attributeValueId], references: [id])
+  
+  @@id([modelId, attributeValueId])
+  @@map("model_attributes")
+}
+
+// ============================================
+// DIRECTORIES (Services, Categories, Attributes, Locations)
+// ============================================
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  status      String   @default("active")
+  isPopular   Boolean  @default(false)
+  
+  // Relations
+  models      ModelService[]
+  bookings    BookingService[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("services")
+}
+
+model Category {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  h1              String?
+  introHtml       String?  @db.Text
+  descriptionHtml String?  @db.Text
+  status          String   @default("active")
+  isPopular       Boolean  @default(false)
+  
+  // SEO
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String?
+  
+  // Relations
+  models          ModelCategory[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("categories")
+}
+
+model Attribute {
+  id          String   @id @default(cuid())
+  code        String   @unique // hair_colour, bust_type
+  name        String
+  isFilterable Boolean @default(true)
+  isPublic    Boolean  @default(true)
+  dataType    String   @default("enum") // enum, text, number
+  status      String   @default("active")
+  
+  // Relations
+  values      AttributeValue[]
+  
+  @@map("attributes")
+}
+
+model AttributeValue {
+  id          String   @id @default(cuid())
+  attributeId String
+  attribute   Attribute @relation(fields: [attributeId], references: [id])
+  
+  value       String
+  sortOrder   Int      @default(0)
+  status      String   @default("active")
+  
+  // Relations
+  models      ModelAttribute[]
+  
+  @@unique([attributeId, value])
+  @@map("attribute_values")
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  county      String?
+  country     String   @default("UK")
+  timezone    String   @default("Europe/London")
+  latitude    Float?
+  longitude   Float?
+  status      String   @default("active")
+  isPopular   Boolean  @default(false)
+  
+  // Relations
+  models      Model[]  @relation("PrimaryLocation")
+  inquiries   Inquiry[]
+  bookings    Booking[]
+  
+  @@map("locations")
+}
+
+model CallRate {
+  id              String   @id @default(cuid())
+  locationId      String?
+  currency        String   @default("GBP")
+  durationMinutes Int
+  price           Float
+  status          String   @default("active")
+  
+  @@map("call_rates")
+}
+
+// ============================================
+// CLIENTS, INQUIRIES, BOOKINGS
+// ============================================
+
+model Client {
+  id              String   @id @default(cuid())
+  fullName        String?
+  email           String?
+  phone           String?
+  preferredChannel String? // web, telegram, whatsapp, phone
+  tags            String[] // ["vip", "regular"]
+  
+  // Relations
+  inquiries       Inquiry[]
+  bookings        Booking[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([email])
+  @@index([phone])
+  @@map("clients")
+}
+
+model Inquiry {
+  id                  String   @id @default(cuid())
+  source              String   // web, telegram, whatsapp, phone, partner
+  externalRef         String?  // ID from external system
+  
+  clientId            String?
+  client              Client?  @relation(fields: [clientId], references: [id])
+  
+  status              String   @default("new") // new, qualified, awaiting_client, awaiting_deposit, converted, lost, spam
+  priority            String   @default("normal") // low, normal, high, critical
+  
+  subject             String?
+  message             String?  @db.Text
+  
+  requestedLocationId String?
+  requestedLocation   Location? @relation(fields: [requestedLocationId], references: [id])
+  requestedServices   Json?
+  requestedTimeFrom   DateTime?
+  requestedTimeTo     DateTime?
+  
+  assignedTo          String?
+  assignedUser        User?    @relation("AssignedInquiries", fields: [assignedTo], references: [id])
+  
+  // Relations
+  matches             InquiryMatch[]
+  booking             Booking?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@unique([source, externalRef])
+  @@index([status, priority])
+  @@index([assignedTo, status])
+  @@index([createdAt])
+  @@map("inquiries")
+}
+
+model InquiryMatch {
+  id          String   @id @default(cuid())
+  inquiryId   String
+  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id])
+  
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [id])
+  
+  score       Float    // 0-100
+  reason      Json     // Why match
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([inquiryId])
+  @@index([modelId])
+  @@map("inquiry_matches")
+}
+
+model Booking {
+  id                String   @id @default(cuid())
+  inquiryId         String?  @unique
+  inquiry           Inquiry? @relation(fields: [inquiryId], references: [id])
+  
+  clientId          String
+  client            Client   @relation(fields: [clientId], references: [id])
+  
+  modelId           String
+  model             Model    @relation(fields: [modelId], references: [id])
+  
+  locationId        String
+  location          Location @relation(fields: [locationId], references: [id])
+  
+  startAt           DateTime
+  endAt             DateTime
+  
+  status            String   @default("draft") // draft, pending, deposit_required, confirmed, in_progress, completed, cancelled, no_show, expired
+  
+  priceTotal        Float
+  currency          String   @default("GBP")
+  depositRequired   Float?
+  depositStatus     String   @default("none") // none, pending, paid, failed
+  paymentStatus     String   @default("unpaid") // unpaid, partial, paid, refunded
+  
+  assignedTo        String?
+  assignedUser      User?    @relation("AssignedBookings", fields: [assignedTo], references: [id])
+  
+  notesInternal     String?  @db.Text
+  
+  // Relations
+  services          BookingService[]
+  timeline          BookingTimeline[]
+  payments          Payment[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([modelId, startAt])
+  @@index([clientId, createdAt])
+  @@index([status, startAt])
+  @@index([assignedTo, status])
+  @@map("bookings")
+}
+
+model BookingService {
+  bookingId   String
+  serviceId   String
+  
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  @@id([bookingId, serviceId])
+  @@map("booking_services")
+}
+
+model BookingTimeline {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  
+  eventType   String   // status_changed, payment_received, note_added
+  payload     Json
+  
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  
+  @@index([bookingId, createdAt])
+  @@map("booking_timeline")
+}
+
+// ============================================
+// AVAILABILITY
+// ============================================
+
+model AvailabilityRule {
+  id          String   @id @default(cuid())
+  name        String
+  scope       String   // global, location, model
+  locationId  String?
+  modelId     String?
+  rule        Json     // Schedule, restrictions, blackouts
+  status      String   @default("active")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("availability_rules")
+}
+
+model AvailabilitySlot {
+  id          String   @id @default(cuid())
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [id])
+  
+  startAt     DateTime
+  endAt       DateTime
+  status      String   @default("available") // available, unavailable, tentative
+  source      String   @default("manual") // manual, automation, sync
+  confidence  Float    @default(1.0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([modelId, startAt])
+  @@index([status, startAt])
+  @@map("availability_slots")
+}
+
+model AvailabilityMismatch {
+  id              String   @id @default(cuid())
+  modelId         String
+  model           Model    @relation(fields: [modelId], references: [id])
+  
+  expectedStatus  String
+  actualStatus    String
+  detectedAt      DateTime
+  severity        String   // low, medium, high, critical
+  context         Json
+  resolvedAt      DateTime?
+  
+  @@index([detectedAt])
+  @@index([modelId, resolvedAt])
+  @@map("availability_mismatches")
+}
+
+// ============================================
+// TASKS, EXCEPTIONS, SLA
+// ============================================
+
+model Task {
+  id              String   @id @default(cuid())
+  type            String   // confirm_booking, request_deposit, follow_up
+  status          String   @default("open") // open, in_progress, done, failed, cancelled
+  priority        String   @default("normal") // low, normal, high, critical
+  subject         String
+  
+  entityType      String   // inquiry, booking, model, payment
+  entityId        String
+  
+  assignedTo      String?
+  assignedUser    User?    @relation("AssignedTasks", fields: [assignedTo], references: [id])
+  
+  dueAt           DateTime?
+  slaDeadlineAt   DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([assignedTo, status])
+  @@index([status, slaDeadlineAt])
+  @@index([entityType, entityId])
+  @@map("tasks")
+}
+
+model Exception {
+  id          String   @id @default(cuid())
+  type        String   // payment_failed, no_show_risk, mismatch, overbooking
+  status      String   @default("open") // open, investigating, resolved, dismissed
+  severity    String   // low, medium, high, critical
+  
+  entityType  String
+  entityId    String
+  
+  summary     String
+  details     Json
+  
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([status, severity])
+  @@index([entityType, entityId])
+  @@map("exceptions")
+}
+
+model SLAPolicy {
+  id              String   @id @default(cuid())
+  name            String
+  appliesTo       String   // task_type, exception_type
+  key             String   // confirm_booking, payment_failed
+  deadlineMinutes Int
+  escalation      Json     // Where to escalate
+  status          String   @default("active")
+  
+  @@map("sla_policies")
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+model Payment {
+  id                String   @id @default(cuid())
+  bookingId         String
+  booking           Booking  @relation(fields: [bookingId], references: [id])
+  
+  provider          String   // stripe, revolut, custom
+  providerPaymentId String?
+  type              String   // deposit, full, refund
+  status            String   @default("pending") // pending, succeeded, failed, cancelled
+  
+  amount            Float
+  currency          String   @default("GBP")
+  
+  raw               Json?    // Full provider response
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([provider, providerPaymentId])
+  @@index([bookingId])
+  @@map("payments")
+}
+
+// ============================================
+// INTEGRATIONS & WEBHOOKS
+// ============================================
+
+model Integration {
+  id          String   @id @default(cuid())
+  code        String   @unique // stripe, telegram_diva, whatsapp
+  name        String
+  type        String   // payment, messaging, calendar, partner
+  status      String   @default("active")
+  config      Json     // Keys, URLs, tokens
+  
+  // Relations
+  webhooksIn  WebhookIn[]
+  webhooksOut WebhookOut[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("integrations")
+}
+
+model WebhookIn {
+  id              String   @id @default(cuid())
+  integrationId   String
+  integration     Integration @relation(fields: [integrationId], references: [id])
+  
+  eventType       String
+  headers         Json
+  payload         Json
+  
+  receivedAt      DateTime @default(now())
+  processedAt     DateTime?
+  status          String   @default("received") // received, processed, failed
+  error           String?  @db.Text
+  
+  idempotencyKey  String?
+  
+  @@unique([integrationId, idempotencyKey])
+  @@index([integrationId, receivedAt])
+  @@index([status, receivedAt])
+  @@map("webhooks_in")
+}
+
+model WebhookOut {
+  id              String   @id @default(cuid())
+  integrationId   String
+  integration     Integration @relation(fields: [integrationId], references: [id])
+  
+  eventType       String
+  targetUrl       String
+  payload         Json
+  
+  createdAt       DateTime @default(now())
+  sentAt          DateTime?
+  status          String   @default("pending") // pending, sent, failed
+  attempts        Int      @default(0)
+  lastError       String?  @db.Text
+  
+  @@index([status, createdAt])
+  @@map("webhooks_out")
+}
+
+// ============================================
+// AUDIT & EVENTS
+// ============================================
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorUserId   String?
+  actor         User?    @relation(fields: [actorUserId], references: [id])
+  actorType     String   @default("user") // user, system
+  
+  action        String   // STATUS_CHANGE, CREATE, UPDATE, DELETE
+  entityType    String
+  entityId      String
+  
+  before        Json?
+  after         Json?
+  
+  ipAddress     String?
+  userAgent     String?  @db.Text
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model DomainEvent {
+  id          String   @id @default(cuid())
+  eventType   String   // inquiry.created, payment.succeeded
+  entityType  String
+  entityId    String
+  payload     Json
+  
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+  
+  @@index([eventType, createdAt])
+  @@index([publishedAt])
+  @@map("domain_events")
+}
+
+// ============================================
+// AUTOMATION
+// ============================================
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  name        String
+  status      String   @default("active") // active, disabled, testing
+  trigger     String   // inquiry.created, payment.succeeded
+  conditions  Json     // IF conditions
+  actions     Json     // THEN actions
+  limits      Json?    // Rate limits
+  
+  // Relations
+  executions  AutomationExecution[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("automation_rules")
+}
+
+model AutomationExecution {
+  id          String   @id @default(cuid())
+  ruleId      String
+  rule        AutomationRule @relation(fields: [ruleId], references: [id])
+  
+  eventId     String   // from domain_events
+  status      String   @default("running") // running, done, failed
+  
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  logs        Json?
+  
+  @@unique([ruleId, eventId])
+  @@map("automation_executions")
+}

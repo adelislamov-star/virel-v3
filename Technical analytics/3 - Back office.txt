@@ -1,0 +1,1054 @@
+--
+
+# 0. Цель системы
+
+Сделать не “админку”, а операционную платформу:
+
+* автопроцессинг лидов и бронирований
+* строгие статусы и переходы
+* Action Center как единственный рабочий экран оператора
+* правила автоматизации, SLA, таймеры
+* полная трассировка, кто что сделал и почему
+* интеграции: платежи, мессенджеры, календарь, агрегаторы, CRM
+
+---
+
+# 1. Роли и зоны ответственности
+
+## Роли
+
+* Owner, полный доступ
+* Ops Manager, настройки процессов, просмотр финансов
+* Operator, Action Center, подтверждения, исключения
+* Content Manager, страницы, SEO, блог
+* Finance, платежи, выплаты, отчеты
+* Integrations Admin, ключи, вебхуки, маппинги
+* Read Only, только просмотр
+
+## Принцип прав
+
+RBAC + policy на уровне объекта:
+
+* operator видит только “назначенное” и “дежурное”
+* доступ к PII ограничить, маскирование телефона и email в списках
+* все изменения пишутся в audit_log
+
+---
+
+# 2. Основные домены и объекты
+
+## Core
+
+* Model, анкета, медиа, теги, локации, услуги, ставки
+* Inquiry, входящий лид из формы, чата, телефона, агрегатора
+* Booking, подтвержденное бронирование, таймлайн, платежи
+* Availability, фактическая доступность, прогноз, правила
+* Exception, любое отклонение, которое требует внимания
+* Task, атомарное действие с SLA и назначением
+* Automation rule, правила, триггеры, действия
+* Integration, внешние системы, вебхуки, маппинги
+* Content, SEO страницы, блог
+
+---
+
+# 3. Канонические статусы и state machine
+
+## Inquiry status
+
+* new
+* qualified
+* awaiting_client
+* awaiting_deposit
+* converted
+* lost
+* spam
+
+## Booking status
+
+* draft
+* pending
+* deposit_required
+* confirmed
+* in_progress
+* completed
+* cancelled
+* no_show
+* expired
+
+## Exception status
+
+* open
+* investigating
+* resolved
+* dismissed
+
+## Task status
+
+* open
+* in_progress
+* done
+* failed
+* cancelled
+
+Правило: переходы статусов только через сервисный слой, не прямым апдейтом в базе.
+
+---
+
+# 4. UX как архитектура
+
+## Единственный рабочий экран оператора
+
+Action Center показывает:
+
+* все задачи и исключения, отсортировано по SLA и важности
+* быстрые действия: подтвердить, запросить депозит, перекинуть, закрыть, оставить комментарий
+* единый поиск, одна строка
+
+## Любой объект открывается как “карточка справа”
+
+Список слева, карточка справа:
+
+* не теряем контекст
+* супер быстро, меньше кликов
+* удобно на ноутбуке и планшете
+
+## Везде
+
+* сохраненные фильтры
+* bulk actions
+* быстрые статусы
+* журнал действий
+
+---
+
+# 5. Архитектура сервисов
+
+## Логическая схема
+
+* API Gateway, если нужно, иначе монолитный API
+* Core API service, REST + WebSocket для лайв обновлений
+* Worker service, очереди, таймеры, интеграции
+* File service, медиа, подписи, трансформации
+* Notification service, email, sms, telegram, push
+* Analytics pipeline, события, агрегации
+
+## Коммуникации
+
+* синхронно: REST
+* асинхронно: queue events + webhooks
+* realtime: WebSocket или SSE
+
+## Очереди
+
+Минимум 3 очереди:
+
+* critical, платежи, статус брони, SLA
+* ops, уведомления, синки
+* heavy, медиа, импорты, отчеты
+
+---
+
+# 6. Данные и база, PostgreSQL
+
+Ниже схема на уровне таблиц. Это уже можно отдавать разработчикам.
+
+## 6.1 Пользователи и доступ
+
+### users
+
+* id uuid pk
+* email text unique
+* phone text null
+* name text
+* password_hash text
+* status text, active, disabled
+* last_login_at timestamptz
+* created_at, updated_at
+
+indexes:
+
+* unique(email)
+* status
+
+### roles
+
+* id uuid pk
+* code text unique
+* name text
+
+### permissions
+
+* id uuid pk
+* code text unique
+* description text
+
+### role_permissions
+
+* role_id fk roles
+* permission_id fk permissions
+  pk(role_id, permission_id)
+
+### user_roles
+
+* user_id fk users
+* role_id fk roles
+  pk(user_id, role_id)
+
+---
+
+## 6.2 Модели и профили
+
+### models
+
+* id uuid pk
+* public_code text unique, короткий код для внешних ссылок
+* name text
+* slug text unique
+* primary_location_id uuid fk locations
+* status text, active, inactive, suspended
+* visibility text, public, private, unlisted
+* rating_internal numeric(3,2) null
+* notes_internal text null
+* created_at, updated_at
+
+indexes:
+
+* unique(slug)
+* status, visibility
+* primary_location_id
+
+### model_stats
+
+* model_id uuid pk fk models
+* age int
+* height int
+* weight int
+* dress_size text
+* bust_size text
+* bust_type text
+* hair_colour text
+* eye_colour text
+* smoking_status text
+* tattoo_status text
+* piercing_status text
+* orientation text
+* nationality text
+* languages text[]
+* uniforms text[]
+
+Можно хранить как jsonb, но для фильтров лучше нормализовать основные поля.
+
+### model_media
+
+* id uuid pk
+* model_id uuid fk models
+* type text, photo, video, doc
+* storage_key text
+* url text
+* checksum text
+* is_primary bool default false
+* is_public bool default true
+* sort_order int
+* created_at
+
+indexes:
+
+* model_id
+* model_id, is_primary
+
+### model_services
+
+* model_id uuid fk models
+* service_id uuid fk services
+* is_enabled bool default true
+  pk(model_id, service_id)
+
+### model_categories
+
+* model_id uuid fk models
+* category_id uuid fk categories
+  pk(model_id, category_id)
+
+### model_attributes
+
+* model_id uuid fk models
+* attribute_value_id uuid fk attribute_values
+  pk(model_id, attribute_value_id)
+
+---
+
+## 6.3 Справочники
+
+### services
+
+* id uuid pk
+* title text
+* slug text unique
+* status text, active, inactive
+* is_popular bool default false
+* created_at, updated_at
+
+### categories
+
+* id uuid pk
+* title text
+* slug text unique
+* h1 text null
+* intro_html text null
+* description_html text null
+* status text
+* is_popular bool default false
+* seo_title text null
+* seo_description text null
+* seo_keywords text null
+
+### attributes
+
+* id uuid pk
+* code text unique
+* name text
+* is_filterable bool default true
+* is_public bool default true
+* data_type text, enum, text, number
+* status text
+
+### attribute_values
+
+* id uuid pk
+* attribute_id uuid fk attributes
+* value text
+* sort_order int
+* status text
+  unique(attribute_id, value)
+
+### locations
+
+* id uuid pk
+* title text
+* slug text unique
+* county text null
+* country text default 'UK'
+* timezone text default 'Europe/London'
+* latitude numeric(9,6) null
+* longitude numeric(9,6) null
+* status text
+* is_popular bool default false
+
+### call_rates
+
+* id uuid pk
+* location_id uuid fk locations null
+* currency text
+* duration_minutes int
+* price numeric(10,2)
+* status text
+
+---
+
+## 6.4 Лиды и бронирования
+
+### clients
+
+* id uuid pk
+* full_name text null
+* email text null
+* phone text null
+* preferred_channel text null
+* tags text[] null
+* created_at, updated_at
+
+indexes:
+
+* email
+* phone
+
+### inquiries
+
+* id uuid pk
+* source text, web, telegram, whatsapp, phone, partner
+* external_ref text null, id из внешней системы
+* client_id uuid fk clients null
+* status text
+* priority text, low, normal, high, critical
+* subject text null
+* message text null
+* requested_location_id uuid fk locations null
+* requested_services jsonb null
+* requested_time_from timestamptz null
+* requested_time_to timestamptz null
+* assigned_to uuid fk users null
+* created_at, updated_at
+
+indexes:
+
+* status, priority
+* assigned_to, status
+* created_at
+* unique(source, external_ref) where external_ref is not null
+
+### inquiry_matches
+
+* id uuid pk
+* inquiry_id uuid fk inquiries
+* model_id uuid fk models
+* score numeric(5,2)
+* reason jsonb
+* created_at
+
+indexes:
+
+* inquiry_id
+* model_id
+
+### bookings
+
+* id uuid pk
+* inquiry_id uuid fk inquiries null
+* client_id uuid fk clients
+* model_id uuid fk models
+* location_id uuid fk locations
+* start_at timestamptz
+* end_at timestamptz
+* status text
+* price_total numeric(10,2)
+* currency text
+* deposit_required numeric(10,2) null
+* deposit_status text, none, pending, paid, failed
+* payment_status text, unpaid, partial, paid, refunded
+* assigned_to uuid fk users null
+* notes_internal text null
+* created_at, updated_at
+
+indexes:
+
+* model_id, start_at
+* client_id, created_at
+* status, start_at
+* assigned_to, status
+
+### booking_services
+
+* booking_id uuid fk bookings
+* service_id uuid fk services
+  pk(booking_id, service_id)
+
+### booking_timeline
+
+* id uuid pk
+* booking_id uuid fk bookings
+* event_type text
+* payload jsonb
+* created_by uuid fk users null
+* created_at
+
+indexes:
+
+* booking_id, created_at
+
+---
+
+## 6.5 Availability
+
+### availability_rules
+
+* id uuid pk
+* name text
+* scope text, global, location, model
+* location_id uuid fk locations null
+* model_id uuid fk models null
+* rule jsonb, пример: расписание, ограничения, черные окна
+* status text
+* created_at, updated_at
+
+### availability_slots
+
+* id uuid pk
+* model_id uuid fk models
+* start_at timestamptz
+* end_at timestamptz
+* status text, available, unavailable, tentative
+* source text, manual, automation, sync
+* confidence numeric(3,2) default 1.0
+* created_at, updated_at
+
+indexes:
+
+* model_id, start_at
+* status, start_at
+
+### availability_mismatches
+
+* id uuid pk
+* model_id uuid fk models
+* expected_status text
+* actual_status text
+* detected_at timestamptz
+* severity text
+* context jsonb
+* resolved_at timestamptz null
+
+indexes:
+
+* detected_at
+* model_id, resolved_at
+
+---
+
+## 6.6 Tasks, Exceptions, SLA
+
+### tasks
+
+* id uuid pk
+* type text
+* status text
+* priority text
+* subject text
+* entity_type text, inquiry, booking, model, payment, integration
+* entity_id uuid
+* assigned_to uuid fk users null
+* due_at timestamptz null
+* sla_deadline_at timestamptz null
+* created_at, updated_at
+
+indexes:
+
+* assigned_to, status
+* status, sla_deadline_at
+* entity_type, entity_id
+
+### exceptions
+
+* id uuid pk
+* type text, payment_failed, no_show_risk, mismatch, overbooking, policy_violation
+* status text
+* severity text
+* entity_type text
+* entity_id uuid
+* summary text
+* details jsonb
+* created_at, updated_at
+* resolved_at timestamptz null
+* resolved_by uuid fk users null
+
+indexes:
+
+* status, severity
+* entity_type, entity_id
+
+### sla_policies
+
+* id uuid pk
+* name text
+* applies_to text, task_type, exception_type
+* key text
+* deadline_minutes int
+* escalation jsonb
+* status text
+
+---
+
+## 6.7 Платежи
+
+### payments
+
+* id uuid pk
+* booking_id uuid fk bookings
+* provider text, stripe, revolut, custom
+* provider_payment_id text
+* type text, deposit, full, refund
+* status text, pending, succeeded, failed, cancelled
+* amount numeric(10,2)
+* currency text
+* created_at, updated_at
+* raw jsonb
+
+indexes:
+
+* booking_id
+* provider, provider_payment_id unique
+
+---
+
+## 6.8 Интеграции и вебхуки
+
+### integrations
+
+* id uuid pk
+* code text unique
+* name text
+* type text, payment, messaging, calendar, partner
+* status text
+* config jsonb, ключи, url, токены, режимы
+* created_at, updated_at
+
+### webhooks_in
+
+* id uuid pk
+* integration_id uuid fk integrations
+* event_type text
+* headers jsonb
+* payload jsonb
+* received_at timestamptz
+* processed_at timestamptz null
+* status text, received, processed, failed
+* error text null
+* idempotency_key text null
+
+indexes:
+
+* integration_id, received_at
+* status, received_at
+* unique(integration_id, idempotency_key) where idempotency_key is not null
+
+### webhooks_out
+
+* id uuid pk
+* integration_id uuid fk integrations
+* event_type text
+* target_url text
+* payload jsonb
+* created_at
+* sent_at timestamptz null
+* status text
+* attempts int default 0
+* last_error text null
+
+indexes:
+
+* status, created_at
+
+---
+
+## 6.9 Аудит и события
+
+### audit_log
+
+* id uuid pk
+* actor_user_id uuid fk users null
+* actor_type text, user, system
+* action text
+* entity_type text
+* entity_id uuid
+* before jsonb null
+* after jsonb null
+* ip text null
+* user_agent text null
+* created_at timestamptz
+
+indexes:
+
+* entity_type, entity_id, created_at
+* actor_user_id, created_at
+* created_at
+
+### domain_events
+
+* id uuid pk
+* event_type text
+* entity_type text
+* entity_id uuid
+* payload jsonb
+* created_at
+* published_at timestamptz null
+
+indexes:
+
+* event_type, created_at
+* published_at
+
+---
+
+# 7. ER модель
+
+## 7.1 Текстовая ER схема
+
+* users M:N roles через user_roles
+
+* roles M:N permissions через role_permissions
+
+* models 1:1 model_stats
+
+* models 1:N model_media
+
+* models M:N services через model_services
+
+* models M:N categories через model_categories
+
+* models M:N attribute_values через model_attributes
+
+* models 1:N availability_slots
+
+* models 1:N availability_mismatches
+
+* clients 1:N inquiries
+
+* clients 1:N bookings
+
+* inquiries 1:N inquiry_matches
+
+* inquiries 0..1:1 bookings
+
+* bookings 1:N payments
+
+* bookings M:N services через booking_services
+
+* bookings 1:N booking_timeline
+
+* tasks привязаны к entity_type + entity_id
+
+* exceptions привязаны к entity_type + entity_id
+
+* integrations 1:N webhooks_in, webhooks_out
+
+* audit_log привязан к entity_type + entity_id
+
+* domain_events привязан к entity_type + entity_id
+
+## 7.2 Mermaid ER diagram
+
+```mermaid
+erDiagram
+  USERS ||--o{ USER_ROLES : has
+  ROLES ||--o{ USER_ROLES : assigned
+  ROLES ||--o{ ROLE_PERMISSIONS : has
+  PERMISSIONS ||--o{ ROLE_PERMISSIONS : includes
+
+  MODELS ||--|| MODEL_STATS : has
+  MODELS ||--o{ MODEL_MEDIA : has
+  MODELS ||--o{ MODEL_SERVICES : offers
+  SERVICES ||--o{ MODEL_SERVICES : in
+
+  MODELS ||--o{ MODEL_CATEGORIES : tagged
+  CATEGORIES ||--o{ MODEL_CATEGORIES : in
+
+  ATTRIBUTES ||--o{ ATTRIBUTE_VALUES : has
+  MODELS ||--o{ MODEL_ATTRIBUTES : has
+  ATTRIBUTE_VALUES ||--o{ MODEL_ATTRIBUTES : applied
+
+  LOCATIONS ||--o{ MODELS : primary
+  MODELS ||--o{ AVAILABILITY_SLOTS : availability
+  MODELS ||--o{ AVAILABILITY_MISMATCHES : mismatch
+
+  CLIENTS ||--o{ INQUIRIES : makes
+  CLIENTS ||--o{ BOOKINGS : books
+  INQUIRIES ||--o{ INQUIRY_MATCHES : matches
+  MODELS ||--o{ INQUIRY_MATCHES : matched
+
+  BOOKINGS ||--o{ PAYMENTS : has
+  BOOKINGS ||--o{ BOOKING_TIMELINE : timeline
+  BOOKINGS ||--o{ BOOKING_SERVICES : includes
+  SERVICES ||--o{ BOOKING_SERVICES : in
+
+  INTEGRATIONS ||--o{ WEBHOOKS_IN : receives
+  INTEGRATIONS ||--o{ WEBHOOKS_OUT : sends
+
+  AUDIT_LOG }o--|| USERS : actor
+```
+
+---
+
+# 8. Архитектура API
+
+## 8.1 Принципы
+
+* REST для CRUD
+* отдельные endpoints для переходов статусов
+* cursor pagination
+* фильтры только через query params, плюс сохраненные фильтры
+* идемпотентность для write операций: Idempotency-Key
+* версионирование API: /api/v1
+* ошибки единым форматом
+* ETag для оптимизации списков, если нужно
+* WebSocket канал для лайв обновлений Action Center
+
+## 8.2 Auth
+
+* JWT access + refresh
+* optional: SSO
+* пермишены проверяются на уровне endpoint + entity policy
+
+---
+
+## 8.3 Основные ресурсы и endpoints
+
+### Auth
+
+* POST /api/v1/auth/login
+* POST /api/v1/auth/refresh
+* POST /api/v1/auth/logout
+* GET /api/v1/me
+
+### Users and Roles
+
+* GET /api/v1/users
+* POST /api/v1/users
+* GET /api/v1/users/{id}
+* PATCH /api/v1/users/{id}
+* POST /api/v1/users/{id}/roles
+* GET /api/v1/roles
+* GET /api/v1/permissions
+
+### Models
+
+* GET /api/v1/models?status=&location=&category=&attribute=&q=
+* POST /api/v1/models
+* GET /api/v1/models/{id}
+* PATCH /api/v1/models/{id}
+* POST /api/v1/models/{id}/status, body: new_status + reason
+* POST /api/v1/models/{id}/media
+* DELETE /api/v1/models/{id}/media/{media_id}
+* POST /api/v1/models/{id}/services
+* POST /api/v1/models/{id}/categories
+* POST /api/v1/models/{id}/attributes
+
+### Directories
+
+* GET/POST/PATCH /api/v1/services
+* GET/POST/PATCH /api/v1/categories
+* GET/POST/PATCH /api/v1/attributes
+* GET/POST/PATCH /api/v1/attribute-values
+* GET/POST/PATCH /api/v1/locations
+* GET/POST/PATCH /api/v1/call-rates
+
+### Inquiries
+
+* GET /api/v1/inquiries?status=&priority=&assigned_to=&q=&created_from=&created_to=
+* POST /api/v1/inquiries
+* GET /api/v1/inquiries/{id}
+* PATCH /api/v1/inquiries/{id}
+* POST /api/v1/inquiries/{id}/status
+* POST /api/v1/inquiries/{id}/assign
+* POST /api/v1/inquiries/{id}/match, запускает matching engine
+* POST /api/v1/inquiries/{id}/convert-to-booking
+
+### Bookings
+
+* GET /api/v1/bookings?status=&start_from=&start_to=&model_id=&location_id=&q=
+* POST /api/v1/bookings
+* GET /api/v1/bookings/{id}
+* PATCH /api/v1/bookings/{id}
+* POST /api/v1/bookings/{id}/status
+* POST /api/v1/bookings/{id}/services
+* GET /api/v1/bookings/{id}/timeline
+
+### Payments
+
+* POST /api/v1/bookings/{id}/payments/deposit-intent
+* POST /api/v1/payments/webhook/{provider}
+* GET /api/v1/payments?booking_id=
+* POST /api/v1/payments/{id}/retry
+* POST /api/v1/payments/{id}/refund
+
+### Availability
+
+* GET /api/v1/availability/slots?model_id=&from=&to=&status=
+* POST /api/v1/availability/slots
+* PATCH /api/v1/availability/slots/{id}
+* GET /api/v1/availability/mismatches?from=&to=&severity=&status=
+* POST /api/v1/availability/rules
+* PATCH /api/v1/availability/rules/{id}
+
+### Tasks and Exceptions
+
+* GET /api/v1/tasks?status=&assigned_to=&priority=&sla_breached=
+* POST /api/v1/tasks
+* POST /api/v1/tasks/{id}/assign
+* POST /api/v1/tasks/{id}/status
+* GET /api/v1/exceptions?status=&severity=&type=
+* POST /api/v1/exceptions/{id}/resolve
+* POST /api/v1/exceptions/{id}/dismiss
+
+### Automation
+
+* GET /api/v1/automation/rules
+* POST /api/v1/automation/rules
+* PATCH /api/v1/automation/rules/{id}
+* POST /api/v1/automation/rules/{id}/test
+* GET /api/v1/automation/executions?rule_id=&status=&from=&to=
+
+### Audit and Events
+
+* GET /api/v1/audit?entity_type=&entity_id=&from=&to=
+* GET /api/v1/events/stream, WebSocket или SSE
+
+### Health
+
+* GET /api/v1/health
+* GET /api/v1/system/metrics
+* GET /api/v1/system/queue
+
+---
+
+# 9. Форматы данных
+
+## 9.1 Ошибка
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid payload",
+    "details": [
+      {"field": "start_at", "issue": "required"}
+    ],
+    "request_id": "..."
+  }
+}
+```
+
+## 9.2 Идемпотентность
+
+Любой POST, который может повториться, принимает header:
+Idempotency-Key: uuid
+
+Сервер хранит результат и возвращает тот же ответ, если ключ повторили.
+
+---
+
+# 10. Automation Engine
+
+## 10.1 Конструктор правил
+
+Rule:
+
+* trigger
+* conditions
+* actions
+* schedule optional
+* rate limits
+* dry run
+
+Trigger примеры:
+
+* inquiry.created
+* booking.status_changed
+* payment.failed
+* availability.mismatch_detected
+* task.sla_breached
+
+Conditions примеры:
+
+* location in X
+* deposit_required true
+* client has tag vip
+* booking start within 6h
+* model status active
+
+Actions примеры:
+
+* create_task
+* create_exception
+* send_message
+* update_status
+* assign_operator
+* call_webhook
+* schedule_followup
+
+## 10.2 Техническая реализация
+
+* rule хранится как jsonb
+* при срабатывании создаем automation_execution
+* экшены кладем в очередь
+* все с ретраями и backoff
+* дедупликация по event_id + rule_id
+
+Таблицы:
+
+### automation_rules
+
+* id, name, status
+* trigger text
+* conditions jsonb
+* actions jsonb
+* limits jsonb
+* created_at, updated_at
+
+### automation_executions
+
+* id, rule_id
+* event_id uuid
+* status, running, done, failed
+* started_at, finished_at
+* logs jsonb
+
+unique(rule_id, event_id)
+
+---
+
+# 11. Скорость и отличия от “обычных”
+
+Вот где ты реально выигрываешь в скорости и качестве.
+
+## 11.1 Saved filters и персональные виды
+
+Каждый список: bookings, inquiries, tasks
+
+* сохраняемые фильтры
+* быстрые вкладки: “сегодня”, “просрочено”, “только мое”
+
+## 11.2 Горячие клавиши
+
+* / фокус в поиск
+* g + b, переход bookings
+* g + i, inquiries
+* e, открыть сущность справа
+* a, назначить на себя
+* s, сменить статус
+
+## 11.3 Realtime обновления
+
+Action Center обновляется без refresh
+
+* пришел платеж, задача закрылась
+* изменился статус
+* прилетела ошибка интеграции
+
+## 11.4 Полный аудит
+
+Любая проблема потом разбирается за 30 секунд
+
+* кто поменял статус
+* что было до и после
+* какой автомат сработал
+
+---
+
+# 12. Что разработчику делать первым, план работ
+
+## Release 1, must have
+
+* auth + roles
+* models CRUD + directories
+* inquiries CRUD + matching MVP
+* bookings CRUD + статусы
+* tasks + exceptions
+* audit_log
+* Action Center UI
+
+## Release 2
+
+* payments provider
+* availability slots + mismatches
+* automation rules v1
+* notifications
+
+## Release 3
+
+* интеграции партнеров
+* аналитика funnel
+* SLA и эскалации
+* advanced search
+
+---
+
+# 13. Что мне нужно от тебя, но без переписки на 100 сообщений
+
+Я могу продолжить прямо сейчас без уточнений, но чтобы было идеально, пришли по возможности одним сообщением:
+
+* какие каналы лидов точно, web form, whatsapp, telegram, звонки, партнеры
+* какой платежный провайдер приоритет, stripe или другое
+* в какой зоне времени живет операционка, London 100 процентов или Spain тоже
+
+Если не пришлешь, я сделаю дефолт: London timezone, stripe, каналы все.
+
+

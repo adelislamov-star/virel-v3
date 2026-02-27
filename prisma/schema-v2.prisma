@@ -1,0 +1,453 @@
+// VIREL - Premium Companion Platform
+// Database Schema - FINAL VERSION
+// Based on: Technical audit, competitor analysis, professional specs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELS (Companions)
+// ============================================
+
+model Model {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  
+  // Basic Info
+  name        String
+  age         Int
+  nationality String
+  
+  // Locations (districts they serve)
+  location    String[] // ["Mayfair", "Kensington"]
+  
+  // Physical Attributes
+  height      Int      // cm
+  weight      Int      // kg
+  hairColor   String   // Blonde, Brunette, Red, Black
+  eyeColor    String   // Blue, Brown, Green, Hazel
+  breastSize  String   // A, B, C, D, DD+
+  dress       String?  // UK size
+  shoe        Int?     // UK size
+  
+  // Profile Content
+  description String   @db.Text  // Min 1500 words for SEO
+  languages   String[] // ["English", "Russian", "French"]
+  
+  // Services & Rates
+  services    Json     // { incall: true, outcall: true, duo: true, rates: {...} }
+  
+  // Media
+  photos      String[] // URLs to images (WebP + AVIF)
+  videos      String[] // URLs to videos (optional)
+  coverPhoto  String?  // Primary photo URL
+  
+  // SEO Fields
+  metaTitle       String?  @db.VarChar(60)
+  metaDescription String?  @db.VarChar(160)
+  faqJson         Json?    // FAQ questions for schema
+  
+  // Status & Flags
+  status      ModelStatus @default(ACTIVE)
+  verified    Boolean     @default(false)
+  featured    Boolean     @default(false)
+  priority    Int         @default(0)  // For sorting
+  
+  // Statistics
+  viewCount   Int         @default(0)
+  bookingCount Int        @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  // Relations
+  bookings    Booking[]
+  availability Availability[]
+  
+  @@index([slug])
+  @@index([status])
+  @@index([featured])
+  @@index([priority])
+  @@index([publishedAt])
+  @@map("models")
+}
+
+enum ModelStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLIDAY
+  ARCHIVED
+}
+
+// ============================================
+// BOOKINGS
+// ============================================
+
+model Booking {
+  id          String   @id @default(cuid())
+  
+  // Client Info (encrypted)
+  clientName  String?
+  clientPhone String?
+  clientEmail String?
+  telegram    String?
+  whatsapp    String?
+  
+  // Booking Details
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [id])
+  
+  date        DateTime
+  duration    Int      // hours
+  location    String   // District or address
+  serviceType String   // "incall" or "outcall"
+  
+  // Pricing
+  rate        Int      // per hour
+  totalAmount Int
+  currency    String   @default("GBP")
+  
+  // Status
+  status      BookingStatus @default(PENDING)
+  
+  // Integration IDs
+  appsheetId  String?  // External ID from AppSheet
+  requestId   String?  @unique // Idempotency key
+  
+  // Staff Assignment
+  assignedTo  String?  // User ID
+  
+  // Notes
+  notes       String?  @db.Text
+  adminNotes  String?  @db.Text
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  confirmedAt DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+  
+  @@index([modelId])
+  @@index([status])
+  @@index([date])
+  @@index([requestId])
+  @@index([createdAt])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// ============================================
+// AVAILABILITY
+// ============================================
+
+model Availability {
+  id        String   @id @default(cuid())
+  modelId   String
+  model     Model    @relation(fields: [modelId], references: [id])
+  
+  date      DateTime
+  startTime String   // "14:00"
+  endTime   String   // "22:00"
+  available Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([modelId, date])
+  @@map("availability")
+}
+
+// ============================================
+// USERS (Admin, Manager, Reception)
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Bcrypt hashed
+  name      String
+  role      UserRole @default(RECEPTION)
+  
+  // Telegram
+  telegramChatId String?
+  
+  // 2FA
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+  
+  // Status
+  active    Boolean  @default(true)
+  lastLogin DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  RECEPTION
+  MODEL
+}
+
+// ============================================
+// SEO WHITELIST (Indexable Pages)
+// ============================================
+
+model SEOWhitelist {
+  id          String   @id @default(cuid())
+  
+  type        SEOPageType
+  slug        String   @unique
+  url         String   @unique
+  
+  // SEO Fields
+  title       String   @db.VarChar(60)
+  metaDesc    String   @db.VarChar(160)
+  h1          String
+  content     String   @db.Text  // Min words based on type
+  faqJson     Json?    // FAQ structured data
+  
+  // Settings
+  isIndexable Boolean  @default(true)  // robots index,follow
+  isPublished Boolean  @default(false)
+  
+  // Canonical override (rare cases)
+  canonicalOverride String?
+  
+  // Statistics
+  viewCount   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  @@index([type])
+  @@index([isPublished])
+  @@index([slug])
+  @@map("seo_whitelist")
+}
+
+enum SEOPageType {
+  GEO       // /escorts-in-mayfair
+  SERVICE   // /services/gfe
+  ATTRIBUTE // /blonde-escorts-london
+}
+
+// ============================================
+// REDIRECTS (UUID -> Slug Migration)
+// ============================================
+
+model Redirect {
+  id          String   @id @default(cuid())
+  
+  fromPath    String   @unique  // /catalog/uuid-here
+  toPath      String             // /catalog/slug-here
+  statusCode  Int      @default(301)
+  
+  hitCount    Int      @default(0)
+  lastHit     DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([fromPath])
+  @@map("redirects")
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  
+  // Who
+  userId      String?
+  userName    String?
+  userEmail   String?
+  
+  // What
+  action      String   // "model_published", "seo_updated", "booking_confirmed"
+  entityType  String   // "Model", "Booking", "SEOWhitelist"
+  entityId    String
+  
+  // Details
+  changes     Json?    // { before: {...}, after: {...} }
+  
+  // Where
+  ipAddress   String?
+  userAgent   String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+// ============================================
+// NOTIFICATION QUEUE (Redis-backed)
+// ============================================
+
+model NotificationQueue {
+  id          String   @id @default(cuid())
+  
+  type        NotificationType
+  recipient   String   // chat_id or email or phone
+  payload     Json
+  
+  status      NotificationStatus @default(PENDING)
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3)
+  
+  lastError   String?  @db.Text
+  sentAt      DateTime?
+  
+  // Idempotency
+  requestId   String?  @unique
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("notification_queue")
+}
+
+enum NotificationType {
+  TELEGRAM_DIVA
+  TELEGRAM_KESHA
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+// ============================================
+// TELEGRAM LOGS
+// ============================================
+
+model TelegramLog {
+  id        String   @id @default(cuid())
+  botName   String   // "DivaReceptionBot" or "KeshaZeroGapBot"
+  chatId    String
+  message   String   @db.Text
+  
+  bookingId String?
+  status    String   // "sent", "failed"
+  error     String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  
+  @@index([botName])
+  @@index([bookingId])
+  @@index([createdAt])
+  @@map("telegram_logs")
+}
+
+// ============================================
+// APPSHEET SYNC
+// ============================================
+
+model AppSheetSync {
+  id          String   @id @default(cuid())
+  bookingId   String
+  
+  syncStatus  String   // "success" or "error"
+  syncType    String   // "create", "update", "webhook"
+  
+  requestData  Json?
+  responseData Json?
+  errorMsg     String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([bookingId])
+  @@index([syncStatus])
+  @@index([createdAt])
+  @@map("appsheet_sync")
+}
+
+// ============================================
+// MEDIA
+// ============================================
+
+model Media {
+  id          String   @id @default(cuid())
+  
+  type        MediaType
+  
+  // URLs
+  originalUrl String
+  webpUrl     String?
+  avifUrl     String?
+  thumbnailUrl String?
+  
+  // Metadata
+  width       Int?
+  height      Int?
+  size        Int?     // bytes
+  altText     String?
+  
+  // Relations
+  modelId     String?
+  entityType  String?  // "Model", "SEOPage"
+  entityId    String?
+  
+  // Order & Visibility
+  order       Int      @default(0)
+  visibility  MediaVisibility @default(PUBLIC)
+  
+  // Status
+  isApproved  Boolean  @default(false)
+  moderatedBy String?
+  moderatedAt DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([modelId])
+  @@index([entityType, entityId])
+  @@index([visibility])
+  @@map("media")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaVisibility {
+  PUBLIC
+  MEMBERS
+  ADMIN
+}
