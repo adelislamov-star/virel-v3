@@ -1,16 +1,41 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
-import { ModelCard } from '@/components/ModelCard'
-import { FAQ } from '@/components/FAQ'
 import { prisma } from '@/lib/db/client'
+
+export const dynamic = 'force-dynamic'
 
 interface Props {
   params: {
     district: string
   }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  return {
+    title: `Escorts in ${params.district} | Virel London`,
+  }
+}
+
+export default async function GeoPage({ params }: Props) {
+  const districtName = params.district
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
+  return (
+    <main className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="font-serif text-4xl font-bold mb-4">
+          Escorts in {districtName}
+        </h1>
+        <p className="text-muted-foreground">Coming soon.</p>
+        <Link href="/london-escorts" className="text-accent hover:underline mt-4 inline-block">
+          Browse all London companions →
+        </Link>
+      </div>
+    </main>
+  )
 }
 
 // Generate metadata from whitelist

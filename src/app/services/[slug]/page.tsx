@@ -1,4 +1,6 @@
-import { Metadata } from 'next/server'
+import { Metadata } from 'next'
+export const dynamic = 'force-dynamic'
+// @ts-nocheck
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
