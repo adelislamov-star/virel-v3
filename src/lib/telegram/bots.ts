@@ -169,6 +169,20 @@ export class KeshaZeroGapBot {
   }
 }
 
-// Export singleton instances
-export const divaBot = new DivaReceptionBot()
-export const keshaBot = new KeshaZeroGapBot()
+// Export singleton instances (lazy - only initialize when actually used)
+let _divaBot: DivaReceptionBot | null = null
+let _keshaBot: KeshaZeroGapBot | null = null
+
+export const divaBot = new Proxy({} as DivaReceptionBot, {
+  get(_target, prop) {
+    if (!_divaBot) _divaBot = new DivaReceptionBot()
+    return (_divaBot as any)[prop]
+  }
+})
+
+export const keshaBot = new Proxy({} as KeshaZeroGapBot, {
+  get(_target, prop) {
+    if (!_keshaBot) _keshaBot = new KeshaZeroGapBot()
+    return (_keshaBot as any)[prop]
+  }
+})
