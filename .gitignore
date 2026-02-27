@@ -42,3 +42,6 @@ seed-services.js
 create-tables.js
 add-columns.js
 check-table.js
+
+.vercel
+.env*.local

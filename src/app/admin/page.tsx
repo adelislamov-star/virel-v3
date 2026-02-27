@@ -14,7 +14,7 @@ export default async function AdminDashboard() {
     prisma.booking.count({ where: { status: 'PENDING' } }),
     prisma.booking.count({
       where: {
-        date: {
+        startAt: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
           lt: new Date(new Date().setHours(23, 59, 59, 999)),
         },
