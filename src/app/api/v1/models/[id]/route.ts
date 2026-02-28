@@ -247,42 +247,30 @@ export async function DELETE(
       select: { storageKey: true }
     });
 
-    // 2. Delete from R2 (photos + thumbnails)
+    // 2. Delete all related DB records in correct order (children before parent)
+    await prisma.booking.deleteMany({ where: { modelId: id } });
+    await prisma.inquiryMatch.deleteMany({ where: { modelId: id } });
+    await prisma.availabilityMismatch.deleteMany({ where: { modelId: id } });
+    await prisma.availabilitySlot.deleteMany({ where: { modelId: id } });
+    await prisma.modelAttribute.deleteMany({ where: { modelId: id } });
+    await prisma.modelCategory.deleteMany({ where: { modelId: id } });
+    await prisma.modelService.deleteMany({ where: { modelId: id } });
+    await prisma.modelMedia.deleteMany({ where: { modelId: id } });
+    // model_rates, model_addresses, model_work_preferences are raw tables outside Prisma schema
+    try { await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE model_id = '${id}'`); } catch {}
+    try { await prisma.$executeRawUnsafe(`DELETE FROM model_addresses WHERE model_id = '${id}'`); } catch {}
+    try { await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences WHERE model_id = '${id}'`); } catch {}
+    try { await prisma.modelStats.delete({ where: { modelId: id } }); } catch {}
+
+    // 3. Delete the model itself
+    await prisma.model.delete({ where: { id } });
+
+    // 4. Delete from R2 (after DB success)
     for (const m of mediaFiles) {
       if (m.storageKey) {
-        try {
-          await deleteMedia(m.storageKey);
-        } catch (e) {
-          console.error('R2 delete failed for key:', m.storageKey, e);
-        }
+        try { await deleteMedia(m.storageKey); } catch {}
       }
     }
-
-    // 3. Delete all related DB records
-    await prisma.modelMedia.deleteMany({ where: { modelId: id } });
-
-    try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_services WHERE "modelId" = '${id}'`);
-    } catch (e) { console.error('model_services', e); }
-
-    try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE model_id = '${id}'`);
-    } catch (e) { console.error('model_rates', e); }
-
-    try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_addresses WHERE model_id = '${id}'`);
-    } catch (e) { console.error('model_addresses', e); }
-
-    try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences WHERE model_id = '${id}'`);
-    } catch (e) { console.error('model_work_preferences', e); }
-
-    try {
-      await prisma.modelStats.delete({ where: { modelId: id } });
-    } catch (e) { console.error('model_stats', e); }
-
-    // 4. Delete the model itself
-    await prisma.model.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: 'Model deleted' });
 
