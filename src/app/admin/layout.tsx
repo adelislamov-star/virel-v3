@@ -1,6 +1,5 @@
 // ADMIN LAYOUT с Sidebar (UPDATED WITH AVAILABILITY V2)
 import Link from 'next/link';
-import './admin.css';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -42,6 +41,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           
           <Link 
+            href="/admin/models/new"
+            className="block px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-muted-foreground"
+          >
+            ＋ Add Model
+          </Link>
+
+          <Link 
+            href="/admin/applications"
+            className="block px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            📋 Applications
+          </Link>
+          
+          <Link 
             href="/admin/availability-v2"
             className="block px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
           >
@@ -49,6 +62,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           
           <div className="pt-4 mt-4 border-t">
+            <Link 
+              href="/admin/analytics"
+              className="block px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              📊 Analytics
+            </Link>
+            
             <Link 
               href="/admin/dashboard"
               className="block px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"

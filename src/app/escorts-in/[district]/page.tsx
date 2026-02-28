@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: info.title,
     description: info.description,
     robots: { index: true, follow: true },
-    alternates: { canonical: `/escorts-in-${params.district}` },
+    alternates: { canonical: `/escorts-in/${params.district}` },
     openGraph: { title: info.title, description: info.description },
   }
 }
@@ -130,7 +130,7 @@ export default async function DistrictPage({ params }: Props) {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
           { '@type': 'ListItem', position: 2, name: 'London Escorts', item: 'https://virel-v3.vercel.app/london-escorts' },
-          { '@type': 'ListItem', position: 3, name: info.h1, item: `https://virel-v3.vercel.app/escorts-in-${params.district}` },
+          { '@type': 'ListItem', position: 3, name: info.h1, item: `https://virel-v3.vercel.app/escorts-in/${params.district}` },
         ],
       },
     ],
@@ -220,7 +220,7 @@ export default async function DistrictPage({ params }: Props) {
               {otherDistricts.map(d => {
                 const name = d.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
                 return (
-                  <Link key={d} href={`/escorts-in-${d}`}
+                  <Link key={d} href={`/escorts-in/${d}`}
                     className="p-3 border border-border rounded-lg hover:border-primary transition-colors text-center text-sm font-medium"
                   >
                     {name}

@@ -15,25 +15,9 @@ export default function ModelsPage() {
   
   async function loadModels() {
     try {
-      const res = await fetch('/api/v1/bookings?limit=10');
+      const res = await fetch('/api/v1/models');
       const data = await res.json();
-      
-      // Extract unique models from bookings
-      const uniqueModels = new Map();
-      data.data?.bookings?.forEach((booking: any) => {
-        if (booking.model && !uniqueModels.has(booking.model.id)) {
-          uniqueModels.set(booking.model.id, {
-            id: booking.model.id,
-            publicCode: booking.model.publicCode || 'N/A',
-            name: booking.model.name,
-            status: 'active',
-            visibility: 'public',
-            ratingInternal: 4.9
-          });
-        }
-      });
-      
-      setModels(Array.from(uniqueModels.values()));
+      setModels(data.data?.models || []);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load models:', error);

@@ -780,3 +780,63 @@ model AutomationExecution {
   @@unique([ruleId, eventId])
   @@map("automation_executions")
 }
+
+// ============================================
+// MODEL APPLICATIONS
+// ============================================
+
+model ModelApplication {
+  id              String   @id @default(cuid())
+  source          String   @default("self") // 'self' | 'admin'
+  status          String   @default("new")  // 'new' | 'reviewing' | 'approved' | 'rejected'
+
+  name            String
+  age             Int?
+  height          Int?
+  weight          Int?
+  dressSizeUK     String?
+  feetSizeUK      String?
+  breastSize      String?
+  breastType      String?
+  eyesColour      String?
+  hairColour      String?
+  smokingStatus   String?
+  tattooStatus    String?
+  piercingTypes   String?
+  nationality     String?
+  languages       String[]
+  orientation     String?
+  workWithCouples Boolean  @default(false)
+  workWithWomen   Boolean  @default(false)
+
+  rate30min       Int?
+  rate45min       Int?
+  rate1hIn        Int?
+  rate1hOut       Int?
+  rate90minIn     Int?
+  rate90minOut    Int?
+  rate2hIn        Int?
+  rate2hOut       Int?
+  rateExtraHour   Int?
+  rateOvernight   Int?
+  blackClients    Boolean  @default(true)
+  disabledClients Boolean  @default(true)
+
+  addressStreet   String?
+  addressFlat     String?
+  addressPostcode String?
+  tubeStation     String?
+  airportHeathrow Boolean  @default(false)
+  airportGatwick  Boolean  @default(false)
+  airportStansted Boolean  @default(false)
+
+  services        String[]
+  notesInternal   String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("model_applications")
+}
