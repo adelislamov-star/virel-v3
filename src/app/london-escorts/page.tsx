@@ -84,7 +84,7 @@ export default async function LondonEscortsPage() {
           {['Mayfair', 'Kensington', 'Knightsbridge', 'Chelsea', 'Belgravia', 'Marylebone', 'Westminster', 'Soho', 'Canary Wharf'].map(district => (
             <Link
               key={district}
-              href={`/escorts-in-${district.toLowerCase().replace(/\s+/g, '-')}`}
+              href={`/escorts-in/${district.toLowerCase().replace(/\s+/g, '-')}`}
               className="block p-4 border border-border rounded-lg hover:border-accent transition-colors text-center"
             >
               Escorts in {district}
