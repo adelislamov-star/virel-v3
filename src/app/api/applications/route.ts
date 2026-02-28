@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const MANAGER_EMAIL = process.env.MANAGER_EMAIL || 'manager@virel.com'
+
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 // All 41 service labels for email readability
 const SERVICE_LABELS: Record<string, string> = {
@@ -234,7 +238,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Send email
-    if (process.env.RESEND_API_KEY) {
+    const resend = getResend()
+    if (resend) {
       await resend.emails.send({
         from: 'Virel Platform <noreply@virel.com>',
         to: MANAGER_EMAIL,
