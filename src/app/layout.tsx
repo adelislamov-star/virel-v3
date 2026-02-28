@@ -13,6 +13,9 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'MUip6cu8OH4oOYyaZKJIo5xoPElQToe0wMp-1J3JcAA',
+  },
   title: 'Virel – Premium Companion Services in London',
   description: 'Exclusive premium companion services in London. Discreet, professional, and elegant experiences with verified companions.',
   keywords: ['london', 'premium', 'companion', 'services', 'luxury'],
