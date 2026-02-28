@@ -1,114 +1,143 @@
+// @ts-nocheck
 import Link from 'next/link'
-import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { FeaturedModels } from '@/components/FeaturedModels'
 import { FAQ } from '@/components/FAQ'
 
+export const metadata = {
+  title: 'Virel | Premium Escort Agency London',
+  description: 'London\'s premier escort agency. Verified, sophisticated companions for incall and outcall. Discreet, elegant, available 24/7 across all London districts.',
+  alternates: { canonical: 'https://virel-v3.vercel.app' },
+}
+
+const DISTRICTS = [
+  'Mayfair', 'Kensington', 'Knightsbridge', 'Chelsea', 'Belgravia',
+  'Marylebone', 'Westminster', 'Soho', 'Canary Wharf', 'Notting Hill',
+  'Paddington', 'Victoria',
+]
+
+const POPULAR_SERVICES = [
+  { slug: 'gfe', name: 'GFE' },
+  { slug: 'owo', name: 'OWO' },
+  { slug: 'dfk', name: 'DFK' },
+  { slug: 'nuru-massage', name: 'Nuru Massage' },
+  { slug: 'a-level', name: 'A Level' },
+  { slug: 'outcall', name: 'Outcall' },
+  { slug: 'incall', name: 'Incall' },
+  { slug: 'overnight', name: 'Overnight' },
+]
+
 export default function HomePage() {
   return (
     <main className="min-h-screen">
       <Header />
-      
-      {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/30 z-10" />
-        <div className="absolute inset-0">
-          <Image
-            src="/images/hero-bg.jpg"
-            alt="Virel"
-            fill
-            className="object-cover"
-            priority
-            quality={90}
-          />
-        </div>
-        
-        <div className="relative z-20 container mx-auto px-4 text-center text-white">
-          <h1 className="font-serif text-5xl md:text-7xl font-bold mb-6">
-            Exclusive Companion Services
+
+      {/* Hero */}
+      <section className="relative bg-zinc-950 py-28 md:py-40 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-800 via-zinc-950 to-zinc-950" />
+        <div className="relative container mx-auto px-4 text-center text-white">
+          <p className="text-sm uppercase tracking-widest text-zinc-400 mb-4">London's Premier Agency</p>
+          <h1 className="font-serif text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            Exclusive Companion<br />Services in London
           </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
-            Discreet, elegant, and professional experiences in London's finest locations
+          <p className="text-xl text-zinc-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Verified, sophisticated companions for discerning gentlemen.
+            Incall and outcall across London's finest districts.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Link 
-              href="/catalog"
-              className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 rounded-lg font-semibold text-lg transition-all"
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Link href="/london-escorts"
+              className="bg-white text-zinc-900 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-zinc-100 transition-colors"
             >
               Browse Companions
             </Link>
-            <Link 
-              href="/quick-match"
-              className="border-2 border-white hover:bg-white hover:text-black px-8 py-4 rounded-lg font-semibold text-lg transition-all"
+            <Link href="/services"
+              className="border border-zinc-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:border-zinc-400 transition-colors"
             >
-              Quick Match
+              View Services
             </Link>
           </div>
         </div>
       </section>
 
-      {/* USP Section */}
-      <section className="py-20 bg-muted/30">
+      {/* USP */}
+      <section className="py-16 border-b border-border">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+            {[
+              { icon: '✓', title: '100% Verified', text: 'Every companion is personally verified with authentic photos' },
+              { icon: '🔒', title: 'Complete Discretion', text: 'Your privacy is our highest priority — total confidentiality' },
+              { icon: '⏱', title: '24/7 Available', text: 'Book anytime, day or night, with fast confirmation' },
+            ].map(item => (
+              <div key={item.title} className="p-6">
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.text}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">100% Verified</h3>
-              <p className="text-muted-foreground">All companions are carefully verified with authentic photos</p>
-            </div>
-            
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Discreet Service</h3>
-              <p className="text-muted-foreground">Your privacy is our priority with complete confidentiality</p>
-            </div>
-            
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">24/7 Availability</h3>
-              <p className="text-muted-foreground">Book anytime with instant confirmation and support</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Featured Models */}
+      {/* Featured Companions */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="font-serif text-4xl font-bold text-center mb-12">
-            Featured Companions
-          </h2>
+          <div className="text-center mb-12">
+            <h2 className="font-serif text-4xl font-bold mb-3">Featured Companions</h2>
+            <p className="text-muted-foreground">Our most sought-after London escorts</p>
+          </div>
           <FeaturedModels />
-          <div className="text-center mt-12">
-            <Link 
-              href="/catalog"
-              className="inline-block bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-semibold transition-all"
+          <div className="text-center mt-10">
+            <Link href="/london-escorts"
+              className="inline-block border border-border px-8 py-3 rounded-xl font-semibold hover:bg-muted transition-colors"
             >
-              View All Companions
+              View All Companions →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* Services */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <h2 className="font-serif text-3xl font-bold mb-8 text-center">Popular Services</h2>
+          <div className="flex flex-wrap gap-3 justify-center max-w-3xl mx-auto">
+            {POPULAR_SERVICES.map(s => (
+              <Link key={s.slug} href={`/services/${s.slug}`}
+                className="px-5 py-2.5 border border-border rounded-xl text-sm font-medium hover:border-primary hover:shadow-sm transition-all"
+              >
+                {s.name}
+              </Link>
+            ))}
+            <Link href="/services"
+              className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              All Services →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Districts */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="font-serif text-3xl font-bold mb-8 text-center">Escorts by District</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
+            {DISTRICTS.map(d => (
+              <Link key={d} href={`/escorts-in/${d.toLowerCase().replace(/\s+/g, '-')}`}
+                className="p-3 border border-border rounded-xl text-center text-sm hover:border-primary transition-colors"
+              >
+                Escorts in {d}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
       <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="font-serif text-4xl font-bold text-center mb-12">
-            Frequently Asked Questions
-          </h2>
+        <div className="container mx-auto px-4 max-w-3xl">
+          <h2 className="font-serif text-4xl font-bold text-center mb-12">FAQ</h2>
           <FAQ />
         </div>
       </section>
