@@ -137,6 +137,89 @@ export async function PATCH(
       `);
     }
     
+    // Update services
+    if (body.services) {
+      // Delete all existing model services
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM model_services WHERE model_id = $1`,
+        params.id
+      );
+      // Re-insert enabled services
+      for (const s of body.services) {
+        if (!s.serviceId) continue;
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO model_services (model_id, service_id, is_enabled, extra_price)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (model_id, service_id) DO UPDATE SET
+             is_enabled = EXCLUDED.is_enabled,
+             extra_price = EXCLUDED.extra_price`,
+          params.id,
+          s.serviceId,
+          s.isEnabled ?? true,
+          s.extraPrice ?? null
+        );
+      }
+    }
+
+    // Update rates
+    if (body.rates) {
+      // Deactivate all existing rates
+      await prisma.$executeRawUnsafe(
+        `UPDATE model_rates SET is_active = false WHERE model_id = $1`,
+        params.id
+      );
+      // Upsert each rate
+      for (const r of body.rates) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, taxi_fee, currency, is_active)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)
+           ON CONFLICT (model_id, location_id, duration_type, call_type) DO UPDATE SET
+             price = EXCLUDED.price,
+             taxi_fee = EXCLUDED.taxi_fee,
+             is_active = true`,
+          params.id,
+          r.durationType,
+          r.callType,
+          r.price,
+          r.taxiFee ?? null,
+          r.currency ?? 'GBP'
+        );
+      }
+    }
+
+    // Update address
+    if (body.address !== undefined) {
+      const a = body.address;
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO model_addresses (
+           id, model_id, street, flat_number, flat_floor, post_code, tube_station,
+           heathrow_available, gatwick_available, stansted_available, is_active
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true
+         )
+         ON CONFLICT (model_id) DO UPDATE SET
+           street = EXCLUDED.street,
+           flat_number = EXCLUDED.flat_number,
+           flat_floor = EXCLUDED.flat_floor,
+           post_code = EXCLUDED.post_code,
+           tube_station = EXCLUDED.tube_station,
+           heathrow_available = EXCLUDED.heathrow_available,
+           gatwick_available = EXCLUDED.gatwick_available,
+           stansted_available = EXCLUDED.stansted_available,
+           is_active = true`,
+        `${params.id}-addr`,
+        params.id,
+        a.street || null,
+        a.flatNumber || null,
+        a.flatFloor ?? null,
+        a.postCode || null,
+        a.tubeStation || null,
+        a.heathrowAvailable ?? false,
+        a.gatwickAvailable ?? false,
+        a.stanstedAvailable ?? false
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Model updated'

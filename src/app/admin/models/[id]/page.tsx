@@ -12,6 +12,7 @@ import StatsTab from '@/components/models/tabs/StatsTab';
 import ServicesTab from '@/components/models/tabs/ServicesTab';
 import RatesTab from '@/components/models/tabs/RatesTab';
 import AddressTab from '@/components/models/tabs/AddressTab';
+import MediaTab from '@/components/models/tabs/MediaTab';
 
 export default function ModelEditPage() {
   const params = useParams();
@@ -80,6 +81,7 @@ export default function ModelEditPage() {
     { id: 'services', label: '③ Services', icon: '✨' },
     { id: 'rates', label: '④ Rates', icon: '💰' },
     { id: 'address', label: '⑤ Address', icon: '📍' },
+    { id: 'media', label: '⑥ Media', icon: '📸' },
   ];
   
   return (
@@ -142,6 +144,9 @@ export default function ModelEditPage() {
         )}
         {activeTab === 'address' && (
           <AddressTab model={model} onSave={saveModel} saving={saving} />
+        )}
+        {activeTab === 'media' && (
+          <MediaTab model={model} />
         )}
       </div>
     </div>
