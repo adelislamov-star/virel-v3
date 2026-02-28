@@ -15,18 +15,7 @@ export async function GET(
         stats: true,
         primaryLocation: true,
         services: {
-          include: {
-            service: {
-              include: {
-                category: true
-              }
-            }
-          }
-        },
-        categories: {
-          include: {
-            category: true
-          }
+          include: { service: true }
         },
         media: {
           orderBy: { sortOrder: 'asc' }
