@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 
 const SERVICES = [
@@ -125,6 +125,89 @@ function Checkbox({ checked, onChange, label }: any) {
   )
 }
 
+function NameField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+  const [open, setOpen] = useState(false)
+  const timerRef = useRef<any>(null)
+
+  const fetchSuggestions = async (input: string) => {
+    if (input.length < 1) { setSuggestions([]); setOpen(false); return }
+    setLoading(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          messages: [{
+            role: 'user',
+            content: `Generate 6 elegant female escort working names that start with or sound similar to "${input}". Names should be sophisticated, easy to remember, international. Return ONLY a JSON array of strings, nothing else. Example: ["Sofia","Stella"]`
+          }]
+        })
+      })
+      const data = await res.json()
+      const text = data.content?.[0]?.text || '[]'
+      const clean = text.replace(/```json|```/g, '').trim()
+      const names: string[] = JSON.parse(clean)
+      setSuggestions(names.slice(0, 6))
+      setOpen(true)
+    } catch {
+      setSuggestions([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleInput = (e: any) => {
+    const val = e.target.value
+    onChange(val)
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => fetchSuggestions(val), 500)
+  }
+
+  const pick = (name: string) => {
+    onChange(name)
+    setOpen(false)
+    setSuggestions([])
+  }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={handleInput}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Start typing a name..."
+          className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring pr-8"
+        />
+        {loading && (
+          <span className="absolute right-2.5 top-2.5 text-xs text-muted-foreground animate-pulse">✨</span>
+        )}
+      </div>
+      {open && suggestions.length > 0 && (
+        <div className="absolute z-50 top-full left-0 mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+          <p className="text-xs text-muted-foreground px-3 py-1.5 border-b border-border">AI suggestions</p>
+          {suggestions.map(name => (
+            <button
+              key={name}
+              type="button"
+              onMouseDown={() => pick(name)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function NewModelPage() {
   const [form, setForm] = useState(defaultForm)
   const [submitting, setSubmitting] = useState(false)
@@ -144,32 +227,17 @@ export default function NewModelPage() {
     setSubmitting(true)
     setError('')
     try {
-      const res = await fetch('/api/applications', {
+      const res = await fetch('/api/admin/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          source: 'admin',
-          age: form.age ? Number(form.age) : null,
-          height: form.height ? Number(form.height) : null,
-          weight: form.weight ? Number(form.weight) : null,
-          rate30min: form.rate30min ? Number(form.rate30min) : null,
-          rate45min: form.rate45min ? Number(form.rate45min) : null,
-          rate1hIn: form.rate1hIn ? Number(form.rate1hIn) : null,
-          rate1hOut: form.rate1hOut ? Number(form.rate1hOut) : null,
-          rate90minIn: form.rate90minIn ? Number(form.rate90minIn) : null,
-          rate90minOut: form.rate90minOut ? Number(form.rate90minOut) : null,
-          rate2hIn: form.rate2hIn ? Number(form.rate2hIn) : null,
-          rate2hOut: form.rate2hOut ? Number(form.rate2hOut) : null,
-          rateExtraHour: form.rateExtraHour ? Number(form.rateExtraHour) : null,
-          rateOvernight: form.rateOvernight ? Number(form.rateOvernight) : null,
-          languages: form.languages.split(',').map((l: string) => l.trim()).filter(Boolean),
-        }),
+        body: JSON.stringify(form),
       })
-      if (!res.ok) throw new Error()
-      setDone(true)
-    } catch {
-      setError('Failed to save. Check console.')
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed')
+      // Redirect to model profile to upload photos
+      window.location.href = `/admin/models/${data.modelId}`
+    } catch (err: any) {
+      setError(err.message || 'Failed to save.')
     } finally {
       setSubmitting(false)
     }
@@ -201,7 +269,7 @@ export default function NewModelPage() {
         <SectionTitle>Personal Information</SectionTitle>
         <div className="grid grid-cols-4 gap-4">
           <Field label="Name *" col={2}>
-            <Input value={form.name} onChange={text('name')} placeholder="Working name" />
+            <NameField value={form.name} onChange={v => set('name', v)} />
           </Field>
           <Field label="Age"><Input value={form.age} onChange={text('age')} type="number" placeholder="25" /></Field>
           <Field label="Nationality"><Input value={form.nationality} onChange={text('nationality')} placeholder="British" /></Field>
