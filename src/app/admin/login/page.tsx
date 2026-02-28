@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('admin@virel.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +20,7 @@ export default function LoginPage() {
     });
 
     if (res.ok) {
-      router.push('/admin/dashboard');
+      window.location.href = '/admin/models';
     } else {
       const data = await res.json();
       setError(data.error || 'Invalid email or password');
