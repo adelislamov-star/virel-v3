@@ -1,9 +1,7 @@
 // GET MODEL WITH FULL PROFILE
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
-
-const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
