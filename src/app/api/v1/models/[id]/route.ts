@@ -42,25 +42,34 @@ export async function GET(
     }
     
     // Get rates
-    const rates = await prisma.$queryRawUnsafe(`
-      SELECT * FROM model_rates 
-      WHERE model_id = '${params.id}' AND is_active = true
-      ORDER BY duration_type, call_type
-    `);
+    let rates: any[] = [];
+    try {
+      rates = await prisma.$queryRawUnsafe(`
+        SELECT * FROM model_rates 
+        WHERE model_id = '${params.id}' AND is_active = true
+        ORDER BY duration_type, call_type
+      `) as any[];
+    } catch {}
     
     // Get address
-    const address = await prisma.$queryRawUnsafe(`
-      SELECT * FROM model_addresses 
-      WHERE model_id = '${params.id}' AND is_active = true
-      LIMIT 1
-    `);
+    let address: any[] = [];
+    try {
+      address = await prisma.$queryRawUnsafe(`
+        SELECT * FROM model_addresses 
+        WHERE model_id = '${params.id}' AND is_active = true
+        LIMIT 1
+      `) as any[];
+    } catch {}
     
     // Get work preferences
-    const workPrefs = await prisma.$queryRawUnsafe(`
-      SELECT * FROM model_work_preferences 
-      WHERE model_id = '${params.id}'
-      LIMIT 1
-    `);
+    let workPrefs: any[] = [];
+    try {
+      workPrefs = await prisma.$queryRawUnsafe(`
+        SELECT * FROM model_work_preferences 
+        WHERE model_id = '${params.id}'
+        LIMIT 1
+      `) as any[];
+    } catch {}
     
     return NextResponse.json({
       success: true,
