@@ -262,24 +262,24 @@ export async function DELETE(
     await prisma.modelMedia.deleteMany({ where: { modelId: id } });
 
     try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_services WHERE model_id = $1`, id);
-    } catch {}
+      await prisma.$executeRawUnsafe(`DELETE FROM model_services WHERE "modelId" = '${id}'`);
+    } catch (e) { console.error('model_services', e); }
 
     try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE model_id = $1`, id);
-    } catch {}
+      await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE model_id = '${id}'`);
+    } catch (e) { console.error('model_rates', e); }
 
     try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_addresses WHERE model_id = $1`, id);
-    } catch {}
+      await prisma.$executeRawUnsafe(`DELETE FROM model_addresses WHERE model_id = '${id}'`);
+    } catch (e) { console.error('model_addresses', e); }
 
     try {
-      await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences WHERE model_id = $1`, id);
-    } catch {}
+      await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences WHERE model_id = '${id}'`);
+    } catch (e) { console.error('model_work_preferences', e); }
 
     try {
       await prisma.modelStats.delete({ where: { modelId: id } });
-    } catch {}
+    } catch (e) { console.error('model_stats', e); }
 
     // 4. Delete the model itself
     await prisma.model.delete({ where: { id } });
