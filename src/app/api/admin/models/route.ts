@@ -67,6 +67,22 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Link services — lookup by slug from DB
+    if (body.services && body.services.length > 0) {
+      const dbServices = await prisma.service.findMany({
+        where: { slug: { in: body.services } }
+      })
+      for (const svc of dbServices) {
+        try {
+          await prisma.$executeRaw`
+            INSERT INTO model_services ("modelId", "serviceId", "isEnabled")
+            VALUES (${model.id}, ${svc.id}, true)
+            ON CONFLICT DO NOTHING
+          `
+        } catch {}
+      }
+    }
+
     // Rates via raw SQL
     const rateMap = [
       { duration_type: '30min',      call_type: 'incall',  price: body.rate30min },

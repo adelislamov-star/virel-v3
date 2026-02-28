@@ -40,9 +40,19 @@ export default async function ModelProfilePage({ params }: Props) {
       WHERE model_id = ${model.id} AND is_active = true
       ORDER BY price ASC
     `
-  } catch (e) {
-    // table may not exist yet
-  }
+  } catch (e) {}
+
+  // Services
+  let services: any[] = []
+  try {
+    services = await prisma.$queryRaw`
+      SELECT s.title, s.slug
+      FROM model_services ms
+      JOIN services s ON s.id = ms."serviceId"
+      WHERE ms."modelId" = ${model.id} AND ms."isEnabled" = true
+      ORDER BY s.title ASC
+    `
+  } catch (e) {}
 
   const primaryPhoto = model.media.find((m: any) => m.isPrimary)?.url || model.media[0]?.url
   const gallery = model.media.filter((m: any) => m.isPublic)
@@ -107,6 +117,19 @@ export default async function ModelProfilePage({ params }: Props) {
                       <span className="text-muted-foreground capitalize">{rate.duration_type?.replace('_', ' ')} · {rate.call_type}</span>
                       <span className="font-semibold">£{Number(rate.price)}</span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {services.length > 0 && (
+              <div className="bg-muted/50 rounded-xl p-6 mt-6">
+                <h2 className="font-semibold text-lg mb-4">Services</h2>
+                <div className="flex flex-wrap gap-2">
+                  {services.map((svc: any) => (
+                    <span key={svc.slug} className="px-3 py-1 bg-background border border-border rounded-full text-sm">
+                      {svc.title}
+                    </span>
                   ))}
                 </div>
               </div>
