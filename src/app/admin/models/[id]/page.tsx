@@ -19,6 +19,7 @@ export default function ModelEditPage() {
   const modelId = params.id as string;
   
   const [activeTab, setActiveTab] = useState('info');
+  const [deleting, setDeleting] = useState(false);
   const [model, setModel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,25 @@ export default function ModelEditPage() {
     }
   }
   
+  async function deleteModel() {
+    if (!confirm(`⚠️ DELETE "${model?.name}"?\n\nThis will permanently remove the profile and ALL photos from storage.\n\nType OK to confirm.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/v1/models/${modelId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert('✅ Model deleted successfully');
+        window.location.href = '/admin/models';
+      } else {
+        alert('❌ Error: ' + data.error?.message);
+        setDeleting(false);
+      }
+    } catch (error) {
+      alert('❌ Delete failed');
+      setDeleting(false);
+    }
+  }
+
   async function saveModel(updates: any) {
     setSaving(true);
     try {
@@ -99,12 +119,22 @@ export default function ModelEditPage() {
           </div>
         </div>
         
-        <Button 
-          size="lg"
-          onClick={() => window.location.href = '/admin/models'}
-        >
-          ← Back to Models
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            size="lg"
+            variant="destructive"
+            onClick={deleteModel}
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : '🗑️ Delete Profile'}
+          </Button>
+          <Button 
+            size="lg"
+            onClick={() => window.location.href = '/admin/models'}
+          >
+            ← Back to Models
+          </Button>
+        </div>
       </div>
       
       {/* Tabs Navigation */}

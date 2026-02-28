@@ -1,6 +1,7 @@
 // GET MODEL WITH FULL PROFILE
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { deleteMedia } from '@/lib/storage/r2';
 
 const prisma = new PrismaClient();
 
@@ -225,6 +226,68 @@ export async function PATCH(
     
   } catch (error: any) {
     console.error('Update model error:', error);
+    return NextResponse.json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message }
+    }, { status: 500 });
+  }
+}
+
+// DELETE MODEL — removes all data from DB and photos from R2
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = params.id;
+
+    // 1. Get all media files to delete from R2
+    const mediaFiles = await prisma.modelMedia.findMany({
+      where: { modelId: id },
+      select: { storageKey: true }
+    });
+
+    // 2. Delete from R2 (photos + thumbnails)
+    for (const m of mediaFiles) {
+      if (m.storageKey) {
+        try {
+          await deleteMedia(m.storageKey);
+        } catch (e) {
+          console.error('R2 delete failed for key:', m.storageKey, e);
+        }
+      }
+    }
+
+    // 3. Delete all related DB records
+    await prisma.modelMedia.deleteMany({ where: { modelId: id } });
+
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM model_services WHERE model_id = $1`, id);
+    } catch {}
+
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE model_id = $1`, id);
+    } catch {}
+
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM model_addresses WHERE model_id = $1`, id);
+    } catch {}
+
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences WHERE model_id = $1`, id);
+    } catch {}
+
+    try {
+      await prisma.modelStats.delete({ where: { modelId: id } });
+    } catch {}
+
+    // 4. Delete the model itself
+    await prisma.model.delete({ where: { id } });
+
+    return NextResponse.json({ success: true, message: 'Model deleted' });
+
+  } catch (error: any) {
+    console.error('Delete model error:', error);
     return NextResponse.json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: error.message }
