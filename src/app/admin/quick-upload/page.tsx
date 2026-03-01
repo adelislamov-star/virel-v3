@@ -159,7 +159,7 @@ export default function QuickUploadPage() {
           body: JSON.stringify({ action: 'presign', modelId, files: sortedPhotos.map(p => ({ name: p.file.name, mimeType: p.file.type || 'image/jpeg' })) })
         })
         const presignData = await presignRes.json()
-        if (!presignData.success) throw new Error('Failed to get upload URLs')
+        if (!presignData.success) throw new Error(`Presign failed: ${presignData.error || presignRes.status}`)
 
         log(`📤 Uploading ${sortedPhotos.length} photos in parallel...`)
         const results = await Promise.allSettled(
