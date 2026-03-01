@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
+import { randomUUID } from 'crypto'
 
 function slugify(name: string) {
   return name.toLowerCase()
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     if (existing) slug = `${slug}-${Date.now()}`
 
     // Public code
-    const publicCode = `${body.name.toUpperCase().replace(/\s+/g, '-').substring(0, 12)}-${Math.floor(Math.random() * 90 + 10)}`
+    const publicCode = `${body.name.toUpperCase().replace(/\s+/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
 
     // Location by tube station
     let primaryLocationId: string | null = null
