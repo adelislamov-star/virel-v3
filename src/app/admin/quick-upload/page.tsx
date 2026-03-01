@@ -17,67 +17,28 @@ async function fileToBase64(file: File): Promise<string> {
   })
 }
 
-function readTextFile(file: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader()
-    r.onload = e => res(e.target?.result as string)
-    r.onerror = rej
-    r.readAsText(file)
-  })
+function isAnketaFile(f: File) {
+  return (
+    f.type === 'text/plain' ||
+    f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    f.type === 'application/vnd.ms-excel' ||
+    f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    f.type === 'text/csv' ||
+    f.name.endsWith('.txt') ||
+    f.name.endsWith('.docx') ||
+    f.name.endsWith('.xlsx') ||
+    f.name.endsWith('.xls') ||
+    f.name.endsWith('.csv')
+  )
 }
 
-async function parseAnketaWithAI(text: string): Promise<Record<string, any>> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 800,
-      messages: [{
-        role: 'user',
-        content: `Extract escort profile data from this anketa/application text. The text may be in any language (English, Russian, etc.) and any format.
-
-Return ONLY a valid JSON object with these exact keys (use null if not found):
-{
-  "name": string,
-  "age": string,
-  "nationality": string,
-  "height": string,
-  "weight": string,
-  "breastSize": string,
-  "dressSizeUK": string,
-  "eyesColour": string,
-  "hairColour": string,
-  "languages": string,
-  "addressPostcode": string,
-  "addressStreet": string,
-  "tubeStation": string,
-  "rate30min": string,
-  "rate1hIn": string,
-  "rate1hOut": string,
-  "rate90minIn": string,
-  "rate90minOut": string,
-  "rate2hIn": string,
-  "rate2hOut": string,
-  "rateOvernight": string,
-  "smokingStatus": string,
-  "tattooStatus": string,
-  "orientation": string
-}
-
-Anketa text:
-${text.slice(0, 3000)}`
-      }]
-    })
-  })
+async function parseAnketaWithAI(file: File): Promise<Record<string, any>> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await fetch('/api/admin/parse-anketa', { method: 'POST', body: formData })
   const data = await res.json()
-  const raw = (data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim()
-  const parsed = JSON.parse(raw)
-  const clean: Record<string, any> = { notesInternal: text.slice(0, 800) }
-  for (const [k, v] of Object.entries(parsed)) {
-    if (v !== null && v !== '' && v !== undefined) clean[k] = String(v)
-  }
-  return clean
+  if (!data.success) throw new Error(data.error || 'Parse failed')
+  return data.fields
 }
 
 export default function QuickUploadPage() {
@@ -106,13 +67,12 @@ export default function QuickUploadPage() {
     await Promise.all(files.map(async f => {
       if (f.type.startsWith('image/')) {
         imgFiles.push({ file: f, previewUrl: URL.createObjectURL(f), id: uid() })
-      } else if (f.type === 'text/plain' || f.name.endsWith('.txt') || f.type === '') {
+      } else if (isAnketaFile(f)) {
         try {
-          const text = await readTextFile(f)
-          setAnketaText(text)
+          setAnketaText(f.name)
           setAiParsing(true)
           setStage('preview')
-          const parsed = await parseAnketaWithAI(text)
+          const parsed = await parseAnketaWithAI(f)
           setParsedForm(parsed)
           if (parsed.name) setManualName(parsed.name)
           setAiParsing(false)
@@ -146,21 +106,21 @@ export default function QuickUploadPage() {
     setAiSorting(true)
     try {
       const sample = photoFiles.slice(0, 12)
-      const blocks: any[] = []
-      for (let i = 0; i < sample.length; i++) {
-        const b64 = await fileToBase64(sample[i].file)
-        blocks.push({ type: 'image', source: { type: 'base64', media_type: sample[i].file.type || 'image/jpeg', data: b64 } })
-        blocks.push({ type: 'text', text: `Photo ${i}` })
-      }
-      blocks.push({ type: 'text', text: `Sort ${sample.length} escort profile photos. Return JSON array ONLY:\n[{"index":0,"role":"cover"},{"index":1,"role":"full_body"},...]\nRoles: cover (best shot, goes first), full_body, face, detail, other. Include all ${sample.length} photos.` })
-
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const photos = await Promise.all(
+        sample.map(async (p, i) => ({
+          index: i,
+          data: await fileToBase64(p.file),
+          mediaType: p.file.type || 'image/jpeg'
+        }))
+      )
+      const res = await fetch('/api/admin/sort-photos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 400, messages: [{ role: 'user', content: blocks }] })
+        body: JSON.stringify({ photos })
       })
       const data = await res.json()
-      const aiOrder: { index: number; role: string }[] = JSON.parse((data.content?.[0]?.text || '[]').replace(/```json|```/g, '').trim())
+      if (!data.success) throw new Error(data.error)
+      const aiOrder: { index: number; role: string }[] = data.order
       const sorted: SortedPhoto[] = aiOrder.map((item, i) => ({ ...photoFiles[item.index], sortOrder: i, isPrimary: i === 0, role: item.role }))
       const extras = photoFiles.slice(12).map((p, i) => ({ ...p, sortOrder: sorted.length + i, isPrimary: false, role: 'other' }))
       setSortedPhotos([...sorted, ...extras])
@@ -260,12 +220,12 @@ export default function QuickUploadPage() {
             }}
             onClick={() => stage === 'drop' && fileInputRef.current?.click()}
           >
-            <input ref={fileInputRef} type="file" multiple accept="image/*,.txt,text/plain" onChange={handleFileInput} style={{ display: 'none' }} />
+            <input ref={fileInputRef} type="file" multiple accept="image/*,.txt,.docx,.xlsx,.xls,.csv" onChange={handleFileInput} style={{ display: 'none' }} />
             <div style={{ fontSize: 40, marginBottom: 8 }}>{photos.length > 0 ? '🖼️' : '📁'}</div>
             <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 15 }}>
               {photos.length > 0
                 ? `${photos.length} photos${anketaText ? ' + anketa ✅' : ' (no anketa)'}`
-                : 'Drop photos + .txt anketa here'}
+                : 'Drop photos + anketa (.txt, .docx, .xlsx) here'}
             </p>
             <p style={{ margin: 0, color: '#888', fontSize: 12 }}>
               {stage === 'drop' ? 'Click or drag & drop' : ''}
