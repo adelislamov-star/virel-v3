@@ -83,8 +83,8 @@ export default async function ModelProfilePage({ params }: Props) {
         .gold-border { border-color: #c9a84c; }
         .stat-divider { border-color: rgba(255,255,255,0.07); }
 
-        .gallery-main { position: relative; aspect-ratio: 3/4; overflow: hidden; background: #111; }
-        .gallery-main img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s cubic-bezier(.25,.46,.45,.94); }
+        .gallery-main { position: relative; width: 100%; height: 85vh; min-height: 600px; overflow: hidden; background: #111; }
+        .gallery-main img { width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: transform 0.8s cubic-bezier(.25,.46,.45,.94); }
         .gallery-main:hover img { transform: scale(1.03); }
 
         .thumb { aspect-ratio: 1; overflow: hidden; background: #111; cursor: pointer; opacity: 0.65; transition: opacity .3s; }
@@ -184,7 +184,6 @@ export default async function ModelProfilePage({ params }: Props) {
                     ['Hair', stats.hairColour || null],
                     ['Eyes', stats.eyeColour || null],
                     ['Nationality', stats.nationality || null],
-                    ['Orientation', stats.orientation || null],
                     ['Languages', stats.languages?.length ? stats.languages.join(', ') : null],
                   ].filter(([, v]) => v).map(([label, value], i) => (
                     <div key={label as string} style={{ padding: '18px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: (i % 3 !== 2) ? '1px solid rgba(255,255,255,0.06)' : 'none', paddingRight: 20, paddingLeft: i % 3 === 0 ? 0 : 20 }}>
