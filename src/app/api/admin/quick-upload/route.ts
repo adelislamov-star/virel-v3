@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
           const fileId = randomUUID()
           const key = buildKey(modelId, `${fileId}.${ext}`)
           const url = await getPresignedUploadUrl(key, f.mimeType, 600)
-          const finalUrl = buildUrl(key.replace(/\.[^.]+$/, '.webp'))
-          return { key: key.replace(/\.[^.]+$/, '.webp'), presignedUrl: url, finalUrl, originalName: f.name }
+          const finalUrl = buildUrl(key)
+          return { key, presignedUrl: url, finalUrl, originalName: f.name }
         })
       )
       return NextResponse.json({ success: true, files: results })
