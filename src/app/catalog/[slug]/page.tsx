@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
+import { GalleryViewer } from '@/components/profile/GalleryViewer'
 import { prisma } from '@/lib/db/client'
 
 interface Props { params: { slug: string } }
@@ -166,21 +167,27 @@ export default async function ModelProfilePage({ params }: Props) {
           {/* ── LEFT COLUMN ── */}
           <div className="fade-in">
 
-            {/* Main photo */}
-            <div className="gallery-main" style={{ marginBottom: 8 }}>
-              {primaryPhoto
-                ? <img src={primaryPhoto} alt={model.name} />
-                : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-                    <div style={{ textAlign: 'center', color: '#333' }}>
-                      <div style={{ fontSize: 60, marginBottom: 16 }}>◈</div>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, letterSpacing: '.15em' }}>PHOTO COMING SOON</div>
-                    </div>
+            {/* Gallery — main photo + clickable thumbnails + lightbox */}
+            {primaryPhoto ? (
+              <GalleryViewer
+                photos={gallery.map((p: any) => ({ id: p.id, url: p.url }))}
+                modelName={model.name}
+                primaryUrl={primaryPhoto}
+              />
+            ) : (
+              <div className="gallery-main" style={{ marginBottom: 8 }}>
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
+                  <div style={{ textAlign: 'center', color: '#333' }}>
+                    <div style={{ fontSize: 60, marginBottom: 16 }}>◈</div>
+                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, letterSpacing: '.15em' }}>PHOTO COMING SOON</div>
                   </div>
-                )
-              }
-              {/* Name overlay on photo */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '60px 32px 32px', background: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, transparent 100%)' }}>
+                </div>
+              </div>
+            )}
+
+            {/* Name overlay — stays on top of GalleryViewer main photo */}
+            <div style={{ position: 'relative', marginTop: -120, marginBottom: 60, pointerEvents: 'none' }}>
+              <div style={{ padding: '60px 32px 32px', background: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, transparent 100%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                   <span className="available-dot" />
                   <span style={{ fontSize: 11, letterSpacing: '.12em', color: '#4ade80' }}>AVAILABLE NOW</span>
@@ -195,17 +202,6 @@ export default async function ModelProfilePage({ params }: Props) {
                 )}
               </div>
             </div>
-
-            {/* Thumbnail strip */}
-            {gallery.length > 1 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: 60 }}>
-                {gallery.slice(0, 10).map((photo: any) => (
-                  <div key={photo.id} className="thumb">
-                    <img src={photo.url} alt={model.name} loading="lazy" />
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* Stats */}
             {stats && (
