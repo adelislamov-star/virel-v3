@@ -37,11 +37,18 @@ export default function ModelsPage() {
           <h1 className="text-3xl font-bold">👤 Models</h1>
           <p className="text-muted-foreground">{models.length} total models</p>
         </div>
-        <Link href="/admin/models/new"
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
-        >
-          + Add Model
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/admin/quick-upload"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-500 transition-colors text-sm flex items-center gap-1"
+          >
+            ⚡ Quick Upload
+          </Link>
+          <Link href="/admin/models/new"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
+          >
+            + Add Model
+          </Link>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
