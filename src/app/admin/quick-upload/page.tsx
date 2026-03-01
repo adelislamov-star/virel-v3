@@ -313,6 +313,7 @@ export default function QuickUploadPage() {
                 width: 300, border: '2px solid #6366f1', borderRadius: 8,
                 padding: '10px 14px', fontSize: 15, fontWeight: 500,
                 outline: 'none', background: '#fff', display: 'block',
+                color: '#111',
               }}
             />
           </div>
