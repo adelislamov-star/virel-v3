@@ -227,7 +227,7 @@ export default function QuickUploadPage() {
             style={{
               border: `2px dashed ${dragOver ? '#6366f1' : '#e2e8f0'}`,
               borderRadius: 16, padding: '32px', textAlign: 'center',
-              background: dragOver ? '#f5f3ff' : '#fafafa',
+              background: dragOver ? '#2a2a4a' : '#1a1a2e',
               transition: 'all .15s', marginBottom: 20,
               cursor: stage === 'drop' ? 'pointer' : 'default',
             }}
@@ -284,8 +284,8 @@ export default function QuickUploadPage() {
 
           {/* Anketa parsed preview */}
           {Object.values(parsedForm).some(v => v && typeof v === 'string' && v.length > 0) && (
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 14, marginBottom: 20 }}>
-              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 12, color: '#15803d' }}>✅ Parsed from anketa</p>
+            <div style={{ background: '#1a2e1a', border: '1px solid #166534', borderRadius: 10, padding: 14, marginBottom: 20 }}>
+              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 12, color: '#4ade80' }}>✅ Parsed from anketa</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 4 }}>
                 {Object.entries(parsedForm)
                   .filter(([k, v]) => v && typeof v === 'string' && v.length > 0 && k !== 'notesInternal')
@@ -312,8 +312,8 @@ export default function QuickUploadPage() {
               style={{
                 width: 300, border: '2px solid #6366f1', borderRadius: 8,
                 padding: '10px 14px', fontSize: 15, fontWeight: 500,
-                outline: 'none', background: '#fff', display: 'block',
-                color: '#111',
+                outline: 'none', background: '#1e1e2e', display: 'block',
+                color: '#fff',
               }}
             />
           </div>
@@ -340,10 +340,10 @@ export default function QuickUploadPage() {
 
       {/* ── UPLOADING ─────────────────────────────────────────────────── */}
       {stage === 'uploading' && (
-        <div style={{ background: '#fafafa', border: '1px solid #e2e8f0', borderRadius: 16, padding: 32 }}>
-          <p style={{ textAlign: 'center', fontWeight: 700, fontSize: 18, marginBottom: 24 }}>⚡ Creating...</p>
+        <div style={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 16, padding: 32 }}>
+          <p style={{ textAlign: 'center', fontWeight: 700, fontSize: 18, marginBottom: 24, color: '#fff' }}>⚡ Creating...</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {progress.map((msg, i) => <div key={i} style={{ fontSize: 13 }}>{msg}</div>)}
+            {progress.map((msg, i) => <div key={i} style={{ fontSize: 13, color: '#ccc' }}>{msg}</div>)}
           </div>
           <div style={{ marginTop: 20, height: 4, background: '#e2e8f0', borderRadius: 2 }}>
             <div style={{ height: '100%', borderRadius: 2, background: '#6366f1', width: `${Math.min(progress.length / 5 * 100, 95)}%`, transition: 'width .3s' }} />
@@ -363,7 +363,7 @@ export default function QuickUploadPage() {
             </a>
             <button
               onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setParsedForm({}); setManualName(''); setProgress([]) }}
-              style={{ border: '1px solid #e2e8f0', background: '#fff', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
+              style={{ border: '1px solid #444', background: '#1e1e2e', color: '#ccc', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
             >
               Add Another
             </button>
