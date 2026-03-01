@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // Link services — lookup by slug from DB
     if (body.services && body.services.length > 0) {
       const dbServices = await prisma.service.findMany({
-        where: { slug: { in: body.services } }
+        where: { code: { in: body.services } }
       })
       for (const svc of dbServices) {
         try {
