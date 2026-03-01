@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequently Asked Questions</title>
+    <meta name="description" content="Find answers to common questions about our booking process, deposits, payments, safety, cancellations, privacy, and what to expect from our professional escort agency.">
+    <style>
+        :root {
+            --color-bg: #fafafa;
+            --color-surface: #ffffff;
+            --color-text: #2c2c2c;
+            --color-text-secondary: #555555;
+            --color-accent: #6b5b7b;
+            --color-accent-light: #f3eff6;
+            --color-border: #e8e4ec;
+            --font-heading: 'Georgia', 'Times New Roman', serif;
+            --font-body: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.7;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+        }
+        .faq-header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+        .faq-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.2em;
+            font-weight: 400;
+            color: var(--color-text);
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        .faq-header p {
+            font-size: 1.05em;
+            color: var(--color-text-secondary);
+            max-width: 560px;
+            margin: 0 auto;
+        }
+        .faq-category {
+            margin-bottom: 48px;
+        }
+        .faq-category h2 {
+            font-family: var(--font-heading);
+            font-size: 1.4em;
+            font-weight: 400;
+            color: var(--color-accent);
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 24px;
+            letter-spacing: -0.01em;
+        }
+        .faq-item {
+            margin-bottom: 28px;
+        }
+        .faq-item h3 {
+            font-family: var(--font-body);
+            font-size: 1.05em;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .faq-item h3::before {
+            content: '+';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--color-accent-light);
+            color: var(--color-accent);
+            font-size: 1.1em;
+            font-weight: 300;
+            line-height: 1;
+            transition: transform 0.2s ease;
+            margin-top: 2px;
+        }
+        .faq-item.open h3::before {
+            content: '−';
+        }
+        .faq-answer {
+            padding-left: 34px;
+            color: var(--color-text-secondary);
+            font-size: 0.97em;
+            line-height: 1.75;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+            opacity: 0;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 600px;
+            opacity: 1;
+        }
+        .faq-footer {
+            text-align: center;
+            margin-top: 56px;
+            padding-top: 32px;
+            border-top: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            font-size: 0.88em;
+        }
+        @media (max-width: 600px) {
+            .faq-container { padding: 36px 16px 48px; }
+            .faq-header h1 { font-size: 1.7em; }
+            .faq-category h2 { font-size: 1.2em; }
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do I book a meeting?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Booking with us is a straightforward and discreet process designed for your convenience. You can initiate a booking in two ways: by filling out the secure form on our website or by calling our client management team directly. The form is available 24/7, allowing you to make a request at a time that suits you. For a more immediate response or to discuss specific arrangements, a phone call is often the most efficient method. Our team is trained to handle your enquiry with professionalism and care, ensuring all details are captured accurately. Once your request is received, we begin coordinating with your chosen companion to confirm their availability for your preferred time and location."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What information do I need to provide for booking?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "To ensure a smooth and secure booking process for everyone, we require a few basic details. We ask for your first name, a valid contact phone number, and an email address for confirmation. For outcall meetings, we will also need the full address of the location, such as your residence or hotel room number. We request the minimum information necessary to coordinate the meeting and maintain a secure environment for both you and our companions. This data is used exclusively for the purpose of arranging your booking and is handled with the utmost respect for your privacy. We never use this information for marketing purposes."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How quickly will I get a confirmation?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We pride ourselves on a prompt and efficient service. Our goal is to provide you with a confirmation as swiftly as possible. Typically, after you submit a booking request, our team immediately contacts the companion to check their availability. For bookings made during our standard operating hours (10 am – 1 am), you can expect to receive a confirmation call or email, usually within 30 to 60 minutes. For requests made outside these hours, we will respond as soon as our office reopens the following morning."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I book for the same day?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, we accommodate same-day bookings and understand that spontaneity can be part of the experience. We recommend contacting us as early as possible on the day to ensure the best availability of your preferred companion. While we always do our best to fulfil last-minute requests, availability can be limited, especially during peak times or with our most in-demand companions. For the most immediate service, we suggest calling us directly."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are the photos on the website genuine?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Authenticity is a cornerstone of our agency's reputation. We are committed to ensuring that the companions you see on our website are the individuals you will meet. All companions undergo a verification process, and we require that their portfolio images are recent and accurately represent their current appearance. While professional photography is used to capture our companions in the best light, we have strict guidelines to prevent any misleading alterations. Our aim is for you to make your choice with confidence, assured that the person who arrives is the same individual presented on our website."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why is a deposit required for some bookings?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A deposit serves as a mutual commitment and is typically requested only for extended bookings, first-time clients, or arrangements involving significant travel. Its purpose is to provide security for both you and the companion. For the companion, it confirms the client's firm intention to proceed with the meeting, compensating for the time they have reserved. For you, the client, it secures your chosen companion for a specific date and time, ensuring they are committed to your arrangement."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is my deposit protected?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Your deposit is a trust-based financial commitment, and we treat it with the highest level of responsibility. When you pay a deposit, it is held by the agency as a safeguard for the booking. It is not disbursed until after the meeting is successfully completed. In the rare event of a cancellation initiated by the agency or the companion, your deposit is fully and immediately refundable."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What payment methods do you accept?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "To ensure discretion and simplicity, our primary method of payment is cash, paid directly to the companion at the beginning of your meeting. We accept British Pounds (GBP), and some companions may also accept Euros (EUR) or US Dollars (USD), which should be confirmed at the time of booking. For deposits, we facilitate secure bank transfers."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "When is the final balance paid?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For the sake of clarity and to ensure a relaxed experience, the final balance for the meeting is settled at the very beginning. Upon the companion's arrival, you are asked to present the agreed-upon fee in cash. This practice is standard and serves to handle the financial aspect of the arrangement upfront, allowing the rest of the time to be focused on companionship without business formalities."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is your screening process and why does it exist?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Our screening process is a discreet and respectful measure designed to create a secure environment for both our clients and companions. For new clients, this typically involves a brief confirmation of the details you provide, ensuring the information is accurate and the booking is legitimate. It exists not as a barrier, but as a foundational layer of trust."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What safety measures are in place during a meeting?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Safety is a shared responsibility that we take very seriously. For outcall meetings, we maintain a record of the location and have a discreet check-in procedure with the companion to confirm their safe arrival and departure. Companions are trained to handle situations professionally and have the full support of the agency. These measures are in place to protect both parties."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is it possible to meet an escort before the booking?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We understand the desire to ensure a good connection, but for safety and privacy reasons, we do not facilitate pre-booking meetings. Our website is designed to provide a comprehensive and accurate portrayal of each companion. We also encourage you to speak with our client managers, who know the companions personally and can offer genuine insights to help you select someone who aligns with your expectations."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens if I feel uncomfortable during a meeting?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Your comfort and safety are paramount. If at any point during a meeting you feel uncomfortable or that the boundaries of the agreed arrangement are not being respected, you have the absolute right to end the meeting. We ask that you inform the agency of the situation afterwards, so we can take appropriate action. Similarly, our companions are instructed to do the same."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens if I need to cancel or reschedule my booking?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We understand that plans can change. If you need to cancel or reschedule, we ask that you provide us with as much notice as possible. For cancellations made with more than 24 hours' notice, there is generally no financial penalty. For cancellations made with less notice, a fee may be applicable to compensate the companion for the time they had reserved for you."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is your policy if the agency or escort needs to cancel?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "In the rare and unfortunate event that a companion must cancel a booking due to illness or an emergency, we will notify you immediately. Our first priority will be to offer you a suitable alternative companion. If we are unable to find a replacement that meets your satisfaction, or if you prefer not to proceed, any deposit you have paid will be refunded in full without delay."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is the deposit refundable if I cancel?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The refundability of a deposit depends on the timing of your cancellation. If you cancel a booking with more than 48 hours' notice, your deposit is typically fully refundable or can be held for a future booking. If you cancel within 48 hours of the agreed meeting time, the deposit is usually non-refundable, as the companion has reserved that time exclusively for you."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the policy for no-shows or very late cancellations?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A no-show or a cancellation made with very little notice creates a significant disruption for the companion, who has dedicated their time and may have incurred travel expenses. In such cases, any deposit paid will be forfeited. This policy is not intended to be punitive, but rather to ensure the reliability and professionalism of the service for all parties."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do you protect my personal information?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Protecting your privacy is a fundamental principle of our agency. We collect only the essential information required to arrange your booking and ensure a safe meeting. This data is stored securely on encrypted systems with strictly limited access. We do not share your information with any third parties for marketing or other purposes, unless required by law or for reasons directly related to ensuring the safety and security of the booking."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How long do you keep my booking data?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Our data retention policy is guided by the principle of minimalism. We keep the details of your booking only for as long as is necessary to successfully manage the appointment and for a short period afterwards to handle any post-booking queries. After this period, typically 72 hours, all personally identifiable information related to the booking is permanently deleted from our active systems."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Will I ever receive marketing emails or calls from you?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Absolutely not. We have a strict no-marketing policy. Your contact information is used exclusively for operational communication related to your bookings, such as confirmations, updates, or addressing any queries you may have. We will never use your phone number or email address to send you promotional materials, newsletters, or unsolicited offers."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are the mutual expectations for conduct during a meeting?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A successful and enjoyable meeting is built on a foundation of mutual respect. We expect our clients to treat our companions with courtesy. This includes being punctual, hygienic, and communicating clearly and respectfully. In return, our companions are expected to be professional, discreet, and to provide the high standard of companionship you expect from our agency."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the agency's role and responsibility?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Our role as an agency extends beyond simply making introductions. We are responsible for creating and maintaining a safe, professional, and reliable framework for both our clients and companions. This includes verifying the identity and professionalism of our companions, managing the booking process with efficiency and discretion, and providing clear and transparent policies. We act as a trusted intermediary, ensuring that arrangements are clear and that both parties are protected."
+          }
+        }
+      ]
+    }
+    </script>
+</head>
+<body>
+    <div class="faq-container">
+        <header class="faq-header">
+            <h1>Frequently Asked Questions</h1>
+            <p>Everything you need to know about our service, from booking to privacy. We believe in transparency and are here to answer your questions openly.</p>
+        </header>
+
+        <section class="faq-category">
+            <h2>How It Works: The Booking Process</h2>
+
+            <div class="faq-item open">
+                <h3>How do I book a meeting?</h3>
+                <div class="faq-answer">
+                    <p>Booking with us is a straightforward and discreet process designed for your convenience. You can initiate a booking in two ways: by filling out the secure form on our website or by calling our client management team directly. The form is available 24/7, allowing you to make a request at a time that suits you. For a more immediate response or to discuss specific arrangements, a phone call is often the most efficient method. Our team is trained to handle your enquiry with professionalism and care, ensuring all details are captured accurately. Once your request is received, we begin coordinating with your chosen companion to confirm their availability for your preferred time and location.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What information do I need to provide for booking?</h3>
+                <div class="faq-answer">
+                    <p>To ensure a smooth and secure booking process for everyone, we require a few basic details. We ask for your first name, a valid contact phone number, and an email address for confirmation. For outcall meetings, we will also need the full address of the location, such as your residence or hotel room number. We request the minimum information necessary to coordinate the meeting and maintain a secure environment for both you and our companions. This data is used exclusively for the purpose of arranging your booking and is handled with the utmost respect for your privacy, as detailed in our Privacy &amp; Discretion section. We never use this information for marketing purposes.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>How quickly will I get a confirmation?</h3>
+                <div class="faq-answer">
+                    <p>We pride ourselves on a prompt and efficient service. Our goal is to provide you with a confirmation as swiftly as possible. Typically, after you submit a booking request, our team immediately contacts the companion to check their availability. For bookings made during our standard operating hours (10 am &ndash; 1 am), you can expect to receive a confirmation call or email, usually within 30 to 60 minutes. For requests made outside these hours, we will respond as soon as our office reopens the following morning. The confirmation will finalise the details of your meeting, ensuring everything is arranged according to your request and you have complete clarity on the arrangement.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Can I book for the same day?</h3>
+                <div class="faq-answer">
+                    <p>Yes, we accommodate same-day bookings and understand that spontaneity can be part of the experience. We recommend contacting us as early as possible on the day to ensure the best availability of your preferred companion. While we always do our best to fulfil last-minute requests, availability can be limited, especially during peak times or with our most in-demand companions. A few hours of advance notice significantly increases the likelihood of securing your desired arrangement without compromise. For the most immediate service, we suggest calling us directly, as this allows our team to check real-time availability and confirm your booking in the quickest possible timeframe.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Are the photos on the website genuine?</h3>
+                <div class="faq-answer">
+                    <p>Authenticity is a cornerstone of our agency's reputation. We are committed to ensuring that the companions you see on our website are the individuals you will meet. All companions undergo a verification process, and we require that their portfolio images are recent and accurately represent their current appearance. We understand that trust begins with transparency, and misrepresentation undermines that trust. While professional photography is used to capture our companions in the best light, we have strict guidelines to prevent any misleading alterations. Our aim is for you to make your choice with confidence, assured that the person who arrives is the same individual presented on our website.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="faq-category">
+            <h2>Deposits &amp; Payments: Our Financial Framework</h2>
+
+            <div class="faq-item">
+                <h3>Why is a deposit required for some bookings?</h3>
+                <div class="faq-answer">
+                    <p>A deposit serves as a mutual commitment and is typically requested only for extended bookings, first-time clients, or arrangements involving significant travel. Its purpose is to provide security for both you and the companion. For the companion, it confirms the client's firm intention to proceed with the meeting, compensating for the time they have reserved and the other bookings they may have declined. For you, the client, it secures your chosen companion for a specific date and time, ensuring they are committed to your arrangement. This framework fosters a professional and reliable process, reducing the uncertainty of last-minute changes and ensuring that both parties can proceed with confidence and peace of mind.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>How is my deposit protected?</h3>
+                <div class="faq-answer">
+                    <p>Your deposit is a trust-based financial commitment, and we treat it with the highest level of responsibility. When you pay a deposit, it is held by the agency as a safeguard for the booking. It is not disbursed until after the meeting is successfully completed. In the rare event of a cancellation initiated by the agency or the companion, your deposit is fully and immediately refundable. We provide clear terms outlining the conditions for deposit refunds in our Cancellations &amp; Changes section. This transparent approach ensures your funds are protected and that you are not financially disadvantaged by circumstances outside of your control. Our goal is to make the financial process as secure and clear as the rest of our service.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What payment methods do you accept?</h3>
+                <div class="faq-answer">
+                    <p>To ensure discretion and simplicity, our primary method of payment is cash, paid directly to the companion at the beginning of your meeting. We accept British Pounds (GBP), and some companions may also accept Euros (EUR) or US Dollars (USD), which should be confirmed at the time of booking. For deposits, we facilitate secure bank transfers. We currently do not process credit card payments directly for the final balance to minimise the data we hold and protect your financial privacy. This cash-based approach is standard within the industry and is often preferred by clients for its straightforwardness and lack of a digital trail, aligning with our commitment to a discreet and confidential service.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>When is the final balance paid?</h3>
+                <div class="faq-answer">
+                    <p>For the sake of clarity and to ensure a relaxed experience, the final balance for the meeting is settled at the very beginning. Upon the companion's arrival, you are asked to present the agreed-upon fee in cash. This practice is standard and serves to handle the financial aspect of the arrangement upfront, allowing the rest of the time to be focused on companionship without business formalities. It provides peace of mind for both you and the companion, confirming that all obligations are met from the outset. This transparent and professional approach prevents any potential awkwardness or misunderstanding later on, ensuring the focus remains on a positive and enjoyable experience for the duration of your time together.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="faq-category">
+            <h2>Screening &amp; Safety: A Mutual Commitment</h2>
+
+            <div class="faq-item">
+                <h3>What is your screening process and why does it exist?</h3>
+                <div class="faq-answer">
+                    <p>Our screening process is a discreet and respectful measure designed to create a secure environment for both our clients and companions. For new clients, this typically involves a brief confirmation of the details you provide, ensuring the information is accurate and the booking is legitimate. We do this to prevent frivolous or malicious bookings, which protects the time and safety of our companions. The process is not intrusive and is handled with the utmost professionalism. It exists not as a barrier, but as a foundational layer of trust. By verifying each booking, we ensure that all parties are genuine and share a mutual understanding of the professional nature of the arrangement, fostering a safer and more reliable experience for everyone.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What safety measures are in place during a meeting?</h3>
+                <div class="faq-answer">
+                    <p>Safety is a shared responsibility that we take very seriously. For outcall meetings, we maintain a record of the location and have a discreet check-in procedure with the companion to confirm their safe arrival and departure. This ensures that the agency is aware of their whereabouts and that the meeting is proceeding as planned. Companions are trained to handle situations professionally and have the full support of the agency to end any meeting where they feel unsafe or disrespected. We ask that our clients contribute to this safe environment by being respectful and communicating clearly. These measures are in place to protect both parties and to ensure that the experience is not only enjoyable but also conducted within a secure and professional framework.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Is it possible to meet an escort before the booking?</h3>
+                <div class="faq-answer">
+                    <p>We understand the desire to ensure a good connection, but for safety and privacy reasons, we do not facilitate pre-booking meetings. Arranging such a meeting creates significant logistical and security challenges for our companions, whose privacy and time we must protect. Their professional commitment begins at the agreed-upon booking time. Our website is designed to provide a comprehensive and accurate portrayal of each companion, including their personality and interests, to help you make an informed choice. We also encourage you to speak with our client managers, who know the companions personally and can offer genuine insights to help you select someone who aligns with your expectations, ensuring a better match without compromising our essential security protocols.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What happens if I feel uncomfortable during a meeting?</h3>
+                <div class="faq-answer">
+                    <p>Your comfort and safety are paramount. If at any point during a meeting you feel uncomfortable or that the boundaries of the agreed arrangement are not being respected, you have the absolute right to end the meeting. We encourage open and respectful communication from the outset to establish mutual expectations. However, should a situation arise that cannot be resolved, you should politely and calmly end the appointment. We ask that you inform the agency of the situation afterwards, so we can take appropriate action and ensure our standards of conduct are upheld. Similarly, our companions are instructed to do the same. This policy of mutual respect is fundamental to ensuring a professional and positive experience for all.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="faq-category">
+            <h2>Cancellations &amp; Changes: A Transparent Policy</h2>
+
+            <div class="faq-item">
+                <h3>What happens if I need to cancel or reschedule my booking?</h3>
+                <div class="faq-answer">
+                    <p>We understand that plans can change. If you need to cancel or reschedule, we ask that you provide us with as much notice as possible to allow us to manage the companion's schedule. For cancellations made with more than 24 hours' notice, there is generally no financial penalty. For cancellations made with less notice, a fee may be applicable to compensate the companion for the time they had reserved for you. This is especially true for outcall bookings where the companion may already be travelling. Our goal is to be fair to both our clients and our companions, and our policy is designed to reflect the mutual commitment made at the time of booking. Please call us directly to discuss any changes to your arrangements.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What is your policy if the agency or escort needs to cancel?</h3>
+                <div class="faq-answer">
+                    <p>In the rare and unfortunate event that a companion must cancel a booking due to illness or an emergency, we will notify you immediately. Our first priority will be to offer you a suitable alternative companion for the same time slot. If we are unable to find a replacement that meets your satisfaction, or if you prefer not to proceed, any deposit you have paid will be refunded in full without delay. We believe in professional accountability, and it is our responsibility to manage such situations with transparency and fairness. Your trust is important to us, and we would never leave you in a difficult position due to a cancellation on our part. Our commitment is to provide a reliable service, and that includes how we handle unforeseen circumstances.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Is the deposit refundable if I cancel?</h3>
+                <div class="faq-answer">
+                    <p>The refundability of a deposit depends on the timing of your cancellation. If you cancel a booking with more than 48 hours' notice, your deposit is typically fully refundable or can be held for a future booking. If you cancel within 48 hours of the agreed meeting time, the deposit is usually non-refundable. This is because the companion has reserved that time exclusively for you and has likely turned down other opportunities. The deposit serves to partially compensate them for this loss of income. We believe this policy strikes a fair balance, respecting the client's need for flexibility while also honouring the companion's professional commitment and time. We aim for transparency in these matters to avoid any misunderstanding.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What is the policy for no-shows or very late cancellations?</h3>
+                <div class="faq-answer">
+                    <p>A no-show or a cancellation made with very little notice (e.g., within a few hours of the meeting time) creates a significant disruption for the companion, who has dedicated their time and may have incurred travel expenses. In such cases, any deposit paid will be forfeited. For clients with a history of last-minute cancellations or no-shows, we may require a full prepayment for any future bookings. This policy is not intended to be punitive, but rather to ensure the reliability and professionalism of the service for all parties. We value the time and commitment of our companions and expect our clients to do the same. Clear communication and timely notice are key to maintaining a respectful and functional relationship.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="faq-category">
+            <h2>Privacy &amp; Discretion: How We Handle Your Data</h2>
+
+            <div class="faq-item">
+                <h3>How do you protect my personal information?</h3>
+                <div class="faq-answer">
+                    <p>Protecting your privacy is a fundamental principle of our agency. We collect only the essential information required to arrange your booking and ensure a safe meeting. This data is stored securely on encrypted systems with strictly limited access. Our team is trained in data protection and bound by confidentiality agreements. We do not share your information with any third parties for marketing or other purposes, unless required by law or for reasons directly related to ensuring the safety and security of the booking. We use discreet communication methods for all confirmations and correspondence. Our entire process is built around the trust you place in us, and we employ both technical and procedural safeguards to ensure your personal details remain confidential at all times.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>How long do you keep my booking data?</h3>
+                <div class="faq-answer">
+                    <p>Our data retention policy is guided by the principle of minimalism. We keep the details of your booking only for as long as is necessary to successfully manage the appointment and for a short period afterwards to handle any post-booking queries. After this period, typically 72 hours, all personally identifiable information related to the booking is permanently deleted from our active systems. We do not maintain a long-term database of client information. This policy is in place to minimise your digital footprint and provide you with the assurance that your association with our agency is not stored indefinitely. Your privacy is not just a promise, but a core part of our operational procedure.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>Will I ever receive marketing emails or calls from you?</h3>
+                <div class="faq-answer">
+                    <p>Absolutely not. We have a strict no-marketing policy. Your contact information is used exclusively for operational communication related to your bookings, such as confirmations, updates, or addressing any queries you may have. We will never use your phone number or email address to send you promotional materials, newsletters, or unsolicited offers. We believe that our clients value discretion above all else, and intrusive marketing is a direct violation of that trust. Our business grows through reputation and the quality of our service, not through marketing lists. You can be confident that your relationship with us remains private and that your inbox will not be filled with unwanted communications from our agency.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="faq-category">
+            <h2>Responsibilities &amp; Expectations: Ensuring a Positive Experience</h2>
+
+            <div class="faq-item">
+                <h3>What are the mutual expectations for conduct during a meeting?</h3>
+                <div class="faq-answer">
+                    <p>A successful and enjoyable meeting is built on a foundation of mutual respect. We expect our clients to treat our companions with courtesy, as you would any professional with whom you have a scheduled appointment. This includes being punctual, hygienic, and communicating clearly and respectfully. In return, our companions are expected to be professional, discreet, and to provide the high standard of companionship you expect from our agency. Any form of abusive, disrespectful, or illegal behaviour from either party is unacceptable and will result in the immediate termination of the meeting. These mutual expectations are not just rules; they are the framework that ensures a safe, respectful, and positive experience for everyone involved.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3>What is the agency's role and responsibility?</h3>
+                <div class="faq-answer">
+                    <p>Our role as an agency extends beyond simply making introductions. We are responsible for creating and maintaining a safe, professional, and reliable framework for both our clients and companions. This includes verifying the identity and professionalism of our companions, managing the booking process with efficiency and discretion, and providing clear and transparent policies on payments, cancellations, and conduct. We act as a trusted intermediary, ensuring that arrangements are clear and that both parties are protected. We are also your point of contact for any issues that may arise, and we take responsibility for resolving them fairly and professionally. Our commitment is to provide a seamless and high-quality service from the first point of contact to the conclusion of your meeting.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="faq-footer">
+            <p>Author / Auditor: KESHA</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('.faq-item h3').forEach(function(heading) {
+            heading.addEventListener('click', function() {
+                var item = this.parentElement;
+                var wasOpen = item.classList.contains('open');
+                item.classList.toggle('open');
+            });
+        });
+    </script>
+</body>
+</html>
