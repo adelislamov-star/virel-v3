@@ -208,6 +208,184 @@ function NameField({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
+const SERVICE_SLUGS = SERVICES.map(s => s.slug)
+
+function ApplicationUploader({ onParsed }: { onParsed: (data: Partial<typeof defaultForm>) => void }) {
+  const [state, setState] = useState<'idle' | 'parsing' | 'done' | 'error'>('idle')
+  const [msg, setMsg] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const parse = async (file: File) => {
+    setState('parsing')
+    setMsg('')
+    try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((res, rej) => {
+        const r = new FileReader()
+        r.onload = () => res((r.result as string).split(',')[1])
+        r.onerror = rej
+        r.readAsDataURL(file)
+      })
+
+      const isPdf = file.type === 'application/pdf'
+      const isImage = file.type.startsWith('image/')
+
+      if (!isPdf && !isImage) {
+        setState('error')
+        setMsg('Please upload a PDF or image file')
+        return
+      }
+
+      const prompt = `You are parsing a model/escort application form. Extract ALL available data and return ONLY a JSON object with these exact keys (use null for missing fields):
+
+{
+  "name": string|null,
+  "age": string|null,
+  "height": string|null (cm number only),
+  "weight": string|null (kg number only),
+  "dressSizeUK": string|null,
+  "feetSizeUK": string|null,
+  "breastSize": string|null,
+  "breastType": "natural"|"silicone"|null,
+  "eyesColour": string|null,
+  "hairColour": string|null,
+  "smokingStatus": "no"|"yes"|"social"|null,
+  "tattooStatus": "none"|"small"|"medium"|"large"|null,
+  "piercingTypes": string|null,
+  "nationality": string|null,
+  "languages": string|null,
+  "orientation": "hetero"|"bi"|null,
+  "workWithCouples": boolean|null,
+  "workWithWomen": boolean|null,
+  "rate30min": string|null,
+  "rate45min": string|null,
+  "rate1hIn": string|null,
+  "rate1hOut": string|null,
+  "rate90minIn": string|null,
+  "rate90minOut": string|null,
+  "rate2hIn": string|null,
+  "rate2hOut": string|null,
+  "rateExtraHour": string|null,
+  "rateOvernight": string|null,
+  "blackClients": boolean|null,
+  "disabledClients": boolean|null,
+  "addressStreet": string|null,
+  "addressFlat": string|null,
+  "addressPostcode": string|null,
+  "tubeStation": string|null,
+  "airportHeathrow": boolean|null,
+  "airportGatwick": boolean|null,
+  "airportStansted": boolean|null,
+  "services": array of slugs from: ${SERVICE_SLUGS.join(',')},
+  "notesInternal": string|null
+}
+
+For services: match what's checked/ticked/marked in the form to the closest slug. Return ONLY the JSON, no explanation.`
+
+      const contentBlock = isPdf
+        ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+        : { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } }
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: prompt }] }]
+        })
+      })
+
+      const data = await res.json()
+      const text = (data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(text)
+
+      // Clean up nulls — only keep defined values
+      const clean: any = {}
+      for (const [k, v] of Object.entries(parsed)) {
+        if (v !== null && v !== undefined) clean[k] = v
+      }
+
+      onParsed(clean)
+      setState('done')
+      const filled = Object.keys(clean).filter(k => clean[k] !== '' && clean[k] !== false && !(Array.isArray(clean[k]) && clean[k].length === 0)).length
+      setMsg(`Filled ${filled} fields from application`)
+    } catch (e: any) {
+      setState('error')
+      setMsg('Failed to parse — try again or fill manually')
+    }
+  }
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) parse(file)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files?.[0]
+    if (file) parse(file)
+  }
+
+  return (
+    <div className="mb-6">
+      <div
+        onDrop={handleDrop}
+        onDragOver={e => e.preventDefault()}
+        onClick={() => state !== 'parsing' && inputRef.current?.click()}
+        className={`
+          border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all
+          ${state === 'parsing' ? 'border-primary/50 bg-primary/5 cursor-wait' : ''}
+          ${state === 'done' ? 'border-green-500/50 bg-green-500/5' : ''}
+          ${state === 'error' ? 'border-destructive/50 bg-destructive/5' : ''}
+          ${state === 'idle' ? 'border-border hover:border-primary/50 hover:bg-muted/30' : ''}
+        `}
+      >
+        <input ref={inputRef} type="file" accept=".pdf,image/*" onChange={handleFile} className="hidden" />
+
+        {state === 'idle' && (
+          <>
+            <div className="text-3xl mb-2">📋</div>
+            <p className="font-semibold text-sm">Drop application here or click to upload</p>
+            <p className="text-xs text-muted-foreground mt-1">PDF or photo — Claude will auto-fill the form</p>
+          </>
+        )}
+
+        {state === 'parsing' && (
+          <>
+            <div className="text-3xl mb-2 animate-spin">⚙️</div>
+            <p className="font-semibold text-sm">Parsing application...</p>
+            <p className="text-xs text-muted-foreground mt-1">Claude is reading the document</p>
+          </>
+        )}
+
+        {state === 'done' && (
+          <>
+            <div className="text-3xl mb-2">✅</div>
+            <p className="font-semibold text-sm text-green-600">{msg}</p>
+            <p className="text-xs text-muted-foreground mt-1">Review and adjust below, then save</p>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); setState('idle'); setMsg(''); inputRef.current && (inputRef.current.value = '') }}
+              className="mt-2 text-xs text-muted-foreground underline"
+            >
+              Upload different file
+            </button>
+          </>
+        )}
+
+        {state === 'error' && (
+          <>
+            <div className="text-3xl mb-2">❌</div>
+            <p className="font-semibold text-sm text-destructive">{msg}</p>
+            <p className="text-xs text-muted-foreground mt-1">Click to try again</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function NewModelPage() {
   const [form, setForm] = useState(defaultForm)
   const [submitting, setSubmitting] = useState(false)
@@ -216,6 +394,10 @@ export default function NewModelPage() {
 
   const set = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }))
   const text = (field: string) => (e: any) => set(field, e.target.value)
+
+  const handleParsed = (data: Partial<typeof defaultForm>) => {
+    setForm(prev => ({ ...prev, ...data }))
+  }
   const toggle = (field: string) => set(field, !(form as any)[field])
   const toggleService = (slug: string) =>
     set('services', form.services.includes(slug)
@@ -264,6 +446,9 @@ export default function NewModelPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-2">
+
+        {/* AI APPLICATION PARSER */}
+        <ApplicationUploader onParsed={handleParsed} />
 
         {/* PERSONAL */}
         <SectionTitle>Personal Information</SectionTitle>
