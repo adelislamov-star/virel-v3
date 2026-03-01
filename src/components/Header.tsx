@@ -15,17 +15,22 @@ export function Header() {
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       fontFamily: 'DM Sans, sans-serif',
     }}>
-      <nav style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <style>{`
+        .h-link { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#6b6560; text-decoration:none; transition:color .2s; }
+        .h-link:hover { color:#ddd5c8; }
+        .h-join { font-size:11px; letter-spacing:.14em; text-transform:uppercase; border:1px solid rgba(201,168,76,0.3); color:#c9a84c; padding:9px 20px; text-decoration:none; transition:all .2s; }
+        .h-join:hover { background:rgba(201,168,76,0.08); border-color:#c9a84c; }
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .mobile-burger { display: block !important; }
+        }
+      `}</style>
 
-        <Link href="/" style={{
-          fontFamily: 'Cormorant Garamond, Georgia, serif',
-          fontSize: 22, fontWeight: 300, color: '#f0e8dc',
-          textDecoration: 'none', letterSpacing: '.08em',
-        }}>
+      <nav style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Link href="/" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 22, fontWeight: 300, color: '#f0e8dc', textDecoration: 'none', letterSpacing: '.08em' }}>
           Virel
         </Link>
 
-        {/* Desktop nav */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 36 }} className="desktop-nav">
           {[
             ['/london-escorts', 'Companions'],
@@ -33,27 +38,11 @@ export function Header() {
             ['/faq', 'FAQ'],
             ['/contact', 'Contact'],
           ].map(([href, label]) => (
-            <Link key={href} href={href} style={{
-              fontSize: 12, letterSpacing: '.1em', textTransform: 'uppercase',
-              color: '#6b6560', textDecoration: 'none', transition: 'color .2s',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ddd5c8')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#6b6560')}>
-              {label}
-            </Link>
+            <Link key={href} href={href} className="h-link">{label}</Link>
           ))}
-          <Link href="/join" style={{
-            fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase',
-            border: '1px solid rgba(201,168,76,0.3)', color: '#c9a84c',
-            padding: '9px 20px', textDecoration: 'none', transition: 'all .2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.08)'; e.currentTarget.style.borderColor = '#c9a84c' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)' }}>
-            Join Us
-          </Link>
+          <Link href="/join" className="h-join">Join Us</Link>
         </div>
 
-        {/* Mobile burger */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', display: 'none' }}
@@ -77,20 +66,10 @@ export function Header() {
             ['/contact', 'Contact'],
             ['/join', 'Join Us'],
           ].map(([href, label]) => (
-            <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: 13, color: '#6b6560', textDecoration: 'none', letterSpacing: '.08em' }}>
-              {label}
-            </Link>
+            <Link key={href} href={href} className="h-link" onClick={() => setMobileMenuOpen(false)}>{label}</Link>
           ))}
         </div>
       )}
-
-      <style>{`
-        @media (max-width: 768px) {
-          .desktop-nav { display: none !important; }
-          .mobile-burger { display: block !important; }
-        }
-      `}</style>
     </header>
   )
 }
