@@ -9,6 +9,47 @@ export const metadata = {
   title: 'London Escorts | Premium Escort Agency London | Virel',
   description: 'London\'s premier escort agency. Verified, sophisticated companions for incall and outcall. Discreet, elegant, available 24/7 across London\'s finest districts.',
   alternates: { canonical: 'https://virel-v3.vercel.app' },
+  openGraph: {
+    title: 'London Escorts | Premium Escort Agency | Virel',
+    description: 'London\'s premier escort agency. Verified, sophisticated companions available 24/7.',
+    url: 'https://virel-v3.vercel.app',
+    siteName: 'Virel',
+    locale: 'en_GB',
+    type: 'website',
+  },
+}
+
+const homeSchema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://virel-v3.vercel.app/#organization',
+      name: 'Virel',
+      url: 'https://virel-v3.vercel.app',
+      description: 'Premium escort agency in London. Verified, sophisticated companions for incall and outcall across London.',
+      areaServed: { '@type': 'City', name: 'London', '@id': 'https://www.wikidata.org/wiki/Q84' },
+      contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', availableLanguage: 'English' },
+    },
+    {
+      '@type': 'LocalBusiness',
+      '@id': 'https://virel-v3.vercel.app/#business',
+      name: 'Virel London Escorts',
+      url: 'https://virel-v3.vercel.app',
+      description: 'London\'s premier escort agency offering verified, sophisticated companions for incall and outcall.',
+      address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
+      openingHours: 'Mo-Su 00:00-23:59',
+      priceRange: '£££',
+      telephone: '',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://virel-v3.vercel.app/#website',
+      url: 'https://virel-v3.vercel.app',
+      name: 'Virel',
+      publisher: { '@id': 'https://virel-v3.vercel.app/#organization' },
+    },
+  ],
 }
 
 const DISTRICTS = [
@@ -37,6 +78,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeSchema) }} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 

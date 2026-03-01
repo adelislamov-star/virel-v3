@@ -72,8 +72,44 @@ export default async function ModelProfilePage({ params }: Props) {
 
   const stats = model.stats
 
+  const lowestPrice = rates.length > 0 ? Math.min(...rates.map((r: any) => Number(r.price))) : null
+
+  const profileSchema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Person',
+        name: model.name,
+        url: `https://virel-v3.vercel.app/catalog/${model.slug}`,
+        image: primaryPhoto || undefined,
+        description: `${model.name} is a premium verified companion available in London for incall and outcall.`,
+        jobTitle: 'Companion',
+        worksFor: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
+        address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
+      },
+      {
+        '@type': 'Service',
+        name: `${model.name} — London Escort`,
+        url: `https://virel-v3.vercel.app/catalog/${model.slug}`,
+        description: `${model.name} is a premium verified companion available in London for incall and outcall.`,
+        provider: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
+        areaServed: { '@type': 'City', name: 'London' },
+        ...(lowestPrice ? { offers: { '@type': 'Offer', price: lowestPrice, priceCurrency: 'GBP', availability: 'https://schema.org/InStock' } } : {}),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
+          { '@type': 'ListItem', position: 2, name: 'Companions', item: 'https://virel-v3.vercel.app/london-escorts' },
+          { '@type': 'ListItem', position: 3, name: model.name, item: `https://virel-v3.vercel.app/catalog/${model.slug}` },
+        ],
+      },
+    ],
+  }
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema) }} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
