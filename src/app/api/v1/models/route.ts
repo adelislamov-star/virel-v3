@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db/client';
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const all = searchParams.get('all') === 'true';
+
+    const where = all ? {} : { status: 'active', visibility: 'public' };
+
     const models = await prisma.model.findMany({
+      where,
       include: { stats: true, primaryLocation: true },
       orderBy: { name: 'asc' },
     });
