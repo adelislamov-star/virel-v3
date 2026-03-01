@@ -4,51 +4,93 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-muted/50 border-t border-border">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-4 gap-8">
+    <footer style={{ background: '#080808', borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'DM Sans, sans-serif' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 40px 40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 60, marginBottom: 60 }}>
+
+          {/* Brand */}
           <div>
-            <h3 className="font-serif text-xl font-bold mb-4">Virel</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Premium companion services in London. Discreet, elegant, and professional.
+            <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', marginBottom: 16, letterSpacing: '.04em' }}>Virel</p>
+            <p style={{ fontSize: 13, color: '#4a4540', lineHeight: 1.8, maxWidth: 260 }}>
+              Premium companion services in London. Discreet, sophisticated, and professional.
             </p>
+            <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
+              <a href="https://t.me/virel_bookings" style={{ fontSize: 11, letterSpacing: '.1em', color: '#6b6560', textDecoration: 'none', textTransform: 'uppercase', transition: 'color .2s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#6b6560')}>
+                Telegram
+              </a>
+              <a href="mailto:bookings@virel.com" style={{ fontSize: 11, letterSpacing: '.1em', color: '#6b6560', textDecoration: 'none', textTransform: 'uppercase' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#6b6560')}>
+                Email
+              </a>
+            </div>
           </div>
 
+          {/* Companions */}
           <div>
-            <h4 className="font-semibold mb-4">Companions</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/london-escorts" className="text-muted-foreground hover:text-foreground transition-colors">London Escorts</Link></li>
-              <li><Link href="/services" className="text-muted-foreground hover:text-foreground transition-colors">Services</Link></li>
-              <li><Link href="/escorts-in/mayfair" className="text-muted-foreground hover:text-foreground transition-colors">Escorts in Mayfair</Link></li>
-              <li><Link href="/escorts-in/kensington" className="text-muted-foreground hover:text-foreground transition-colors">Escorts in Kensington</Link></li>
-              <li><Link href="/escorts-in/knightsbridge" className="text-muted-foreground hover:text-foreground transition-colors">Escorts in Knightsbridge</Link></li>
+            <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Companions</p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                ['/london-escorts', 'London Escorts'],
+                ['/escorts-in/mayfair', 'Escorts in Mayfair'],
+                ['/escorts-in/kensington', 'Escorts in Kensington'],
+                ['/escorts-in/knightsbridge', 'Escorts in Knightsbridge'],
+                ['/escorts-in/chelsea', 'Escorts in Chelsea'],
+              ].map(([href, label]) => (
+                <li key={href}>
+                  <Link href={href} style={{ fontSize: 13, color: '#4a4540', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#ddd5c8')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#4a4540')}>
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Information */}
           <div>
-            <h4 className="font-semibold mb-4">Information</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</Link></li>
-              <li><Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</Link></li>
-              <li><Link href="/join" className="text-muted-foreground hover:text-foreground transition-colors">Model Application</Link></li>
-              <li><Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
-              <li><Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link></li>
+            <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Information</p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                ['/faq', 'FAQ'],
+                ['/contact', 'Contact'],
+                ['/join', 'Model Application'],
+                ['/terms', 'Terms of Service'],
+                ['/privacy', 'Privacy Policy'],
+              ].map(([href, label]) => (
+                <li key={href}>
+                  <Link href={href} style={{ fontSize: 13, color: '#4a4540', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#ddd5c8')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#4a4540')}>
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Contact */}
           <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>London, United Kingdom</li>
-              <li>Available 24/7</li>
-              <li><a href="https://t.me/virel_bookings" className="hover:text-foreground transition-colors">Telegram</a></li>
-              <li><a href="mailto:bookings@virel.com" className="hover:text-foreground transition-colors">bookings@virel.com</a></li>
+            <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Contact</p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {['London, United Kingdom', 'Available 24/7', 'Discreet & Confidential'].map(item => (
+                <li key={item} style={{ fontSize: 13, color: '#4a4540' }}>{item}</li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>&copy; {currentYear} Virel. All rights reserved. · Adults only (18+)</p>
+        {/* Bottom bar */}
+        <div style={{ paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>
+            © {currentYear} Virel. All rights reserved.
+          </p>
+          <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>
+            Adults only (18+)
+          </p>
         </div>
       </div>
     </footer>
