@@ -174,7 +174,7 @@ export default async function HomePage() {
         </div>
 
         {/* ── FEATURED COMPANIONS ── */}
-        <div style={{ padding: '100px 0 0' }}>
+        <div style={{ padding: '0' }}>
           <div className="section" style={{ paddingBottom: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
