@@ -68,11 +68,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Link services — lookup by slug from DB
+    // Link services — lookup by code via raw SQL
     if (body.services && body.services.length > 0) {
-      const dbServices = await prisma.service.findMany({
-        where: { code: { in: body.services } }
-      })
+      const dbServices = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM services WHERE code = ANY(${body.services}::text[])
+      `
       for (const svc of dbServices) {
         try {
           await prisma.$executeRaw`
