@@ -4,86 +4,77 @@ import { useState } from 'react'
 
 const faqs = [
   {
-    question: 'How do I make a booking?',
-    answer: 'Browse our companions, select your preferred companion, and click the "Book Now" button on their profile. Fill in the booking form with your details, preferred date and time. You\'ll receive confirmation within minutes via email or phone.',
+    question: 'How do I book a meeting?',
+    answer: 'Booking with us is a straightforward and discreet process. You can initiate a booking by filling out the secure form on our website or by calling our client management team directly. The form is available 24/7. For a more immediate response, a phone call is often the most efficient method. Once your request is received, we begin coordinating with your chosen companion to confirm availability for your preferred time and location.',
   },
   {
-    question: 'Are all photos verified and authentic?',
-    answer: 'Yes, absolutely. All photos on our platform are 100% verified and authentic. We take verification seriously to ensure transparency and trust. Every companion profile displays only genuine, recent photos.',
-  },
-  {
-    question: 'What areas do you serve in London?',
-    answer: 'We provide services across all premium London districts including Mayfair, Kensington, Knightsbridge, Chelsea, Belgravia, Marylebone, Westminster, Notting Hill, Soho, Covent Garden, Canary Wharf, and City of London.',
-  },
-  {
-    question: 'Is the service discreet and confidential?',
-    answer: 'Your privacy is our absolute priority. All bookings are handled with complete discretion and confidentiality. We never share client information and all communication is encrypted and secure.',
+    question: 'Are the photos on the website genuine?',
+    answer: 'Authenticity is a cornerstone of our agency\'s reputation. All companions undergo a verification process, and we require that their portfolio images are recent and accurately represent their current appearance. Our aim is for you to make your choice with confidence, assured that the person who arrives is the same individual presented on our website.',
   },
   {
     question: 'What payment methods do you accept?',
-    answer: 'We accept cash, bank transfers, and major credit cards. All transactions are processed securely. Payment details are required at booking confirmation.',
+    answer: 'Our primary method of payment is cash, paid directly to the companion at the beginning of your meeting. We accept British Pounds (GBP), and some companions may also accept Euros or US Dollars — confirm at the time of booking. For deposits, we facilitate secure bank transfers. We do not process credit card payments for the final balance to protect your financial privacy.',
   },
   {
-    question: 'Can I cancel or reschedule my booking?',
-    answer: 'Yes, you can cancel or reschedule up to 24 hours before your booking without penalty. Cancellations made less than 24 hours before are subject to a 50% fee. Please contact us as soon as possible if you need to make changes.',
+    question: 'Is the service discreet and confidential?',
+    answer: 'Protecting your privacy is a fundamental principle of our agency. We collect only the essential information required to arrange your booking, stored on encrypted systems with strictly limited access. We do not share your information with any third parties, and we have a strict no-marketing policy — your contact details are used solely for operational communication related to your booking.',
+  },
+  {
+    question: 'What happens if I need to cancel or reschedule?',
+    answer: 'We ask that you provide as much notice as possible. For cancellations with more than 24 hours\' notice, there is generally no financial penalty. For cancellations with less notice, a fee may be applicable to compensate the companion for time reserved. In the rare event that we or the companion must cancel, you will be notified immediately and any deposit refunded in full.',
+  },
+  {
+    question: 'How long do you keep my booking data?',
+    answer: 'Our data retention policy is guided by minimalism. We keep booking details only for as long as necessary — typically 72 hours after the appointment, after which all personally identifiable information is permanently deleted. We do not maintain a long-term database of client information. Your association with our agency is not stored indefinitely.',
   },
 ]
 
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
-  // JSON-LD Schema for FAQ
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    'mainEntity': faqs.map(faq => ({
+    mainEntity: faqs.map(faq => ({
       '@type': 'Question',
-      'name': faq.question,
-      'acceptedAnswer': {
-        '@type': 'Answer',
-        'text': faq.answer,
-      },
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
     })),
   }
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-      
-      <div className="space-y-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {faqs.map((faq, index) => (
           <div
             key={index}
-            className="border border-border rounded-lg overflow-hidden"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
           >
             <button
-              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
+              style={{
+                width: '100%', padding: '22px 0', display: 'flex',
+                justifyContent: 'space-between', alignItems: 'center',
+                gap: 24, background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', color: '#ddd5c8', fontSize: 15,
+              }}
               onClick={() => setOpenIndex(openIndex === index ? null : index)}
             >
-              <span className="font-semibold">{faq.question}</span>
-              <svg
-                className={`w-5 h-5 transition-transform ${
-                  openIndex === index ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <span>{faq.question}</span>
+              <span style={{
+                color: '#c9a84c', fontSize: 20, fontWeight: 300, flexShrink: 0,
+                transition: 'transform .25s',
+                transform: openIndex === index ? 'rotate(45deg)' : 'none',
+                lineHeight: 1,
+              }}>+</span>
             </button>
             {openIndex === index && (
-              <div className="px-6 pb-4 text-muted-foreground">
+              <p style={{
+                padding: '0 32px 22px 0', fontSize: 13,
+                color: '#6b6560', lineHeight: 2.1, margin: 0,
+              }}>
                 {faq.answer}
-              </div>
+              </p>
             )}
           </div>
         ))}
