@@ -26,35 +26,58 @@ function readTextFile(file: File): Promise<string> {
   })
 }
 
-function parseAnketa(text: string): Record<string, any> {
-  const find = (keys: string[]) => {
-    for (const key of keys) {
-      // match "key: value" or "key value" patterns
-      const re = new RegExp(`(?:^|\\n)\\s*${key}\\s*[:\\-]?\\s*([^\\n\\r]+)`, 'im')
-      const m = text.match(re)
-      if (m && m[1].trim()) return m[1].trim()
-    }
-    return ''
+async function parseAnketaWithAI(text: string): Promise<Record<string, any>> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{
+        role: 'user',
+        content: `Extract escort profile data from this anketa/application text. The text may be in any language (English, Russian, etc.) and any format.
+
+Return ONLY a valid JSON object with these exact keys (use null if not found):
+{
+  "name": string,
+  "age": string,
+  "nationality": string,
+  "height": string,
+  "weight": string,
+  "breastSize": string,
+  "dressSizeUK": string,
+  "eyesColour": string,
+  "hairColour": string,
+  "languages": string,
+  "addressPostcode": string,
+  "addressStreet": string,
+  "tubeStation": string,
+  "rate30min": string,
+  "rate1hIn": string,
+  "rate1hOut": string,
+  "rate90minIn": string,
+  "rate90minOut": string,
+  "rate2hIn": string,
+  "rate2hOut": string,
+  "rateOvernight": string,
+  "smokingStatus": string,
+  "tattooStatus": string,
+  "orientation": string
+}
+
+Anketa text:
+${text.slice(0, 3000)}`
+      }]
+    })
+  })
+  const data = await res.json()
+  const raw = (data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim()
+  const parsed = JSON.parse(raw)
+  const clean: Record<string, any> = { notesInternal: text.slice(0, 800) }
+  for (const [k, v] of Object.entries(parsed)) {
+    if (v !== null && v !== '' && v !== undefined) clean[k] = String(v)
   }
-  return {
-    name:          find(['name', 'имя', 'working name', 'stage name', 'nickname']),
-    age:           find(['age', 'возраст']),
-    nationality:   find(['nationality', 'национальность', 'country', 'страна']),
-    height:        find(['height', 'рост', 'height cm']),
-    weight:        find(['weight', 'вес', 'weight kg']),
-    breastSize:    find(['bust', 'breast', 'bra', 'грудь', 'bra size']),
-    dressSizeUK:   find(['dress', 'dress size', 'size uk', 'uk size', 'размер одежды']),
-    eyesColour:    find(['eyes', 'eye colour', 'eye color', 'глаза', 'цвет глаз']),
-    hairColour:    find(['hair', 'hair colour', 'hair color', 'волосы', 'цвет волос']),
-    languages:     find(['languages', 'language', 'speaks', 'язык', 'языки']),
-    addressPostcode: find(['postcode', 'post code', 'zip', 'postal', 'индекс']),
-    tubeStation:   find(['tube', 'nearest tube', 'station', 'метро', 'ближайшее метро']),
-    rate1hIn:      find(['1h incall', '1 hour incall', '1hr incall', '60 min incall', '1 час incall', 'incall 1h', 'in 1h']),
-    rate1hOut:     find(['1h outcall', '1 hour outcall', '1hr outcall', '60 min outcall', 'outcall 1h', 'out 1h']),
-    rate30min:     find(['30 min', '30min', '30 minutes', 'half hour']),
-    rateOvernight: find(['overnight', 'ночь', 'на ночь']),
-    notesInternal: text.slice(0, 800),
-  }
+  return clean
 }
 
 export default function QuickUploadPage() {
@@ -68,6 +91,7 @@ export default function QuickUploadPage() {
   const [progress, setProgress] = useState<string[]>([])
   const [doneUrl, setDoneUrl] = useState('')
   const [aiSorting, setAiSorting] = useState(false)
+  const [aiParsing, setAiParsing] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,11 +109,14 @@ export default function QuickUploadPage() {
       } else if (f.type === 'text/plain' || f.name.endsWith('.txt') || f.type === '') {
         try {
           const text = await readTextFile(f)
-          const parsed = parseAnketa(text)
           setAnketaText(text)
+          setAiParsing(true)
+          setStage('preview')
+          const parsed = await parseAnketaWithAI(text)
           setParsedForm(parsed)
           if (parsed.name) setManualName(parsed.name)
-        } catch {}
+          setAiParsing(false)
+        } catch { setAiParsing(false) }
       }
     }))
 
@@ -283,7 +310,12 @@ export default function QuickUploadPage() {
           )}
 
           {/* Anketa parsed preview */}
-          {Object.values(parsedForm).some(v => v && typeof v === 'string' && v.length > 0) && (
+          {aiParsing && (
+            <div style={{ background: '#1a1a2e', border: '1px solid #6366f1', borderRadius: 10, padding: 14, marginBottom: 20 }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#a5b4fc' }}>✨ AI reading anketa...</p>
+            </div>
+          )}
+          {!aiParsing && Object.values(parsedForm).some(v => v && typeof v === 'string' && v.length > 0) && (
             <div style={{ background: '#1a2e1a', border: '1px solid #166534', borderRadius: 10, padding: 14, marginBottom: 20 }}>
               <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 12, color: '#4ade80' }}>✅ Parsed from anketa</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 4 }}>
