@@ -141,98 +141,124 @@ export default async function DistrictPage({ params }: Props) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
-      <main className="min-h-screen">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        .dst-root { font-family:'DM Sans',sans-serif; background:#080808; color:#ddd5c8; min-height:100vh; }
+        .model-card { text-decoration:none; display:block; overflow:hidden; position:relative; }
+        .model-card img { width:100%; aspect-ratio:3/4; object-fit:cover; transition:transform .6s; }
+        .model-card:hover img { transform:scale(1.04); }
+        .model-card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%); }
+        .model-card-info { position:absolute; bottom:0; padding:20px; }
+        .faq-item summary { list-style:none; cursor:pointer; padding:20px 24px; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#ddd5c8; }
+        .faq-item summary::-webkit-details-marker { display:none; }
+        .faq-item[open] summary { color:#c9a84c; }
+        .faq-item summary .arr { transition:transform .25s; font-size:10px; color:#6b6560; }
+        .faq-item[open] summary .arr { transform:rotate(180deg); }
+        .dist-link { display:block; padding:14px 16px; border:1px solid rgba(255,255,255,0.07); font-size:12px; color:#6b6560; text-decoration:none; text-align:center; transition:border-color .2s,color .2s; letter-spacing:.04em; }
+        .dist-link:hover { border-color:rgba(201,168,76,0.3); color:#c9a84c; }
+        .book-btn { display:inline-block; background:#c9a84c; color:#080808; padding:16px 36px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; text-decoration:none; font-weight:500; transition:background .2s; }
+        .book-btn:hover { background:#e0be6a; }
+        @media(max-width:600px){ .dst-hero,.dst-body{padding-left:20px!important;padding-right:20px!important;} }
+      `}</style>
+
+      <div className="dst-root">
         <Header />
 
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          <nav className="text-sm text-muted-foreground mb-6 flex gap-2">
-            <Link href="/" className="hover:text-accent">Home</Link>
-            <span>/</span>
-            <Link href="/london-escorts" className="hover:text-accent">London Escorts</Link>
-            <span>/</span>
-            <span>{districtName}</span>
-          </nav>
+        {/* Breadcrumb */}
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 40px', fontSize: 11, letterSpacing: '.1em', color: '#3a3530', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <Link href="/" style={{ color: '#3a3530', textDecoration: 'none' }}>HOME</Link>
+          <span style={{ margin: '0 12px' }}>—</span>
+          <Link href="/london-escorts" style={{ color: '#3a3530', textDecoration: 'none' }}>COMPANIONS</Link>
+          <span style={{ margin: '0 12px' }}>—</span>
+          <span style={{ color: '#c9a84c' }}>{districtName.toUpperCase()}</span>
+        </div>
 
-          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">{info.h1}</h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mb-12">{info.description}</p>
+        {/* Hero */}
+        <div className="dst-hero" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 40px 64px' }}>
+          <p style={{ fontSize: 10, letterSpacing: '.3em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>London Escorts</p>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(48px,6vw,80px)', fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px', lineHeight: 1.05 }}>
+            {info.h1.replace('Escorts in ', '').replace("Escorts in London's ", "London's ")}<br />
+            <em style={{ fontStyle: 'italic', color: '#c9a84c' }}>Companions</em>
+          </h1>
+          <p style={{ fontSize: 15, color: '#6b6560', maxWidth: 560, lineHeight: 1.8, margin: '0 0 40px' }}>{info.description}</p>
+          <Link href="/london-escorts" className="book-btn">Browse All Companions</Link>
+        </div>
 
-          {models.length > 0 ? (
-            <div className="mb-16">
-              <h2 className="text-2xl font-bold mb-6">Available Companions in {districtName}</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {models.map((model: any) => {
-                  const photo = model.media[0]?.url
-                  return (
-                    <Link key={model.id} href={`/catalog/${model.slug}`}
-                      className="group block bg-muted rounded-xl overflow-hidden hover:shadow-xl transition-all"
-                    >
-                      <div className="relative aspect-[3/4] bg-muted-foreground/10">
-                        {photo
-                          ? <img src={photo} alt={model.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          : <div className="w-full h-full flex items-center justify-center text-4xl">👤</div>
-                        }
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                          <h3 className="text-xl font-semibold">{model.name}</h3>
-                          <p className="text-sm opacity-80">{model.stats?.age && `${model.stats.age} yrs`}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
+        {/* Models grid */}
+        {models.length > 0 && (
+          <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 32 }}>
+              <p style={{ fontSize: 10, letterSpacing: '.25em', color: '#c9a84c', textTransform: 'uppercase', margin: 0 }}>
+                Available in {districtName}
+              </p>
+              <Link href="/london-escorts" style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', textDecoration: 'none', textTransform: 'uppercase' }}>View All →</Link>
             </div>
-          ) : (
-            <div className="mb-16 p-8 bg-muted/50 rounded-xl text-center">
-              <p className="text-muted-foreground mb-4">Browse all available companions in London</p>
-              <Link href="/london-escorts" className="text-primary hover:underline font-medium">View all companions →</Link>
-            </div>
-          )}
-
-          <div className="mb-16 max-w-3xl">
-            {info.content.split('\n\n').map((para: string, i: number) => (
-              <p key={i} className="text-muted-foreground mb-4 leading-relaxed">{para}</p>
-            ))}
-          </div>
-
-          <div className="mb-16">
-            <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
-            <div className="space-y-3 max-w-3xl">
-              {[
-                { q: `How do I book an escort in ${districtName}?`, a: `Browse our available companions, select your preferred escort, and submit a booking request. We'll confirm within 30 minutes.` },
-                { q: `Are escorts in ${districtName} available for outcall?`, a: `Yes, most of our companions offer both incall and outcall services in ${districtName} and surrounding areas.` },
-                { q: `Is the service discreet in ${districtName}?`, a: `Absolutely. All communications and bookings are handled with complete confidentiality. We never share client information.` },
-              ].map((faq, i) => (
-                <details key={i} className="group border border-border rounded-lg">
-                  <summary className="px-6 py-4 cursor-pointer font-medium flex justify-between items-center list-none hover:bg-muted/50 transition-colors">
-                    {faq.q}
-                    <span className="text-muted-foreground group-open:rotate-180 transition-transform">▾</span>
-                  </summary>
-                  <div className="px-6 pb-4 text-muted-foreground">{faq.a}</div>
-                </details>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Escorts in Other London Areas</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {otherDistricts.map(d => {
-                const name = d.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 2, background: 'rgba(255,255,255,0.03)' }}>
+              {models.map((model: any) => {
+                const photo = model.media[0]?.url
                 return (
-                  <Link key={d} href={`/escorts-in-${d}`}
-                    className="p-3 border border-border rounded-lg hover:border-primary transition-colors text-center text-sm font-medium"
-                  >
-                    {name}
+                  <Link key={model.id} href={`/catalog/${model.slug}`} className="model-card">
+                    {photo
+                      ? <img src={photo} alt={model.name} loading="lazy" />
+                      : <div style={{ aspectRatio: '3/4', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>👤</div>
+                    }
+                    <div className="model-card-overlay" />
+                    <div className="model-card-info">
+                      <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 300, color: '#f0e8dc', margin: '0 0 4px' }}>{model.name}</p>
+                      {model.stats?.age && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: 0 }}>{model.stats.age} yrs</p>}
+                    </div>
                   </Link>
                 )
               })}
             </div>
+          </section>
+        )}
+
+        <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,rgba(201,168,76,0.15),transparent)', maxWidth: 1200, margin: '0 auto' }} />
+
+        {/* Content + FAQ */}
+        <div className="dst-body" style={{ maxWidth: 780, margin: '0 auto', padding: '80px 40px' }}>
+          {/* Area description */}
+          <div style={{ marginBottom: 64 }}>
+            {info.content.split('\n\n').map((para: string, i: number) => (
+              <p key={i} style={{ fontSize: 15, color: '#6b6560', lineHeight: 1.9, marginBottom: 20 }}>{para}</p>
+            ))}
+          </div>
+
+          {/* FAQ */}
+          <p style={{ fontSize: 10, letterSpacing: '.25em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 24 }}>FAQ</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'rgba(255,255,255,0.04)' }}>
+            {[
+              { q: `How do I book an escort in ${districtName}?`, a: `Browse our available companions, select your preferred escort, and submit a booking request. We confirm within 30 minutes.` },
+              { q: `Are escorts in ${districtName} available for outcall?`, a: `Yes, most companions offer both incall and outcall in ${districtName} and surrounding areas.` },
+              { q: `Is the service discreet in ${districtName}?`, a: `Absolutely. All communications and bookings are handled with complete confidentiality. We never share client information.` },
+            ].map((faq, i) => (
+              <details key={i} className="faq-item" style={{ background: '#080808' }}>
+                <summary>
+                  <span>{faq.q}</span>
+                  <span className="arr">▾</span>
+                </summary>
+                <p style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.8, margin: 0, padding: '0 24px 20px' }}>{faq.a}</p>
+              </details>
+            ))}
           </div>
         </div>
 
+        {/* Other districts */}
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 100px' }}>
+          <p style={{ fontSize: 10, letterSpacing: '.25em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 24 }}>Other London Areas</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 1, background: 'rgba(255,255,255,0.04)' }}>
+            {otherDistricts.map(d => {
+              const name = d.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+              return (
+                <Link key={d} href={`/escorts-in-${d}`} className="dist-link">{name}</Link>
+              )
+            })}
+          </div>
+        </section>
+
         <Footer />
-      </main>
+      </div>
     </>
   )
 }
