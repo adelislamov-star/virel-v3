@@ -27,67 +27,77 @@ export async function POST(request: NextRequest) {
 
     const text = await extractText(file)
 
+    const EXAMPLE_INPUT = `Name – Sophia
+Age – 24
+Height – 1,67
+Weight – 54
+Dress Size (UK) – 8
+Feet Size (UK size) – 5
+Breast Size – 34C
+Breast Type – Natural
+Eyes Colour – Green
+Hair Colour – Brown
+Smoking – No
+Tattoo – Small
+Piercing – Ears only
+Nationality – Romanian
+Languages – English, Romanian
+Orientation – Bisexual
+*Do you work with couples? – Yes
+*Do you work with women? – Yes
+*Do you accept black clients? – Yes
+*Do you work with disabled clients? – No
+
+ADDRESS:
+34 Baker Street
+Flat 4B
+W1U 6RS
+Tube Station – Baker Street
+
+Airport Outcalls:
+Heathrow – Yes
+Gatwick – No
+Stansted – No
+
+RATES (incall/outcall):
+30 min – £150 / –
+45 min – £200 / –
+1 hour – £250 / £300
+90 min – £350 / £400
+2 hours – £450 / £500
+Extra hour – £200
+Overnight – £1200
+
+SERVICES:
+GFE – Yes
+OWO – Yes
+69 – Yes
+DFK – Yes
+A Level – No
+B2B massage – Yes
+Striptease – Yes
+Toys – Yes`
+
+    const EXAMPLE_OUTPUT = `{"name":"Sophia","age":"24","height":"167","weight":"54","dressSizeUK":"8","feetSizeUK":"5","breastSize":"34C","breastType":"natural","eyesColour":"Green","hairColour":"Brown","smokingStatus":"no","tattooStatus":"small","piercingTypes":"Ears only","nationality":"Romanian","languages":["English","Romanian"],"orientation":"bisexual","workWithCouples":true,"workWithWomen":true,"blackClients":true,"disabledClients":false,"tubeStation":"Baker Street","addressStreet":"34 Baker Street","addressFlat":"4B","addressPostcode":"W1U 6RS","airportHeathrow":true,"airportGatwick":false,"airportStansted":false,"rate30min":"150","rate45min":"200","rate1hIn":"250","rate1hOut":"300","rate90minIn":"350","rate90minOut":"400","rate2hIn":"450","rate2hOut":"500","rateExtraHour":"200","rateOvernight":"1200","services":["GFE","OWO","69","DFK","B2B","STRIPTEASE","TOYS"]}`
+
     const response = await client.messages.create({
       model: 'claude-opus-4-5',
       max_tokens: 2000,
-      messages: [{
-        role: 'user',
-        content: `You are parsing an escort model application form. Read EVERY field in the document and return ONLY valid JSON, no markdown, no explanation.
+      system: `You are an expert data extraction assistant for an escort agency platform. Your only job is to parse application forms and return perfectly structured JSON. You read EVERY field in the document, no matter the language or format. You never skip any field. You return ONLY valid JSON with no markdown, no explanation, no extra text.
 
-Return this exact structure (fill in ALL fields you find, leave unknown as null/false/[]):
-{
-  "name": "",
-  "age": "",
-  "height": "",
-  "weight": "",
-  "dressSizeUK": "",
-  "feetSizeUK": "",
-  "breastSize": "",
-  "breastType": "",
-  "eyesColour": "",
-  "hairColour": "",
-  "smokingStatus": "",
-  "tattooStatus": "",
-  "piercingTypes": "",
-  "nationality": "",
-  "languages": [],
-  "orientation": "",
-  "workWithCouples": false,
-  "workWithWomen": false,
-  "blackClients": true,
-  "disabledClients": true,
-  "tubeStation": "",
-  "addressStreet": "",
-  "addressFlat": "",
-  "addressPostcode": "",
-  "airportHeathrow": false,
-  "airportGatwick": false,
-  "airportStansted": false,
-  "rate30min": "",
-  "rate45min": "",
-  "rate1hIn": "",
-  "rate1hOut": "",
-  "rate90minIn": "",
-  "rate90minOut": "",
-  "rate2hIn": "",
-  "rate2hOut": "",
-  "rateExtraHour": "",
-  "rateOvernight": "",
-  "services": []
-}
-
-Rules:
-- height: always in cm as integer string (e.g. "165", convert "1,65" to "165")
-- age, weight, feetSizeUK: string (e.g. "4.5", "165")
+Field rules:
+- height: integer string in cm (convert "1,67" → "167", "5ft 5" → "165")
+- age, weight: integer string
+- feetSizeUK: string as-is (e.g. "4.5", "5")
 - smokingStatus: "yes" or "no"
 - tattooStatus: "none", "small", "medium", or "large"
-- piercingTypes: "none" or description of piercing locations
+- piercingTypes: "none" or description
 - orientation: "heterosexual" or "bisexual"
 - breastType: "natural" or "silicone"
-- rates: numbers only, no £ sign
-- languages: array of language names e.g. ["English", "Russian"]
-- workWithCouples, workWithWomen, blackClients, disabledClients, airportHeathrow, airportGatwick, airportStansted: true or false
-- services: array of codes from this list only (include if answer is yes/extra, exclude if no):
+- rates: number string, no currency symbols
+- languages: array of strings
+- booleans (workWithCouples, workWithWomen, blackClients, disabledClients, airports): true or false
+- services: ONLY codes from this exact list (yes/extra = include, no = exclude):
   69, FK, DFK, GFE, OWO, OWC, COB, CIF, CIM, SWALLOW, SNOWBALLING, DT, FINGERING,
   A_LEVEL, DP, PSE, PARTY_GIRL, FACE_SITTING, DIRTY_TALK, LADY_SERVICES,
   WS_GIVING, WS_RECEIVING, RIMMING_GIVING, RIMMING_RECEIVING, SMOKING_FETISH,
@@ -95,11 +105,21 @@ Rules:
   LIGHT_DOM, SPANKING_GIVING, SPANKING_SOFT_RECEIVING, DUO, BI_DUO, COUPLES,
   MMF, GROUP, MASSAGE, PROSTATE, PROFESSIONAL_MASSAGE, B2B, EROTIC_MASSAGE,
   LOMILOMI, NURU, SENSUAL, TANTRIC, STRIPTEASE, LAPDANCING, BELLY_DANCE,
-  UNIFORMS, TOYS, STRAP_ON, POPPERS, HANDCUFFS, DOMINATION, FISTING_GIVING, TIE_AND_TEASE
-
-Form text:
-${text}`
-      }]
+  UNIFORMS, TOYS, STRAP_ON, POPPERS, HANDCUFFS, DOMINATION, FISTING_GIVING, TIE_AND_TEASE`,
+      messages: [
+        {
+          role: 'user',
+          content: `Parse this application form and return JSON:\n\n${EXAMPLE_INPUT}`
+        },
+        {
+          role: 'assistant',
+          content: EXAMPLE_OUTPUT
+        },
+        {
+          role: 'user',
+          content: `Parse this application form and return JSON:\n\n${text}`
+        }
+      ]
     })
 
     const raw = response.content[0].type === 'text' ? response.content[0].text : ''
