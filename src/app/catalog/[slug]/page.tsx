@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
-import { DragGallery, ExpToggle } from '@/components/profile/ProfileInteractive'
+import { DragGallery, ExpToggle, RevealInit } from '@/components/profile/ProfileInteractive'
 import { prisma } from '@/lib/db/client'
 
 interface Props { params: { slug: string } }
@@ -256,6 +256,7 @@ export default async function ModelProfilePage({ params }: Props) {
 
       <div className="profile-root">
         <Header />
+        <RevealInit />
 
         {/* ── HERO ── */}
         {primaryPhoto && (

@@ -2,6 +2,32 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+// ── REVEAL INIT — always rendered, sets up scroll animations ──
+export function RevealInit() {
+  useEffect(() => {
+    // Add js-ready so CSS can safely hide .reveal elements
+    document.body.classList.add('js-ready')
+
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
+      { threshold: 0, rootMargin: '0px 0px 60px 0px' }
+    )
+
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    })
+
+    // Hard fallback — if something goes wrong, show everything after 2s
+    const fallback = setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'))
+    }, 2000)
+
+    return () => { observer.disconnect(); clearTimeout(fallback) }
+  }, [])
+
+  return null
+}
+
 // ── DRAG GALLERY ──
 export function DragGallery({ photos, modelName }: { photos: { id: string; url: string }[]; modelName: string }) {
   const trackRef = useRef<HTMLDivElement>(null)
@@ -11,10 +37,10 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
   useEffect(() => {
     const track = trackRef.current
     if (!track) return
-    let isDown = false, startX = 0, scrollLeft = 0, moved = false
+    let isDown = false, startX = 0, scrollLeft = 0
 
     const onDown = (e: MouseEvent) => {
-      isDown = true; moved = false
+      isDown = true
       track.classList.add('grabbing')
       startX = e.pageX - track.offsetLeft
       scrollLeft = track.scrollLeft
@@ -23,7 +49,6 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
     const onMove = (e: MouseEvent) => {
       if (!isDown) return
       e.preventDefault()
-      moved = true
       track.scrollLeft = scrollLeft - (e.pageX - track.offsetLeft - startX) * 1.4
     }
 
@@ -39,26 +64,7 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
     }
   }, [])
 
-  // Scroll reveal + js-ready flag
-  useEffect(() => {
-    // Mark JS as running — CSS will now hide .reveal elements
-    document.body.classList.add('js-ready')
-
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
-      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
-    )
-    // Small delay so browser paints js-ready class before observer fires
-    requestAnimationFrame(() => {
-      document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-    })
-    return () => observer.disconnect()
-  }, [])
-
-  function openLightbox(idx: number) {
-    setLightboxIdx(idx)
-    setLightbox(photos[idx]?.url)
-  }
+  function openLightbox(idx: number) { setLightboxIdx(idx); setLightbox(photos[idx]?.url) }
   function closeLightbox() { setLightbox(null) }
   function prev() { const i = Math.max(0, lightboxIdx - 1); setLightboxIdx(i); setLightbox(photos[i].url) }
   function next() { const i = Math.min(photos.length - 1, lightboxIdx + 1); setLightboxIdx(i); setLightbox(photos[i].url) }
@@ -118,10 +124,7 @@ export function ExpToggle({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <div style={{ display: open ? 'block' : 'none' }}>{children}</div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="exp-more-btn"
-      >
+      <button onClick={() => setOpen(!open)} className="exp-more-btn">
         {open ? 'Show less ←' : 'Show all experiences →'}
       </button>
     </div>
