@@ -97,8 +97,11 @@ Field rules:
 - rates: number string, no currency symbols
 - languages: array of strings
 - booleans (workWithCouples, workWithWomen, blackClients, disabledClients, airports): true or false
-- services: array of objects. Include service if answer is yes/extra, exclude if no.
-  Each object: {"code":"CODE"} or {"code":"CODE","extraPrice":NUMBER} if extra fee mentioned.
+- services: array of objects. Include service if answer is yes/has price, exclude if no/blank.
+  Each object: {"code":"CODE"} or {"code":"CODE","extraPrice":NUMBER} if any price mentioned.
+  Extra price detection — ALL these formats mean extraPrice (extract the number):
+    "Yes Extra £30", "Yes Extra 30/", "Yes £30/", "£30", "30", "Extra 30", "30/"
+  If only "Yes" with no number → no extraPrice. If "No" → exclude service entirely.
   Use ONLY codes from this list:
   69, FK, DFK, GFE, OWO, OWC, COB, CIF, CIM, SWALLOW, SNOWBALLING, DT, FINGERING,
   A_LEVEL, DP, PSE, PARTY_GIRL, FACE_SITTING, DIRTY_TALK, LADY_SERVICES,
