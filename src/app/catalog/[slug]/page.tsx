@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
@@ -361,7 +362,7 @@ export default async function ModelProfilePage({ params }: Props) {
         <section className="hero-split">
           <div className="hero-photo">
             {primaryPhoto
-              ? <img src={primaryPhoto} alt={model.name} />
+              ? <Image fill src={primaryPhoto} alt={model.name} style={{ objectFit: 'cover', objectPosition: 'center 15%' }} sizes="60vw" priority />
               : <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#111,#1a1a1a)' }} />
             }
           </div>
@@ -552,7 +553,7 @@ export default async function ModelProfilePage({ params }: Props) {
                 return (
                   <Link key={sim.id} href={`/catalog/${sim.slug}`} className="sim-card">
                     {simPhoto
-                      ? <img src={simPhoto} alt={sim.name} loading="lazy" />
+                      ? <Image fill src={simPhoto} alt={sim.name} style={{ objectFit: 'cover' }} sizes="33vw" />
                       : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#111', color:'#2a2520', fontSize:40 }}>◈</div>
                     }
                     <div className="sim-overlay" />
