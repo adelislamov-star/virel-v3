@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     for (const rate of rateMap) {
       try {
         await prisma.$executeRaw`
-          INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active, created_at)
+          INSERT INTO model_rates (id, "modelId", duration_type, call_type, price, currency, is_active, created_at)
           VALUES (gen_random_uuid(), ${model.id}, ${rate.duration_type}, ${rate.call_type}, ${Number(rate.price)}, 'GBP', true, now())
         `
       } catch {}
