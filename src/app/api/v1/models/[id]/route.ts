@@ -126,7 +126,7 @@ export async function PATCH(
           ${body.workPreferences.blackClientsWelcome !== false},
           ${body.workPreferences.disabledClientsWelcome !== false}
         )
-        ON CONFLICT (model_id) DO UPDATE SET
+        ON CONFLICT (id) DO UPDATE SET
           work_with_couples = EXCLUDED.work_with_couples,
           work_with_women = EXCLUDED.work_with_women,
           black_clients_welcome = EXCLUDED.black_clients_welcome,
@@ -194,7 +194,7 @@ export async function PATCH(
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true
          )
-         ON CONFLICT (model_id) DO UPDATE SET
+         ON CONFLICT (id) DO UPDATE SET
            street = EXCLUDED.street,
            flat_number = EXCLUDED.flat_number,
            flat_floor = EXCLUDED.flat_floor,

@@ -43,7 +43,10 @@ export async function POST(request: NextRequest) {
         publicCode,
         status: 'active',
         visibility: 'public',
-        notesInternal: body.notesInternal || null,
+        notesInternal: [
+          body.notesInternal,
+          body.feetSizeUK ? `Feet size (UK): ${body.feetSizeUK}` : null,
+        ].filter(Boolean).join('\n') || null,
         primaryLocationId,
         stats: {
           create: {
@@ -120,7 +123,7 @@ export async function POST(request: NextRequest) {
              id, model_id, street, flat_number, post_code, tube_station,
              heathrow_available, gatwick_available, stansted_available, is_active
            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
-           ON CONFLICT (model_id) DO UPDATE SET
+           ON CONFLICT (id) DO UPDATE SET
              street = EXCLUDED.street,
              flat_number = EXCLUDED.flat_number,
              post_code = EXCLUDED.post_code,
@@ -148,7 +151,7 @@ export async function POST(request: NextRequest) {
            id, model_id, work_with_couples, work_with_women,
            black_clients_welcome, disabled_clients_welcome
          ) VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (model_id) DO UPDATE SET
+         ON CONFLICT (id) DO UPDATE SET
            work_with_couples = EXCLUDED.work_with_couples,
            work_with_women = EXCLUDED.work_with_women,
            black_clients_welcome = EXCLUDED.black_clients_welcome,
