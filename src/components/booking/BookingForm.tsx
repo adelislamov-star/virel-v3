@@ -454,7 +454,12 @@ export function BookingForm({ model }: BookingFormProps) {
         onMouseOver={e => { if (canSubmit) (e.target as HTMLButtonElement).style.background = '#d4af6e' }}
         onMouseOut={e => { if (canSubmit) (e.target as HTMLButtonElement).style.background = '#b8965a' }}
       >
-        {loading ? 'Submitting…' : 'Submit Your Request'}
+        {loading
+          ? 'Submitting…'
+          : selectedRate
+            ? `Request Booking — £${Number(selectedRate.price).toLocaleString('en-GB')}`
+            : 'Request Booking'
+        }
       </button>
 
       {/* Assurance row */}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 
 // ── REVEAL INIT — always rendered, sets up scroll animations ──
 export function RevealInit() {
@@ -73,8 +74,8 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
     <>
       <div className="gallery-track" ref={trackRef}>
         {photos.map((photo, idx) => (
-          <div key={photo.id} className="gallery-item" onClick={() => openLightbox(idx)} style={{ cursor: 'zoom-in' }}>
-            <img src={photo.url} alt={modelName} loading="lazy" />
+          <div key={photo.id} className="gallery-item" onClick={() => openLightbox(idx)} style={{ cursor: 'zoom-in', position: 'relative' }}>
+            <Image fill src={photo.url} alt={modelName} style={{ objectFit: 'cover', objectPosition: 'top' }} sizes="300px" />
           </div>
         ))}
       </div>
@@ -92,11 +93,13 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
           {lightboxIdx > 0 && (
             <button onClick={e => { e.stopPropagation(); prev() }} style={navBtn}>‹</button>
           )}
-          <img
+          <Image
             src={lightbox}
             alt={modelName}
+            width={1200}
+            height={1600}
             onClick={e => e.stopPropagation()}
-            style={{ maxHeight: '92vh', maxWidth: '92vw', objectFit: 'contain', cursor: 'default' }}
+            style={{ maxHeight: '92vh', maxWidth: '92vw', objectFit: 'contain', cursor: 'default', width: 'auto', height: 'auto' }}
           />
           {lightboxIdx < photos.length - 1 && (
             <button onClick={e => { e.stopPropagation(); next() }} style={{ ...navBtn, left: 'auto', right: 24 }}>›</button>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface Model {
   id: string
@@ -152,7 +153,7 @@ export function CatalogFilter({ models, totalCount }: Props) {
               return (
                 <Link key={model.id} href={`/catalog/${model.slug}`} className="cf-card">
                   {photo
-                    ? <img src={photo} alt={model.name} loading="lazy" />
+                    ? <Image fill src={photo} alt={model.name} style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 100vw, (max-width: 750px) 50vw, (max-width: 1100px) 33vw, 25vw" />
                     : <div className="cf-placeholder">
                         <span style={{ fontSize: 40, color: '#2a2520', marginBottom: 10 }}>◈</span>
                         <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 11, letterSpacing: '.18em', color: '#2a2520', textTransform: 'uppercase' }}>Photo Coming Soon</span>

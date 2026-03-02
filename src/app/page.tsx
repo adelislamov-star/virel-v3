@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Link from 'next/link'
+import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { prisma } from '@/lib/db/client'
@@ -160,7 +161,7 @@ export default async function HomePage() {
         <section className="hero-split">
           <div className="hero-photo">
             {heroPhoto
-              ? <img src={heroPhoto} alt="Premium London companion" />
+              ? <Image fill src={heroPhoto} alt="Premium London companion" style={{ objectFit: 'cover', objectPosition: 'center 15%' }} sizes="60vw" priority />
               : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #111 0%, #1a1a1a 100%)' }} />
             }
             <div className="hero-photo-overlay" />
@@ -236,7 +237,7 @@ export default async function HomePage() {
               return (
                 <Link key={model.id} href={`/catalog/${model.slug}`} className="f-card">
                   {photo
-                    ? <img src={photo} alt={model.name} loading="lazy" />
+                    ? <Image fill src={photo} alt={model.name} style={{ objectFit: 'cover' }} sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw" />
                     : (
                       <div className="f-card-placeholder">
                         <span style={{ fontSize: 48, color: '#2a2520', marginBottom: 12 }}>◈</span>

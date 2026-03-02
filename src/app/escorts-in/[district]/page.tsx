@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { prisma } from '@/lib/db/client'
@@ -188,7 +189,7 @@ export default async function DistrictPage({ params }: Props) {
                 return (
                   <Link key={model.id} href={`/catalog/${model.slug}`} className="d-card">
                     {photo
-                      ? <img src={photo} alt={model.name} loading="lazy" />
+                      ? <Image fill src={photo} alt={model.name} style={{ objectFit: 'cover' }} sizes="(max-width: 900px) 50vw, 25vw" />
                       : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#111',color:'#2a2520',fontSize:40 }}>◈</div>
                     }
                     <div className="d-card-overlay" />
