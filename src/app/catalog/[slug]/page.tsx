@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
-import { GalleryViewer } from '@/components/profile/GalleryViewer'
+// GalleryViewer kept for lightbox — drag gallery rendered inline
 import { prisma } from '@/lib/db/client'
 
 interface Props { params: { slug: string } }
@@ -22,6 +22,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const RATE_ORDER = ['30min','45min','1hour','90min','2hours','extra_hour','overnight']
+
+const SERVICE_REMAP: Record<string, string> = {
+  'COB (Cum on body)': 'Finishing on body',
+  'OWC (Blow job with condom)': 'Protected oral',
+  'DT (Deep throat)': 'Deep throat',
+  'DFK (Deep French kissing with tongue)': 'Deep French kissing',
+  'FK (French kissing without tongue)': 'French kissing',
+  'GFE': 'Girlfriend Experience',
+  'PSE (Porn Star Experience)': 'Uninhibited experience',
+  'MMF for double price (Male-Male-Female)': 'MMF duo (double rate)',
+  'Bi DUO (lesbian show)': 'Bi duo experience',
+  'Couples (includes Bi services)': 'Couples experience',
+  'DUO (ladies serve client)': 'Duo — ladies serve',
+  'Rimming Receiving (licking anal hole of lady)': 'Rimming receiving',
+  'OWC': 'Protected oral',
+}
 
 export default async function ModelProfilePage({ params }: Props) {
   const model = await prisma.model.findUnique({
@@ -58,26 +74,8 @@ export default async function ModelProfilePage({ params }: Props) {
 
   const primaryPhoto = model.media.find((m: any) => m.isPrimary)?.url || model.media[0]?.url
   const gallery = model.media.filter((m: any) => m.isPublic)
-
   const stats = model.stats
   const lowestPrice = rates.length > 0 ? Math.min(...rates.map((r: any) => Number(r.price))) : null
-
-  // Clean service labels — remove explicit abbreviations
-  const SERVICE_REMAP: Record<string, string> = {
-    'COB (Cum on body)': 'Finishing on body',
-    'OWC (Blow job with condom)': 'Protected oral',
-    'DT (Deep throat)': 'Deep throat',
-    'DFK (Deep French kissing with tongue)': 'Deep French kissing',
-    'FK (French kissing without tongue)': 'French kissing',
-    'GFE': 'Girlfriend Experience',
-    'PSE (Porn Star Experience)': 'Uninhibited experience',
-    'MMF for double price (Male-Male-Female)': 'MMF duo (double rate)',
-    'Bi DUO (lesbian show)': 'Bi duo experience',
-    'Couples (includes Bi services)': 'Couples experience',
-    'DUO (ladies serve client)': 'Duo — ladies serve',
-    'Rimming Receiving (licking anal hole of lady)': 'Rimming receiving',
-    'OWC': 'Protected oral',
-  }
 
   const cleanedServices = services.map((s: any) => ({
     ...s,
@@ -101,7 +99,6 @@ export default async function ModelProfilePage({ params }: Props) {
         '@type': 'Service',
         name: `${model.name} — London Escort`,
         url: `https://virel-v3.vercel.app/catalog/${model.slug}`,
-        description: `${model.name} is a premium verified companion available in London for incall and outcall.`,
         provider: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
         areaServed: { '@type': 'City', name: 'London' },
         ...(lowestPrice ? { offers: { '@type': 'Offer', price: lowestPrice, priceCurrency: 'GBP', availability: 'https://schema.org/InStock' } } : {}),
@@ -121,206 +118,731 @@ export default async function ModelProfilePage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema) }} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
 
-        .profile-root { font-family: 'DM Sans', sans-serif; background: #0a0a0a; color: #e8e0d4; min-height: 100vh; }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+          --gold: #c9a84c;
+          --gold-dim: rgba(201,168,76,0.12);
+          --black: #0a0a0a;
+          --dark: #111111;
+          --card: #161616;
+          --border: rgba(255,255,255,0.07);
+          --text: #e8e0d4;
+          --muted: rgba(232,224,212,0.42);
+        }
+
+        .profile-root {
+          font-family: 'DM Sans', sans-serif;
+          background: var(--black);
+          color: var(--text);
+          min-height: 100vh;
+        }
         .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
-        .gold { color: #c9a84c; }
 
-        .gallery-main { position: relative; width: 100%; height: 85vh; min-height: 600px; overflow: hidden; background: #111; }
-        .gallery-main img { width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: transform 0.8s cubic-bezier(.25,.46,.45,.94); }
-        .gallery-main:hover img { transform: scale(1.03); }
-
-        .tag { display: inline-block; padding: 5px 14px; border: 1px solid rgba(201,168,76,0.2); color: #9a8860; font-size: 12px; letter-spacing: .04em; margin: 3px; transition: all .2s; cursor: default; }
-        .tag:hover { border-color: rgba(201,168,76,0.5); color: #c9a84c; }
-
-        .booking-panel { background: #111; border: 1px solid rgba(255,255,255,0.08); }
-
-        .sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; padding: 16px 20px; background: linear-gradient(to top, rgba(10,10,10,1) 60%, transparent); display: none; }
-        @media (max-width: 1024px) { .sticky-cta { display: block; } }
-
-        .section-label { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #c9a84c; margin-bottom: 20px; }
-
-        .fade-in { animation: fadeUp .6s ease both; }
-        @keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform:none; } }
-
+        /* ── HERO ── */
+        .hero {
+          position: relative;
+          height: 100vh;
+          min-height: 640px;
+          overflow: hidden;
+          display: flex;
+          align-items: flex-end;
+        }
+        .hero-bg {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center top;
+          transition: transform 8s ease;
+        }
+        .hero:hover .hero-bg { transform: scale(1.03); }
+        .hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            to bottom,
+            rgba(10,10,10,0.15) 0%,
+            rgba(10,10,10,0.0) 35%,
+            rgba(10,10,10,0.0) 50%,
+            rgba(10,10,10,0.72) 78%,
+            rgba(10,10,10,1.0) 100%
+          );
+        }
+        .hero-content {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          padding: 0 64px 72px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 40px;
+        }
+        .hero-left { animation: fadeUp .9s ease both; }
+        .hero-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 18px;
+          animation: fadeUp .9s .2s ease both;
+          flex-shrink: 0;
+        }
         .avail-badge {
-          display: inline-flex; align-items: center; gap: 10px;
-          font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #7a7060;
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 10px;
+          letter-spacing: .2em;
+          text-transform: uppercase;
+          color: var(--muted);
+          margin-bottom: 14px;
         }
         .avail-line {
-          display: inline-block; width: 28px; height: 1px; background: #c9a84c; opacity: 0.5;
+          display: inline-block;
+          width: 32px;
+          height: 1px;
+          background: var(--gold);
+          opacity: 0.6;
+        }
+        .hero-name {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(64px, 8vw, 110px);
+          font-weight: 300;
+          color: #fff;
+          margin: 0;
+          line-height: 0.92;
+          letter-spacing: -.01em;
+        }
+        .hero-sub {
+          margin-top: 14px;
+          font-size: 11px;
+          letter-spacing: .14em;
+          color: rgba(255,255,255,0.38);
+          text-transform: uppercase;
+        }
+        .hero-attrs {
+          display: flex;
+          gap: 24px;
+          font-size: 11px;
+          letter-spacing: .1em;
+          color: rgba(255,255,255,0.35);
+        }
+        .hero-attrs span { color: rgba(255,255,255,0.6); }
+        .btn-hero {
+          display: inline-block;
+          padding: 17px 44px;
+          background: var(--gold);
+          color: #080808;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: .22em;
+          text-transform: uppercase;
+          text-decoration: none;
+          border: none;
+          cursor: pointer;
+          transition: background .3s, transform .3s;
+        }
+        .btn-hero:hover { background: #d4b45a; transform: translateY(-2px); }
+        .scroll-hint {
+          position: absolute;
+          bottom: 28px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          font-size: 8px;
+          letter-spacing: .28em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.28);
+          animation: fadeIn 2s 1.2s ease both;
+        }
+        .scroll-line {
+          width: 1px;
+          height: 36px;
+          background: var(--gold);
+          animation: scrollLine 2.2s ease infinite;
+        }
+        @keyframes scrollLine {
+          0%   { transform: scaleY(0); transform-origin: top; }
+          50%  { transform: scaleY(1); transform-origin: top; }
+          51%  { transform: scaleY(1); transform-origin: bottom; }
+          100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+
+        /* ── GALLERY DRAG ── */
+        .gallery-section {
+          padding: 100px 0 100px 64px;
+          overflow: hidden;
+        }
+        .section-label {
+          font-size: 9px;
+          letter-spacing: .3em;
+          text-transform: uppercase;
+          color: var(--gold);
+          margin-bottom: 40px;
+        }
+        .gallery-track {
+          display: flex;
+          gap: 16px;
+          overflow-x: auto;
+          padding-right: 64px;
+          scrollbar-width: none;
+          cursor: grab;
+          -webkit-overflow-scrolling: touch;
+        }
+        .gallery-track::-webkit-scrollbar { display: none; }
+        .gallery-track.grabbing { cursor: grabbing; }
+        .gallery-item {
+          flex-shrink: 0;
+          width: 300px;
+          height: 420px;
+          overflow: hidden;
+          position: relative;
+        }
+        .gallery-item img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top;
+          transition: transform .7s ease;
+          pointer-events: none;
+          display: block;
+        }
+        .gallery-item:hover img { transform: scale(1.05); }
+        .gallery-hint {
+          margin-top: 20px;
+          padding-right: 64px;
+          font-size: 9px;
+          letter-spacing: .18em;
+          color: var(--muted);
+          text-align: right;
+          text-transform: uppercase;
+        }
+
+        /* ── INTRO ── */
+        .intro-section {
+          padding: 0 64px 100px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 80px;
+          align-items: start;
+        }
+        .intro-text {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 24px;
+          font-weight: 300;
+          line-height: 1.65;
+          font-style: italic;
+          color: var(--text);
+          border-left: 1px solid var(--gold);
+          padding-left: 36px;
+          opacity: 0.9;
+        }
+        .intro-attrs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1px;
+          background: var(--border);
+          border: 1px solid var(--border);
+        }
+        .attr-cell {
+          background: var(--dark);
+          padding: 22px 24px;
+        }
+        .attr-lbl {
+          font-size: 8px;
+          letter-spacing: .22em;
+          text-transform: uppercase;
+          color: #5a5450;
+          margin-bottom: 7px;
+        }
+        .attr-val {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 19px;
+          font-weight: 300;
+          color: var(--text);
+        }
+
+        /* ── BOOKING SECTION ── */
+        .booking-outer {
+          padding: 0 64px 100px;
+          display: grid;
+          grid-template-columns: 1fr 400px;
+          gap: 64px;
+          align-items: start;
+        }
+        .booking-left-header {
+          border-bottom: 1px solid var(--border);
+          padding-bottom: 28px;
+          margin-bottom: 0;
+        }
+        .booking-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 48px;
+          font-weight: 300;
+          color: var(--text);
+          margin: 0 0 6px;
+        }
+        .booking-subtitle {
+          font-size: 10px;
+          letter-spacing: .14em;
+          color: var(--muted);
+          text-transform: uppercase;
+        }
+
+        /* ── PANEL ── */
+        .booking-panel {
+          background: var(--dark);
+          border: 1px solid var(--border);
+          padding: 36px 32px;
+          position: sticky;
+          top: 32px;
+        }
+        .panel-name {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 34px;
+          font-weight: 300;
+          margin: 0 0 10px;
+        }
+
+        /* ── EXPERIENCES ── */
+        .exp-section { padding: 0 64px 100px; }
+        .exp-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1px;
+          background: var(--border);
+          border: 1px solid var(--border);
+          margin-top: 40px;
+        }
+        .exp-category {
+          background: var(--dark);
+          padding: 36px 32px;
+        }
+        .exp-cat-title {
+          font-size: 9px;
+          letter-spacing: .25em;
+          text-transform: uppercase;
+          color: var(--gold);
+          margin-bottom: 20px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--border);
+        }
+        .exp-list { list-style: none; padding: 0; margin: 0; }
+        .exp-list li {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 17px;
+          font-weight: 300;
+          color: var(--text);
+          padding: 6px 0;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+          line-height: 1.3;
+        }
+        .exp-list li:last-child { border-bottom: none; }
+        .exp-more-btn {
+          margin-top: 20px;
+          font-size: 9px;
+          letter-spacing: .2em;
+          text-transform: uppercase;
+          color: var(--gold);
+          cursor: pointer;
+          background: none;
+          border: none;
+          font-family: 'DM Sans', sans-serif;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: gap .3s;
+        }
+        .exp-more-btn:hover { gap: 14px; }
+        .exp-hidden { display: none; }
+        .exp-hidden.open { display: block; }
+
+        /* ── ASSURANCE ── */
+        .assurance-section {
+          border-top: 1px solid var(--border);
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1px;
+          background: var(--border);
+        }
+        .assurance-item {
+          background: var(--black);
+          padding: 56px 48px;
+          text-align: center;
+        }
+        .assurance-glyph {
+          font-size: 22px;
+          color: var(--gold);
+          margin-bottom: 20px;
+          display: block;
+        }
+        .assurance-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 22px;
+          font-weight: 300;
+          color: var(--text);
+          margin-bottom: 12px;
+        }
+        .assurance-desc {
+          font-size: 11px;
+          letter-spacing: .06em;
+          line-height: 1.9;
+          color: var(--muted);
+        }
+
+        /* ── BACK ── */
+        .back-link {
+          display: block;
+          text-align: center;
+          padding: 48px;
+          font-size: 10px;
+          letter-spacing: .18em;
+          text-transform: uppercase;
+          color: #5a5450;
+          text-decoration: none;
+          transition: color .2s;
+        }
+        .back-link:hover { color: var(--gold); }
+
+        /* ── STICKY MOBILE CTA ── */
+        .sticky-cta {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 50;
+          padding: 12px 20px 20px;
+          background: linear-gradient(to top, rgba(10,10,10,1) 60%, transparent);
+          display: none;
+        }
+        @media (max-width: 1024px) { .sticky-cta { display: block; } }
+
+        /* ── TAG ── */
+        .tag {
+          display: inline-block;
+          padding: 5px 14px;
+          border: 1px solid rgba(201,168,76,0.2);
+          color: #9a8860;
+          font-size: 12px;
+          letter-spacing: .04em;
+          margin: 3px;
+          transition: all .2s;
+          cursor: default;
+        }
+        .tag:hover { border-color: rgba(201,168,76,0.5); color: var(--gold); }
+
+        /* ── REVEAL ── */
+        .reveal {
+          opacity: 0;
+          transform: translateY(22px);
+          transition: opacity .85s ease, transform .85s ease;
+        }
+        .reveal.visible { opacity: 1; transform: none; }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(28px); }
+          to   { opacity: 1; transform: none; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; } to { opacity: 1; }
+        }
+
+        /* ── MOBILE ── */
+        @media (max-width: 900px) {
+          .hero-content { padding: 0 24px 60px; flex-direction: column; align-items: flex-start; }
+          .hero-right { align-items: flex-start; }
+          .gallery-section { padding: 72px 0 72px 24px; }
+          .gallery-item { width: 240px; height: 340px; }
+          .gallery-hint { padding-right: 24px; }
+          .intro-section { grid-template-columns: 1fr; padding: 0 24px 72px; gap: 48px; }
+          .booking-outer { grid-template-columns: 1fr; padding: 0 24px 72px; }
+          .booking-panel { position: static; }
+          .exp-section { padding: 0 24px 72px; }
+          .exp-grid { grid-template-columns: 1fr; }
+          .assurance-section { grid-template-columns: 1fr; }
+          .assurance-item { padding: 40px 32px; }
         }
       `}</style>
+
+      {/* Scripts for interactivity — gallery drag, reveal, exp toggle */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        document.addEventListener('DOMContentLoaded', function() {
+          // Gallery drag
+          const track = document.getElementById('galleryTrack');
+          if (track) {
+            let isDown = false, startX, scrollLeft;
+            track.addEventListener('mousedown', e => {
+              isDown = true; track.classList.add('grabbing');
+              startX = e.pageX - track.offsetLeft;
+              scrollLeft = track.scrollLeft;
+            });
+            ['mouseleave','mouseup'].forEach(ev => track.addEventListener(ev, () => {
+              isDown = false; track.classList.remove('grabbing');
+            }));
+            track.addEventListener('mousemove', e => {
+              if (!isDown) return;
+              e.preventDefault();
+              track.scrollLeft = scrollLeft - (e.pageX - track.offsetLeft - startX) * 1.4;
+            });
+          }
+
+          // Scroll reveal
+          const observer = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+          }, { threshold: 0.08 });
+          document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+          // Experiences toggle
+          window.toggleExp = function() {
+            const more = document.getElementById('expMore');
+            const btn = document.getElementById('expMoreBtn');
+            if (!more || !btn) return;
+            more.classList.toggle('open');
+            btn.textContent = more.classList.contains('open') ? 'Show less ←' : 'Show all experiences →';
+          };
+        });
+      ` }} />
 
       <div className="profile-root">
         <Header />
 
-        {/* NO breadcrumb — SEO handled via JSON-LD schema only */}
-
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 40px 120px', display: 'grid', gridTemplateColumns: '1fr 420px', gap: 64, alignItems: 'start' }}>
-
-          {/* ── LEFT COLUMN ── */}
-          <div className="fade-in">
-
-            {/* Gallery */}
-            {primaryPhoto ? (
-              <GalleryViewer
-                photos={gallery.map((p: any) => ({ id: p.id, url: p.url }))}
-                modelName={model.name}
-                primaryUrl={primaryPhoto}
-              />
-            ) : (
-              <div className="gallery-main" style={{ marginBottom: 8 }}>
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-                  <div style={{ textAlign: 'center', color: '#333' }}>
-                    <div style={{ fontSize: 60, marginBottom: 16 }}>◈</div>
-                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, letterSpacing: '.15em' }}>PHOTO COMING SOON</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Name overlay */}
-            <div style={{ position: 'relative', marginTop: -120, marginBottom: 72, pointerEvents: 'none' }}>
-              <div style={{ padding: '60px 32px 32px', background: 'linear-gradient(to top, rgba(0,0,0,.88) 0%, transparent 100%)' }}>
-                <div className="avail-badge" style={{ marginBottom: 14 }}>
-                  <span className="avail-line" />
-                  Available in London
-                </div>
-                <h1 className="serif" style={{ fontSize: 56, fontWeight: 300, color: '#fff', margin: 0, lineHeight: 1, letterSpacing: '.01em' }}>
-                  {model.name}
-                </h1>
-                {stats && (
-                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.4)', letterSpacing: '.1em' }}>
-                    {[stats.age && `${stats.age} yrs`, stats.nationality, model.primaryLocation?.name].filter(Boolean).join('  ·  ')}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Profile stats */}
-            {stats && (
-              <div style={{ marginBottom: 72 }}>
-                <p className="section-label">Profile</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0' }}>
-                  {[
-                    ['Age', stats.age ? `${stats.age}` : null],
-                    ['Height', stats.height ? `${stats.height} cm` : null],
-                    ['Weight', stats.weight ? `${stats.weight} kg` : null],
-                    ['Bust', stats.bustSize || null],
-                    ['Hair', stats.hairColour || null],
-                    ['Eyes', stats.eyeColour || null],
-                    ['Nationality', stats.nationality || null],
-                    ['Languages', stats.languages?.length ? stats.languages.join(', ') : null],
-                  ].filter(([, v]) => v).map(([label, value], i) => (
-                    <div key={label as string} style={{
-                      padding: '20px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      borderRight: (i % 3 !== 2) ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      paddingRight: 20,
-                      paddingLeft: i % 3 === 0 ? 0 : 20
-                    }}>
-                      <p style={{ fontSize: 9, letterSpacing: '.18em', color: '#5a5450', marginBottom: 7, textTransform: 'uppercase' }}>{label}</p>
-                      <p style={{ fontSize: 15, fontWeight: 400, color: '#d8d0c4', margin: 0 }}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Experiences — renamed from Services, labels cleaned */}
-            {cleanedServices.length > 0 && (
-              <div style={{ marginBottom: 40 }}>
-                <p className="section-label">Experiences</p>
-                <div style={{ marginTop: -4 }}>
-                  {cleanedServices.map((svc: any) => (
-                    <span key={svc.slug} className="tag">{svc.displayTitle}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Back link — mobile */}
-            <div style={{ marginTop: 48, display: 'none' }} className="mobile-back">
-              <Link href="/london-escorts" style={{ fontSize: 11, letterSpacing: '.12em', color: '#5a5450', textDecoration: 'none', textTransform: 'uppercase' }}>
-                ← All Companions
-              </Link>
-            </div>
-          </div>
-
-          {/* ── RIGHT COLUMN — BOOKING PANEL ── */}
-          <div style={{ position: 'sticky', top: 32 }}>
-            <div className="booking-panel" style={{ padding: '40px 36px' }}>
-
-              {/* Header — no green dot, just name + subtle availability */}
-              <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', paddingBottom: 28, marginBottom: 28 }}>
-                <h2 className="serif" style={{ fontSize: 38, fontWeight: 300, margin: '0 0 10px', letterSpacing: '.01em' }}>{model.name}</h2>
+        {/* ── HERO ── */}
+        {primaryPhoto && (
+          <section className="hero">
+            <div
+              className="hero-bg"
+              style={{ backgroundImage: `url('${primaryPhoto}')` }}
+            />
+            <div className="hero-overlay" />
+            <div className="hero-content">
+              <div className="hero-left">
                 <div className="avail-badge">
                   <span className="avail-line" />
                   Available in London
                 </div>
+                <h1 className="serif hero-name">{model.name}</h1>
+                {stats && (
+                  <p className="hero-sub">
+                    {[stats.age && `${stats.age} yrs`, stats.nationality, 'London'].filter(Boolean).join('  ·  ')}
+                  </p>
+                )}
               </div>
-
-              {/* Quick stats */}
-              {stats && (
-                <div style={{ display: 'flex', gap: 28, marginBottom: 32, paddingBottom: 28, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  {stats.age && (
-                    <div>
-                      <p style={{ fontSize: 9, letterSpacing: '.18em', color: '#5a5450', marginBottom: 5 }}>AGE</p>
-                      <p style={{ fontSize: 16, color: '#e8e0d4', margin: 0 }}>{stats.age}</p>
-                    </div>
-                  )}
-                  {stats.height && (
-                    <div>
-                      <p style={{ fontSize: 9, letterSpacing: '.18em', color: '#5a5450', marginBottom: 5 }}>HEIGHT</p>
-                      <p style={{ fontSize: 16, color: '#e8e0d4', margin: 0 }}>{stats.height} cm</p>
-                    </div>
-                  )}
-                  {stats.bustSize && (
-                    <div>
-                      <p style={{ fontSize: 9, letterSpacing: '.18em', color: '#5a5450', marginBottom: 5 }}>BUST</p>
-                      <p style={{ fontSize: 16, color: '#e8e0d4', margin: 0 }}>{stats.bustSize}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Booking form */}
-              <BookingForm model={{ id: model.id, name: model.name, rates }} />
-
-              {/* Trust signals */}
-              <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                {[
-                  ['◈', 'Confirmed within 30 minutes'],
-                  ['◉', '100% discreet & confidential'],
-                  ['✦', 'Verified authentic profile'],
-                ].map(([icon, text]) => (
-                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0' }}>
-                    <span style={{ fontSize: 11, color: '#c9a84c', flexShrink: 0 }}>{icon}</span>
-                    <span style={{ fontSize: 12, color: '#5a5450', letterSpacing: '.04em' }}>{text}</span>
+              <div className="hero-right">
+                {stats && (
+                  <div className="hero-attrs">
+                    {stats.height && <span>{stats.height} cm</span>}
+                    {stats.bustSize && <span>{stats.bustSize}</span>}
+                    {stats.hairColour && <span>{stats.hairColour} hair</span>}
                   </div>
-                ))}
+                )}
+                <a href="#booking" className="btn-hero">Arrange a Meeting</a>
               </div>
             </div>
+            <div className="scroll-hint">
+              <div className="scroll-line" />
+              Discover
+            </div>
+          </section>
+        )}
 
-            {/* Back link — desktop */}
-            <div style={{ marginTop: 20, textAlign: 'center' }}>
-              <Link href="/london-escorts" style={{ fontSize: 11, letterSpacing: '.12em', color: '#5a5450', textDecoration: 'none', textTransform: 'uppercase' }}>
-                ← All Companions
-              </Link>
+        {/* ── DRAG GALLERY ── */}
+        {gallery.length > 1 && (
+          <section className="gallery-section reveal">
+            <p className="section-label">Portfolio</p>
+            <div className="gallery-track" id="galleryTrack">
+              {gallery.map((photo: any) => (
+                <div key={photo.id} className="gallery-item">
+                  <img src={photo.url} alt={model.name} loading="lazy" />
+                </div>
+              ))}
+            </div>
+            <p className="gallery-hint">{gallery.length} photographs &nbsp;·&nbsp; Drag to explore</p>
+          </section>
+        )}
+
+        {/* ── INTRO + PROFILE ATTRS ── */}
+        {stats && (
+          <section className="intro-section reveal">
+            <div className="intro-text">
+              {model.name} brings a rare combination of warmth and sophistication
+              to every encounter. Fluent in English
+              {stats.languages?.includes('Portuguese') ? ' and Portuguese' : ''},
+              she creates an atmosphere of genuine connection where every detail
+              is attended to with complete discretion and care.
+            </div>
+            <div className="intro-attrs">
+              {[
+                ['Age', stats.age ? `${stats.age}` : null],
+                ['Height', stats.height ? `${stats.height} cm` : null],
+                ['Figure', stats.weight ? `${stats.weight} kg · ${stats.bustSize || ''}` : stats.bustSize || null],
+                ['Hair · Eyes', [stats.hairColour, stats.eyeColour].filter(Boolean).join(' · ') || null],
+                ['Nationality', stats.nationality || null],
+                ['Languages', stats.languages?.length ? stats.languages.join(', ') : null],
+              ].filter(([, v]) => v).map(([label, value]) => (
+                <div key={label as string} className="attr-cell">
+                  <p className="attr-lbl">{label}</p>
+                  <p className="attr-val">{value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── BOOKING ── */}
+        <section className="booking-outer reveal" id="booking">
+          {/* Left: heading only */}
+          <div>
+            <div className="booking-left-header">
+              <h2 className="serif booking-title">Arrange a Meeting</h2>
+              <p className="booking-subtitle">Confirmation within 30 minutes</p>
             </div>
           </div>
-        </div>
+
+          {/* Right: panel */}
+          <div className="booking-panel">
+            <h3 className="serif panel-name">{model.name}</h3>
+            <div className="avail-badge" style={{ marginBottom: 24 }}>
+              <span className="avail-line" />
+              Available in London
+            </div>
+
+            {stats && (
+              <div style={{ display: 'flex', gap: 24, marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                {stats.age && (
+                  <div>
+                    <p style={{ fontSize: 8, letterSpacing: '.2em', color: '#5a5450', marginBottom: 4, textTransform: 'uppercase' }}>Age</p>
+                    <p style={{ fontSize: 15, color: 'var(--text)', margin: 0 }}>{stats.age}</p>
+                  </div>
+                )}
+                {stats.height && (
+                  <div>
+                    <p style={{ fontSize: 8, letterSpacing: '.2em', color: '#5a5450', marginBottom: 4, textTransform: 'uppercase' }}>Height</p>
+                    <p style={{ fontSize: 15, color: 'var(--text)', margin: 0 }}>{stats.height} cm</p>
+                  </div>
+                )}
+                {stats.bustSize && (
+                  <div>
+                    <p style={{ fontSize: 8, letterSpacing: '.2em', color: '#5a5450', marginBottom: 4, textTransform: 'uppercase' }}>Bust</p>
+                    <p style={{ fontSize: 15, color: 'var(--text)', margin: 0 }}>{stats.bustSize}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <BookingForm model={{ id: model.id, name: model.name, rates }} />
+
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              {[
+                ['◈', 'Confirmed within 30 minutes'],
+                ['◉', '100% discreet & confidential'],
+                ['✦', 'Verified authentic profile'],
+              ].map(([icon, text]) => (
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '9px 0' }}>
+                  <span style={{ fontSize: 11, color: 'var(--gold)', flexShrink: 0 }}>{icon}</span>
+                  <span style={{ fontSize: 11, color: '#5a5450', letterSpacing: '.04em' }}>{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── EXPERIENCES ── */}
+        {cleanedServices.length > 0 && (
+          <section className="exp-section reveal">
+            <p className="section-label">Experiences</p>
+            <div className="exp-grid">
+
+              {/* Connection */}
+              <div className="exp-category">
+                <p className="exp-cat-title">Connection</p>
+                <ul className="exp-list">
+                  {cleanedServices
+                    .filter((s: any) => ['Girlfriend Experience','Deep French kissing','French kissing','Dirty Talk','Roleplay'].includes(s.displayTitle))
+                    .map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)
+                  }
+                </ul>
+              </div>
+
+              {/* Touch */}
+              <div className="exp-category">
+                <p className="exp-cat-title">Touch & Wellness</p>
+                <ul className="exp-list">
+                  {cleanedServices
+                    .filter((s: any) => ['Body to Body Massage','Erotic Massage','Massage','Lapdancing','Striptease','Face Sitting','Foot Fetish'].includes(s.displayTitle))
+                    .map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)
+                  }
+                </ul>
+              </div>
+
+              {/* Specialities */}
+              <div className="exp-category">
+                <p className="exp-cat-title">Specialities</p>
+                <ul className="exp-list">
+                  {cleanedServices
+                    .filter((s: any) => ['Uninhibited experience','Tie and Tease','Light Domination','Smoking Fetish','Toys'].includes(s.displayTitle))
+                    .map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)
+                  }
+                </ul>
+                {/* Hidden extras */}
+                <div className="exp-hidden" id="expMore">
+                  <ul className="exp-list" style={{ marginTop: 0 }}>
+                    {cleanedServices
+                      .filter((s: any) => !['Girlfriend Experience','Deep French kissing','French kissing','Dirty Talk','Roleplay','Body to Body Massage','Erotic Massage','Massage','Lapdancing','Striptease','Face Sitting','Foot Fetish','Uninhibited experience','Tie and Tease','Light Domination','Smoking Fetish','Toys'].includes(s.displayTitle))
+                      .map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)
+                    }
+                  </ul>
+                </div>
+                <button className="exp-more-btn" id="expMoreBtn" onClick={() => (window as any).toggleExp?.()}>
+                  Show all experiences →
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── ASSURANCE ── */}
+        <section className="assurance-section reveal">
+          <div className="assurance-item">
+            <span className="assurance-glyph">◈</span>
+            <div className="assurance-title">Absolute Discretion</div>
+            <p className="assurance-desc">Your privacy is our highest priority. All enquiries and arrangements remain strictly confidential.</p>
+          </div>
+          <div className="assurance-item">
+            <span className="assurance-glyph">◉</span>
+            <div className="assurance-title">Verified Authentic</div>
+            <p className="assurance-desc">Every profile on Virel is personally verified. The photographs and information you see are genuine.</p>
+          </div>
+          <div className="assurance-item">
+            <span className="assurance-glyph">✦</span>
+            <div className="assurance-title">30-Minute Response</div>
+            <p className="assurance-desc">All enquiries are acknowledged within 30 minutes. We respect your time as much as your privacy.</p>
+          </div>
+        </section>
+
+        <Link href="/london-escorts" className="back-link reveal">← All Companions</Link>
 
         {/* ── STICKY MOBILE CTA ── */}
         <div className="sticky-cta">
           <a href="#booking" style={{
-            display: 'block', background: '#c9a84c', color: '#0a0a0a',
-            textAlign: 'center', padding: '16px',
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
-            fontSize: 13, letterSpacing: '.1em',
-            textDecoration: 'none', textTransform: 'uppercase'
+            display: 'block',
+            background: 'var(--gold)',
+            color: '#080808',
+            textAlign: 'center',
+            padding: '16px',
+            fontFamily: 'DM Sans, sans-serif',
+            fontWeight: 500,
+            fontSize: 12,
+            letterSpacing: '.12em',
+            textDecoration: 'none',
+            textTransform: 'uppercase',
           }}>
             Arrange a Meeting with {model.name}
           </a>
