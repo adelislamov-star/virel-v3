@@ -27,7 +27,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Companions */}
+          {/* Companions & Districts */}
           <div>
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Companions</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -37,6 +37,11 @@ export function Footer() {
                 ['/escorts-in/kensington', 'Escorts in Kensington'],
                 ['/escorts-in/knightsbridge', 'Escorts in Knightsbridge'],
                 ['/escorts-in/chelsea', 'Escorts in Chelsea'],
+                ['/escorts-in/belgravia', 'Escorts in Belgravia'],
+                ['/escorts-in/marylebone', 'Escorts in Marylebone'],
+                ['/escorts-in/westminster', 'Escorts in Westminster'],
+                ['/escorts-in/soho', 'Escorts in Soho'],
+                ['/escorts-in/canary-wharf', 'Escorts in Canary Wharf'],
               ].map(([href, label]) => (
                 <li key={href}><Link href={href} className="f-link">{label}</Link></li>
               ))}
