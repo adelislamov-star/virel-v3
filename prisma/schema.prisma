@@ -164,7 +164,7 @@ model ModelStats {
   height          Int?
   weight          Int?
   dressSize       String?
-  feetSize        String?
+  feetSize        String?  @map("feet_size")
   bustSize        String?
   bustType        String?
   hairColour      String?
