@@ -164,6 +164,7 @@ model ModelStats {
   height          Int?
   weight          Int?
   dressSize       String?
+  feetSize        String?
   bustSize        String?
   bustType        String?
   hairColour      String?

@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
             height: body.height ? Number(body.height) : null,
             weight: body.weight ? Number(body.weight) : null,
             dressSize: body.dressSizeUK || null,
+            feetSize: body.feetSizeUK || null,
             bustSize: body.breastSize || null,
             bustType: body.breastType || null,
             eyeColour: body.eyesColour || null,
