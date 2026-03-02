@@ -84,12 +84,11 @@ Rules:
   69, FK, DFK, GFE, OWO, OWC, COB, CIF, CIM, SWALLOW, SNOWBALLING, DT, FINGERING,
   A_LEVEL, DP, PSE, PARTY_GIRL, FACE_SITTING, DIRTY_TALK, LADY_SERVICES,
   WS_GIVING, WS_RECEIVING, RIMMING_GIVING, RIMMING_RECEIVING, SMOKING_FETISH,
-  ROLEPLAY, FILMING_MASK, FILMING_NO_MASK, FOOT_FETISH, SQUIRTING, OPEN_MINDED,
+  ROLEPLAY, FILMING_MASK, FILMING_NO_MASK, FOOT_FETISH, OPEN_MINDED,
   LIGHT_DOM, SPANKING_GIVING, SPANKING_SOFT_RECEIVING, DUO, BI_DUO, COUPLES,
-  MMF, GROUP, MASSAGE, PROSTATE, PROFESSIONAL_MASSAGE, BODY_TO_BODY, EROTIC_MASSAGE,
+  MMF, GROUP, MASSAGE, PROSTATE, PROFESSIONAL_MASSAGE, B2B, EROTIC_MASSAGE,
   LOMILOMI, NURU, SENSUAL, TANTRIC, STRIPTEASE, LAPDANCING, BELLY_DANCE,
-  UNIFORMS, TOYS, STRAP_ON, POPPERS, HANDCUFFS, DOMINATION, FISTING_GIVING,
-  FISTING_RECEIVING, TIE_AND_TEASE
+  UNIFORMS, TOYS, STRAP_ON, POPPERS, HANDCUFFS, DOMINATION, FISTING_GIVING, TIE_AND_TEASE
 
 Form text:
 ${text}`
@@ -97,8 +96,16 @@ ${text}`
     })
 
     const raw = response.content[0].type === 'text' ? response.content[0].text : ''
-    const clean = raw.replace(/```json|```/g, '').trim()
-    const fields = JSON.parse(clean)
+    const clean = raw.replace(/```json\n?|```/g, '').trim()
+
+    let fields: Record<string, any>
+    try {
+      fields = JSON.parse(clean)
+    } catch {
+      const match = clean.match(/\{[\s\S]*\}/)
+      if (!match) return NextResponse.json({ success: false, error: 'AI returned invalid JSON' }, { status: 500 })
+      fields = JSON.parse(match[0])
+    }
 
     return NextResponse.json({ success: true, fields })
   } catch (error: any) {

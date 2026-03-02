@@ -159,19 +159,21 @@ export default function QuickUploadPage() {
           body: JSON.stringify({ action: 'presign', modelId, files: sortedPhotos.map(p => ({ name: p.file.name, mimeType: p.file.type || 'image/jpeg' })) })
         })
         const presignData = await presignRes.json()
-        if (!presignData.success) throw new Error('Failed to get upload URLs')
+        if (!presignData.success) throw new Error(`Presign failed: ${presignData.error || presignRes.status}`)
 
-        log(`📤 Uploading ${sortedPhotos.length} photos in parallel...`)
+        log(`📤 Uploading ${sortedPhotos.length} photos...`)
         const results = await Promise.allSettled(
           sortedPhotos.map(async (photo, i) => {
             const { presignedUrl, key, finalUrl } = presignData.files[i]
-            await fetch(presignedUrl, { method: 'PUT', body: await photo.file.arrayBuffer(), headers: { 'Content-Type': photo.file.type || 'image/jpeg' } })
+            const r = await fetch(presignedUrl, { method: 'PUT', body: await photo.file.arrayBuffer(), headers: { 'Content-Type': photo.file.type || 'image/jpeg' } })
+            if (!r.ok) throw new Error(`R2 error ${r.status}`)
             return { key, finalUrl, sortOrder: photo.sortOrder, isPrimary: photo.isPrimary }
           })
         )
         const succeeded = results.filter(r => r.status === 'fulfilled').map(r => (r as any).value)
-        const failed = results.filter(r => r.status === 'rejected').length
-        log(`✅ Uploaded ${succeeded.length} photos${failed > 0 ? ` (${failed} failed)` : ''}`)
+        const failed = results.filter(r => r.status === 'rejected')
+        if (failed.length > 0) log(`⚠️ ${failed.length} photos failed: ${(failed[0] as any).reason?.message}`)
+        log(`✅ Uploaded ${succeeded.length}/${sortedPhotos.length} photos`)
 
         log('💾 Saving media...')
         await fetch('/api/admin/quick-upload', {
