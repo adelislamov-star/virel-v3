@@ -135,14 +135,16 @@ export default async function ModelProfilePage({ params }: Props) {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
         :root {
-          --gold: #c9a84c;
-          --gold-dim: rgba(201,168,76,0.1);
+          --gold: #b8965a;
+          --gold-light: #d4af6e;
+          --gold-dim: rgba(184,150,90,0.12);
           --black: #0a0a0a;
           --dark: #111111;
           --card: #161616;
           --border: rgba(255,255,255,0.07);
           --text: #e8e0d4;
-          --muted: rgba(232,224,212,0.4);
+          --white: #f5f0e8;
+          --muted: rgba(232,224,212,0.45);
         }
         .profile-root { font-family:'DM Sans',sans-serif; background:var(--black); color:var(--text); min-height:100vh; }
         .serif { font-family:'Cormorant Garamond',Georgia,serif; }
@@ -157,7 +159,7 @@ export default async function ModelProfilePage({ params }: Props) {
         .hero-right { display:flex; flex-direction:column; align-items:flex-end; gap:18px; animation:fadeUp .9s .2s ease both; flex-shrink:0; }
         .avail-badge { display:inline-flex; align-items:center; gap:12px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
         .avail-line { display:inline-block; width:28px; height:1px; background:var(--gold); opacity:.55; }
-        .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(60px,8vw,108px); font-weight:300; color:#fff; margin:0; line-height:.92; letter-spacing:-.01em; }
+        .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(60px,8vw,108px); font-weight:300; color:#f5f0e8; margin:0; line-height:.92; letter-spacing:-.01em; }
         .hero-sub { margin-top:14px; font-size:11px; letter-spacing:.14em; color:rgba(255,255,255,.35); text-transform:uppercase; }
         .hero-attrs { display:flex; gap:24px; font-size:11px; letter-spacing:.1em; color:rgba(255,255,255,.35); }
         .btn-hero { display:inline-block; padding:17px 44px; background:var(--gold); color:#080808; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; text-decoration:none; border:none; cursor:pointer; transition:background .3s,transform .3s; }
@@ -188,18 +190,15 @@ export default async function ModelProfilePage({ params }: Props) {
         .attr-val { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:300; color:var(--text); }
 
         /* BOOKING */
-        .booking-outer { padding:0 64px 100px; display:grid; grid-template-columns:1fr 400px; gap:64px; align-items:start; }
-        .booking-left-header { border-bottom:1px solid var(--border); padding-bottom:28px; margin-bottom:40px; }
-        .booking-title { font-family:'Cormorant Garamond',serif; font-size:48px; font-weight:300; color:var(--text); margin:0 0 6px; }
-        .booking-subtitle { font-size:10px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; }
-        .booking-left-intro { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; font-style:italic; line-height:1.7; color:var(--text); border-left:1px solid var(--gold); padding-left:28px; margin-bottom:48px; opacity:.85; }
-        .booking-guarantees { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); }
-        .guarantee-item { background:var(--dark); padding:28px 24px; }
-        .guarantee-glyph { font-size:16px; color:var(--gold); margin-bottom:12px; display:block; }
-        .guarantee-title { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:var(--text); margin-bottom:6px; }
-        .guarantee-desc { font-size:11px; letter-spacing:.04em; line-height:1.8; color:#5a5450; }
-        .booking-panel { background:var(--dark); border:1px solid var(--border); padding:36px 32px; position:sticky; top:32px; }
-        .panel-name { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:300; margin:0 0 10px; }
+        .booking-outer { padding:0 80px 140px; }
+        .booking-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:56px; border-bottom:1px solid var(--border); padding-bottom:24px; }
+        .booking-title { font-family:'Cormorant Garamond',serif; font-size:48px; font-weight:300; color:var(--white); margin:0; }
+        .booking-subtitle { font-size:10px; letter-spacing:.15em; color:var(--muted); text-transform:uppercase; }
+        .booking-left-header { display:none; }
+        .booking-left-intro { display:none; }
+        .booking-guarantees { display:none; }
+        .booking-panel { background:transparent; border:none; padding:0; position:static; }
+        .panel-name { display:none; }
 
         /* EXPERIENCES */
         .exp-section { padding:0 64px 100px; }
@@ -248,6 +247,8 @@ export default async function ModelProfilePage({ params }: Props) {
           .intro-section { grid-template-columns:1fr; padding:0 24px 72px; gap:48px; }
           .booking-outer { grid-template-columns:1fr; padding:0 24px 72px; }
           .booking-panel { position:static; }
+          .booking-outer { padding:0 24px 80px; }
+          .booking-header { flex-direction:column; gap:8px; }
           .exp-section { padding:0 24px 72px; }
           .exp-grid { grid-template-columns:1fr; }
           .assurance-section { grid-template-columns:1fr; }
@@ -334,59 +335,13 @@ export default async function ModelProfilePage({ params }: Props) {
 
         {/* ── BOOKING ── */}
         <section className="booking-outer reveal" id="booking">
-          <div>
-            <div className="booking-left-header">
-              <h2 className="serif booking-title">Arrange a Meeting</h2>
-              <p className="booking-subtitle">Confirmation within 30 minutes</p>
-            </div>
-
-            <p className="booking-left-intro">
-              Every arrangement is handled with the utmost care and discretion.
-              Share your preferences below and {model.name} will confirm
-              the details of your meeting within 30 minutes.
-            </p>
-
-            <div className="booking-guarantees">
-              {[
-                ['◈', 'Absolute Privacy', 'No data sharing, no records. Your enquiry remains between you and us.'],
-                ['◉', 'Genuine Profile', 'All photographs are authentic and personally verified by our team.'],
-                ['✦', 'Swift Confirmation', 'A response within 30 minutes, at any hour of the day or night.'],
-                ['◇', 'No Obligation', 'Reaching out carries no commitment. Simply begin a conversation.'],
-              ].map(([icon, title, desc]) => (
-                <div key={title as string} className="guarantee-item">
-                  <span className="guarantee-glyph">{icon}</span>
-                  <div className="guarantee-title">{title}</div>
-                  <p className="guarantee-desc">{desc}</p>
-                </div>
-              ))}
-            </div>
+          <div className="booking-header">
+            <h2 className="serif booking-title">Arrange a Meeting</h2>
+            <div className="booking-subtitle">Confirmation within 30 minutes</div>
           </div>
 
           <div className="booking-panel">
-            <h3 className="serif panel-name">{model.name}</h3>
-            <div className="avail-badge" style={{ marginBottom: 24 }}>
-              <span className="avail-line" />
-              Available in London
-            </div>
-
-            {stats && (
-              <div style={{ display:'flex', gap:24, marginBottom:28, paddingBottom:24, borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
-                {stats.age && <div><p style={{ fontSize:8, letterSpacing:'.2em', color:'#5a5450', marginBottom:4, textTransform:'uppercase' }}>Age</p><p style={{ fontSize:15, color:'var(--text)', margin:0 }}>{stats.age}</p></div>}
-                {stats.height && <div><p style={{ fontSize:8, letterSpacing:'.2em', color:'#5a5450', marginBottom:4, textTransform:'uppercase' }}>Height</p><p style={{ fontSize:15, color:'var(--text)', margin:0 }}>{stats.height} cm</p></div>}
-                {stats.bustSize && <div><p style={{ fontSize:8, letterSpacing:'.2em', color:'#5a5450', marginBottom:4, textTransform:'uppercase' }}>Bust</p><p style={{ fontSize:15, color:'var(--text)', margin:0 }}>{stats.bustSize}</p></div>}
-              </div>
-            )}
-
             <BookingForm model={{ id: model.id, name: model.name, rates }} />
-
-            <div style={{ marginTop:24, paddingTop:20, borderTop:'1px solid rgba(255,255,255,0.06)' }}>
-              {[['◈','Confirmed within 30 minutes'],['◉','100% discreet & confidential'],['✦','Verified authentic profile']].map(([icon, text]) => (
-                <div key={text} style={{ display:'flex', alignItems:'center', gap:10, margin:'9px 0' }}>
-                  <span style={{ fontSize:11, color:'var(--gold)', flexShrink:0 }}>{icon}</span>
-                  <span style={{ fontSize:11, color:'#5a5450', letterSpacing:'.04em' }}>{text}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
