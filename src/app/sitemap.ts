@@ -35,12 +35,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true },
     })
     modelPages = models.map(m => ({
-      url: `${BASE}/catalog/${m.slug}`,
+      url: `${BASE}/companions/${m.slug}`,
       lastModified: m.updatedAt,
       changeFrequency: 'weekly' as const,
       priority: 0.85,
     }))
   } catch (e) {}
 
-  return [...staticPages, ...geoPages, ...modelPages]
+  // Service pages
+  let servicePages: MetadataRoute.Sitemap = []
+  try {
+    const services = await prisma.service.findMany({
+      select: { slug: true },
+    })
+    servicePages = [
+      { url: `${BASE}/services`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7 },
+      ...services.map(s => ({
+        url: `${BASE}/services/${s.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      })),
+    ]
+  } catch (e) {}
+
+  return [...staticPages, ...geoPages, ...modelPages, ...servicePages]
 }

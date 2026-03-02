@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${model.name} — London Companion | Virel`,
     description: `${model.name} is a premium verified companion available in London for incall and outcall. Discreet, sophisticated, available now.`,
-    alternates: { canonical: `https://virel-v3.vercel.app/catalog/${params.slug}` },
+    alternates: { canonical: `https://virel-v3.vercel.app/companions/${params.slug}` },
   }
 }
 
@@ -179,7 +179,7 @@ export default async function ModelProfilePage({ params }: Props) {
       {
         '@type': 'Person',
         name: model.name,
-        url: `https://virel-v3.vercel.app/catalog/${model.slug}`,
+        url: `https://virel-v3.vercel.app/companions/${model.slug}`,
         image: primaryPhoto || undefined,
         description: `${model.name} is a premium verified companion available in London.`,
         jobTitle: 'Companion',
@@ -189,7 +189,7 @@ export default async function ModelProfilePage({ params }: Props) {
       {
         '@type': 'Service',
         name: `${model.name} — London Escort`,
-        url: `https://virel-v3.vercel.app/catalog/${model.slug}`,
+        url: `https://virel-v3.vercel.app/companions/${model.slug}`,
         provider: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
         areaServed: { '@type': 'City', name: 'London' },
         ...(lowestPrice ? { offers: { '@type': 'Offer', price: lowestPrice, priceCurrency: 'GBP', availability: 'https://schema.org/InStock' } } : {}),
@@ -199,7 +199,7 @@ export default async function ModelProfilePage({ params }: Props) {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
           { '@type': 'ListItem', position: 2, name: 'Companions', item: 'https://virel-v3.vercel.app/london-escorts' },
-          { '@type': 'ListItem', position: 3, name: model.name, item: `https://virel-v3.vercel.app/catalog/${model.slug}` },
+          { '@type': 'ListItem', position: 3, name: model.name, item: `https://virel-v3.vercel.app/companions/${model.slug}` },
         ],
       },
     ],
@@ -558,7 +558,7 @@ export default async function ModelProfilePage({ params }: Props) {
                 const simNat = sim.stats?.nationality
                 const simPrice = similarPrices[sim.id]
                 return (
-                  <Link key={sim.id} href={`/catalog/${sim.slug}`} className="sim-card">
+                  <Link key={sim.id} href={`/companions/${sim.slug}`} className="sim-card">
                     {simPhoto
                       ? <Image fill src={simPhoto} alt={sim.name} style={{ objectFit: 'cover' }} sizes="33vw" />
                       : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#111', color:'#2a2520', fontSize:40 }}>◈</div>

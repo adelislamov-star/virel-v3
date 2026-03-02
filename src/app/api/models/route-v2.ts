@@ -213,8 +213,8 @@ export async function PUT(request: NextRequest) {
       // Create 301 redirect
       await prisma.redirect.create({
         data: {
-          fromPath: `/catalog/${existing.slug}`,
-          toPath: `/catalog/${newSlug}`,
+          fromPath: `/companions/${existing.slug}`,
+          toPath: `/companions/${newSlug}`,
           statusCode: 301,
         },
       })

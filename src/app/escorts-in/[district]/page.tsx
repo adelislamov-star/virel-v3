@@ -187,7 +187,7 @@ export default async function DistrictPage({ params }: Props) {
               {models.map((model: any) => {
                 const photo = model.media[0]?.url
                 return (
-                  <Link key={model.id} href={`/catalog/${model.slug}`} className="d-card">
+                  <Link key={model.id} href={`/companions/${model.slug}`} className="d-card">
                     {photo
                       ? <Image fill src={photo} alt={model.name} style={{ objectFit: 'cover' }} sizes="(max-width: 900px) 50vw, 25vw" />
                       : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#111',color:'#2a2520',fontSize:40 }}>◈</div>

@@ -25,7 +25,7 @@ export async function FeaturedModels() {
       {models.map((model: any) => {
         const photo = model.media[0]?.url
         return (
-          <Link key={model.id} href={`/catalog/${model.slug}`}
+          <Link key={model.id} href={`/companions/${model.slug}`}
             className="group relative overflow-hidden rounded-2xl bg-muted aspect-[3/4] block border border-border hover:border-primary transition-colors"
           >
             {photo

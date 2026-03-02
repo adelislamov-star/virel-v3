@@ -65,7 +65,7 @@ export default async function LondonEscortsPage() {
     itemListElement: models.map((m: any, i: number) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: `https://virel-v3.vercel.app/catalog/${m.slug}`,
+      url: `https://virel-v3.vercel.app/companions/${m.slug}`,
       name: m.name,
     })),
   }
