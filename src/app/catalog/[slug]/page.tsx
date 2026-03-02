@@ -149,7 +149,7 @@ export default async function ModelProfilePage({ params }: Props) {
 
         /* HERO */
         .hero { position:relative; height:100vh; min-height:640px; overflow:hidden; display:flex; align-items:flex-end; }
-        .hero-bg { position:absolute; inset:0; background-size:cover; background-position:center top; transition:transform 9s ease; }
+        .hero-bg { position:absolute; inset:0; background-size:cover; background-position:center 15%; transition:transform 9s ease; }
         .hero:hover .hero-bg { transform:scale(1.04); }
         .hero-overlay { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(10,10,10,.15) 0%, rgba(10,10,10,0) 35%, rgba(10,10,10,0) 52%, rgba(10,10,10,.72) 78%, rgba(10,10,10,1) 100%); }
         .hero-content { position:relative; z-index:2; width:100%; padding:0 64px 72px; display:flex; align-items:flex-end; justify-content:space-between; gap:40px; }
@@ -189,9 +189,15 @@ export default async function ModelProfilePage({ params }: Props) {
 
         /* BOOKING */
         .booking-outer { padding:0 64px 100px; display:grid; grid-template-columns:1fr 400px; gap:64px; align-items:start; }
-        .booking-left-header { border-bottom:1px solid var(--border); padding-bottom:28px; }
+        .booking-left-header { border-bottom:1px solid var(--border); padding-bottom:28px; margin-bottom:40px; }
         .booking-title { font-family:'Cormorant Garamond',serif; font-size:48px; font-weight:300; color:var(--text); margin:0 0 6px; }
         .booking-subtitle { font-size:10px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; }
+        .booking-left-intro { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; font-style:italic; line-height:1.7; color:var(--text); border-left:1px solid var(--gold); padding-left:28px; margin-bottom:48px; opacity:.85; }
+        .booking-guarantees { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); }
+        .guarantee-item { background:var(--dark); padding:28px 24px; }
+        .guarantee-glyph { font-size:16px; color:var(--gold); margin-bottom:12px; display:block; }
+        .guarantee-title { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:var(--text); margin-bottom:6px; }
+        .guarantee-desc { font-size:11px; letter-spacing:.04em; line-height:1.8; color:#5a5450; }
         .booking-panel { background:var(--dark); border:1px solid var(--border); padding:36px 32px; position:sticky; top:32px; }
         .panel-name { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:300; margin:0 0 10px; }
 
@@ -222,8 +228,11 @@ export default async function ModelProfilePage({ params }: Props) {
         @media (max-width:1024px) { .sticky-cta { display:block; } }
 
         /* REVEAL */
-        .reveal { opacity:0; transform:translateY(22px); transition:opacity .85s ease,transform .85s ease; }
+        .reveal { opacity:0; transform:translateY(18px); transition:opacity .75s ease,transform .75s ease; }
         .reveal.visible { opacity:1; transform:none; }
+        /* Fallback: show if JS hasn't run after 1.5s */
+        @media (prefers-reduced-motion: no-preference) {}
+        .no-js .reveal { opacity:1; transform:none; }
 
         /* ANIMATIONS */
         @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }
@@ -243,6 +252,7 @@ export default async function ModelProfilePage({ params }: Props) {
           .exp-grid { grid-template-columns:1fr; }
           .assurance-section { grid-template-columns:1fr; }
           .assurance-item { padding:40px 32px; }
+          .booking-guarantees { grid-template-columns:1fr; }
         }
       `}</style>
 
@@ -328,6 +338,27 @@ export default async function ModelProfilePage({ params }: Props) {
             <div className="booking-left-header">
               <h2 className="serif booking-title">Arrange a Meeting</h2>
               <p className="booking-subtitle">Confirmation within 30 minutes</p>
+            </div>
+
+            <p className="booking-left-intro">
+              Every arrangement is handled with the utmost care and discretion.
+              Share your preferences below and {model.name} will confirm
+              the details of your meeting within 30 minutes.
+            </p>
+
+            <div className="booking-guarantees">
+              {[
+                ['◈', 'Absolute Privacy', 'No data sharing, no records. Your enquiry remains between you and us.'],
+                ['◉', 'Genuine Profile', 'All photographs are authentic and personally verified by our team.'],
+                ['✦', 'Swift Confirmation', 'A response within 30 minutes, at any hour of the day or night.'],
+                ['◇', 'No Obligation', 'Reaching out carries no commitment. Simply begin a conversation.'],
+              ].map(([icon, title, desc]) => (
+                <div key={title as string} className="guarantee-item">
+                  <span className="guarantee-glyph">{icon}</span>
+                  <div className="guarantee-title">{title}</div>
+                  <p className="guarantee-desc">{desc}</p>
+                </div>
+              ))}
             </div>
           </div>
 

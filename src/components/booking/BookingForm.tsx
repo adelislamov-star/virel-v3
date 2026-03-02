@@ -271,14 +271,14 @@ export function BookingForm({ model }: BookingFormProps) {
                     fontFamily: 'Cormorant Garamond, serif',
                     fontSize: 20,
                     fontWeight: 300,
-                    color: sel ? '#f0e8dc' : '#d8d0c4',
+                    color: sel ? '#f0e8dc' : '#c8bfb0',
                     margin: '0 0 6px',
                   }}>
                     {DURATION_LABELS[rate.duration_type] || rate.duration_type}
                   </p>
                   <p style={{
                     fontSize: 15,
-                    color: sel ? '#c9a84c' : '#5a5450',
+                    color: sel ? '#c9a84c' : '#8a7d6a',
                     margin: 0,
                     fontFamily: 'Cormorant Garamond, serif',
                     transition: 'color .2s',
