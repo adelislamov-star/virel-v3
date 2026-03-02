@@ -10,6 +10,7 @@ interface Model {
   stats?: { age?: number; nationality?: string } | null
   media: { url: string }[]
   primaryLocation?: { name: string; slug: string } | null
+  minPrice?: number | null
 }
 
 interface Props {
@@ -161,7 +162,11 @@ export function CatalogFilter({ models, totalCount }: Props) {
                   <div className="cf-content">
                     <p className="cf-name">{model.name}</p>
                     <p className="cf-meta">{[model.stats?.age && `${model.stats.age} yrs`, model.stats?.nationality].filter(Boolean).join('  ·  ')}</p>
-                    <span className="cf-cta">View Profile →</span>
+                    {model.minPrice && (
+                      <p style={{ fontSize: 13, letterSpacing: '.05em', textTransform: 'uppercase', color: '#C5A572', margin: '8px 0 0' }}>
+                        From £{model.minPrice.toLocaleString('en-GB')}/hr
+                      </p>
+                    )}
                   </div>
                 </Link>
               )

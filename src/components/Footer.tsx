@@ -49,8 +49,9 @@ export function Footer() {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
                 ['/faq', 'FAQ'],
+                ['/services', 'Services'],
                 ['/contact', 'Contact'],
-                ['/join', 'Model Application'],
+                ['/join', 'Join Us'],
                 ['/terms', 'Terms of Service'],
                 ['/privacy', 'Privacy Policy'],
               ].map(([href, label]) => (

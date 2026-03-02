@@ -18,8 +18,8 @@ export function Header() {
       <style>{`
         .h-link { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#6b6560; text-decoration:none; transition:color .2s; }
         .h-link:hover { color:#ddd5c8; }
-        .h-join { font-size:11px; letter-spacing:.14em; text-transform:uppercase; border:1px solid rgba(201,168,76,0.3); color:#c9a84c; padding:9px 20px; text-decoration:none; transition:all .2s; }
-        .h-join:hover { background:rgba(201,168,76,0.08); border-color:#c9a84c; }
+        .h-book { font-size:11px; letter-spacing:.14em; text-transform:uppercase; background:#C5A572; color:#000; padding:9px 24px; text-decoration:none; font-weight:500; transition:all .2s; }
+        .h-book:hover { background:#d4b87a; }
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
           .mobile-burger { display: block !important; }
@@ -34,13 +34,12 @@ export function Header() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 36 }} className="desktop-nav">
           {[
             ['/london-escorts', 'Companions'],
-            ['/services', 'Services'],
-            ['/faq', 'FAQ'],
+            ['/about', 'About'],
             ['/contact', 'Contact'],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="h-link">{label}</Link>
           ))}
-          <Link href="/join" className="h-join">Join Us</Link>
+          <Link href="/london-escorts" className="h-book">Book Now</Link>
         </div>
 
         <button
@@ -61,13 +60,12 @@ export function Header() {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#080808', padding: '20px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
             ['/london-escorts', 'Companions'],
-            ['/services', 'Services'],
-            ['/faq', 'FAQ'],
+            ['/about', 'About'],
             ['/contact', 'Contact'],
-            ['/join', 'Join Us'],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="h-link" onClick={() => setMobileMenuOpen(false)}>{label}</Link>
           ))}
+          <Link href="/london-escorts" className="h-book" onClick={() => setMobileMenuOpen(false)}>Book Now</Link>
         </div>
       )}
     </header>
