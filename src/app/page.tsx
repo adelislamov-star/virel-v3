@@ -235,7 +235,7 @@ export default async function HomePage() {
               const nationality = model.stats?.nationality
               const minPrice = minPrices[model.id]
               return (
-                <Link key={model.id} href={`/catalog/${model.slug}`} className="f-card">
+                <Link key={model.id} href={`/companions/${model.slug}`} className="f-card">
                   {photo
                     ? <Image fill src={photo} alt={model.name} style={{ objectFit: 'cover' }} sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw" />
                     : (

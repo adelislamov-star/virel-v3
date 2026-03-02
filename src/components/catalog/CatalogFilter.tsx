@@ -151,7 +151,7 @@ export function CatalogFilter({ models, totalCount }: Props) {
             {filtered.map(model => {
               const photo = model.media[0]?.url
               return (
-                <Link key={model.id} href={`/catalog/${model.slug}`} className="cf-card">
+                <Link key={model.id} href={`/companions/${model.slug}`} className="cf-card">
                   {photo
                     ? <Image fill src={photo} alt={model.name} style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 100vw, (max-width: 750px) 50vw, (max-width: 1100px) 33vw, 25vw" />
                     : <div className="cf-placeholder">

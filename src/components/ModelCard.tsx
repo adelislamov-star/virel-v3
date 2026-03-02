@@ -18,7 +18,7 @@ interface ModelCardProps {
 export function ModelCard({ model }: ModelCardProps) {
   return (
     <Link
-      href={`/catalog/${model.slug}`}
+      href={`/companions/${model.slug}`}
       className="group block bg-muted rounded-lg overflow-hidden hover:shadow-lg transition-all"
     >
       <div className="relative aspect-[3/4] overflow-hidden">

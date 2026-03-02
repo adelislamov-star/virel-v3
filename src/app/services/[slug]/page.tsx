@@ -158,7 +158,7 @@ export default async function ServicePage({ params }: Props) {
               {models.map((model: any) => {
                 const photo = model.media[0]?.url
                 return (
-                  <Link key={model.id} href={`/catalog/${model.slug}`} className="model-card">
+                  <Link key={model.id} href={`/companions/${model.slug}`} className="model-card">
                     {photo
                       ? <img src={photo} alt={model.name} loading="lazy" />
                       : <div style={{ aspectRatio: '3/4', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>👤</div>
