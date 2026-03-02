@@ -39,13 +39,19 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
     }
   }, [])
 
-  // Scroll reveal
+  // Scroll reveal + js-ready flag
   useEffect(() => {
+    // Mark JS as running — CSS will now hide .reveal elements
+    document.body.classList.add('js-ready')
+
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
-      { threshold: 0.08 }
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
     )
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    // Small delay so browser paints js-ready class before observer fires
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    })
     return () => observer.disconnect()
   }, [])
 

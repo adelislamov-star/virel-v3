@@ -226,12 +226,9 @@ export default async function ModelProfilePage({ params }: Props) {
         .sticky-cta { position:fixed; bottom:0; left:0; right:0; z-index:50; padding:12px 20px 20px; background:linear-gradient(to top,rgba(10,10,10,1) 60%,transparent); display:none; }
         @media (max-width:1024px) { .sticky-cta { display:block; } }
 
-        /* REVEAL */
-        .reveal { opacity:0; transform:translateY(18px); transition:opacity .75s ease,transform .75s ease; }
-        .reveal.visible { opacity:1; transform:none; }
-        /* Fallback: show if JS hasn't run after 1.5s */
-        @media (prefers-reduced-motion: no-preference) {}
-        .no-js .reveal { opacity:1; transform:none; }
+        /* REVEAL — only hides when JS is confirmed running */
+        body.js-ready .reveal { opacity:0; transform:translateY(18px); transition:opacity .75s ease,transform .75s ease; }
+        body.js-ready .reveal.visible { opacity:1; transform:none; }
 
         /* ANIMATIONS */
         @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }
