@@ -293,12 +293,14 @@ export default async function ModelProfilePage({ params }: Props) {
 
         /* RATES TABLE (3.2) */
         .rates-section { padding:0 64px 100px; }
-        .rates-table { width:100%; border-collapse:collapse; }
+        .rates-table { max-width:600px; border-collapse:collapse; table-layout:fixed; }
+        .rates-table colgroup .col-dur { width:50%; }
+        .rates-table colgroup .col-price { width:25%; }
         .rates-table thead th { padding:12px 0; text-align:left; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#808080; font-weight:400; border-bottom:1px solid #2A2A2A; }
-        .rates-table thead th:not(:first-child) { text-align:right; }
+        .rates-table thead th:not(:first-child) { text-align:right; padding-left:16px; }
         .rates-table tbody td { padding:16px 0; border-bottom:1px solid #1A1A1A; }
         .rates-table tbody td:first-child { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:var(--text); }
-        .rates-table tbody td:not(:first-child) { text-align:right; font-size:14px; color:#C5A572; letter-spacing:.04em; }
+        .rates-table tbody td:not(:first-child) { text-align:right; font-size:14px; color:#C5A572; letter-spacing:.04em; padding-left:16px; }
 
         /* SERVICE TAGS (3.3) */
         .service-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
@@ -435,6 +437,11 @@ export default async function ModelProfilePage({ params }: Props) {
             <p className="section-label">Rates</p>
             <div style={{ overflowX: 'auto' }}>
               <table className="rates-table">
+                <colgroup>
+                  <col className="col-dur" />
+                  <col className="col-price" />
+                  <col className="col-price" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Duration</th>
