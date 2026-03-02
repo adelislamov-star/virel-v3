@@ -76,6 +76,23 @@ export default async function HomePage() {
     take: 6,
   })
 
+  // Fetch minimum prices for all featured models
+  let minPrices: Record<string, number> = {}
+  try {
+    const modelIds = models.map((m: any) => m.id)
+    if (modelIds.length > 0) {
+      const rates: any[] = await prisma.$queryRaw`
+        SELECT model_id, MIN(price) as min_price
+        FROM model_rates
+        WHERE model_id = ANY(${modelIds}::text[]) AND is_active = true
+        GROUP BY model_id
+      `
+      for (const r of rates) {
+        minPrices[r.model_id] = Number(r.min_price)
+      }
+    }
+  } catch (e) {}
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeSchema) }} />
@@ -234,6 +251,7 @@ export default async function HomePage() {
               const photo = model.media[0]?.url
               const age = model.stats?.age
               const nationality = model.stats?.nationality
+              const minPrice = minPrices[model.id]
               return (
                 <Link key={model.id} href={`/catalog/${model.slug}`} className="model-card">
                   {photo
@@ -251,7 +269,11 @@ export default async function HomePage() {
                     <p className="model-card-meta">
                       {[age && `${age} yrs`, nationality].filter(Boolean).join('  ·  ')}
                     </p>
-                    <span className="model-card-cta">View Profile →</span>
+                    {minPrice && (
+                      <p style={{ fontSize: 13, letterSpacing: '.05em', textTransform: 'uppercase', color: '#C5A572', margin: '8px 0 0' }}>
+                        From £{minPrice.toLocaleString('en-GB')}/hr
+                      </p>
+                    )}
                   </div>
                 </Link>
               )

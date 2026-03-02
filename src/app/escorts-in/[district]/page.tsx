@@ -67,6 +67,23 @@ export default async function DistrictPage({ params }: Props) {
     take: 12,
   }).catch(() => [])
 
+  // Fetch minimum prices for district models
+  let minPrices: Record<string, number> = {}
+  try {
+    const modelIds = models.map((m: any) => m.id)
+    if (modelIds.length > 0) {
+      const rates: any[] = await prisma.$queryRaw`
+        SELECT model_id, MIN(price) as min_price
+        FROM model_rates
+        WHERE model_id = ANY(${modelIds}::text[]) AND is_active = true
+        GROUP BY model_id
+      `
+      for (const r of rates) {
+        minPrices[r.model_id] = Number(r.min_price)
+      }
+    }
+  } catch (e) {}
+
   const schemaOrg = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -178,6 +195,11 @@ export default async function DistrictPage({ params }: Props) {
                     <div className="d-card-content">
                       <p className="d-card-name">{model.name}</p>
                       <p className="d-card-meta">{[model.stats?.age && `${model.stats.age} yrs`, model.stats?.nationality].filter(Boolean).join('  ·  ')}</p>
+                      {minPrices[model.id] && (
+                        <p style={{ fontSize: 13, letterSpacing: '.05em', textTransform: 'uppercase', color: '#C5A572', margin: '8px 0 0' }}>
+                          From £{minPrices[model.id].toLocaleString('en-GB')}/hr
+                        </p>
+                      )}
                     </div>
                   </Link>
                 )

@@ -33,6 +33,29 @@ export default async function LondonEscortsPage() {
     },
   })
 
+  // Fetch minimum prices for all models
+  let minPrices: Record<string, number> = {}
+  try {
+    const modelIds = models.map((m: any) => m.id)
+    if (modelIds.length > 0) {
+      const rates: any[] = await prisma.$queryRaw`
+        SELECT model_id, MIN(price) as min_price
+        FROM model_rates
+        WHERE model_id = ANY(${modelIds}::text[]) AND is_active = true
+        GROUP BY model_id
+      `
+      for (const r of rates) {
+        minPrices[r.model_id] = Number(r.min_price)
+      }
+    }
+  } catch (e) {}
+
+  // Attach minPrice to each model for client-side rendering
+  const modelsWithPrices = models.map((m: any) => ({
+    ...m,
+    minPrice: minPrices[m.id] || null,
+  }))
+
   const catalogSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -97,7 +120,7 @@ export default async function LondonEscortsPage() {
         </div>
 
         {/* Filter + Grid — client component */}
-        <CatalogFilter models={models} totalCount={models.length} />
+        <CatalogFilter models={modelsWithPrices} totalCount={modelsWithPrices.length} />
 
         <Footer />
       </div>

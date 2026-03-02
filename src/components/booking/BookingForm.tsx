@@ -62,58 +62,59 @@ function StepLabel({ n, text }: { n: string; text: string }) {
 }
 
 function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [display, setDisplay] = useState(() => {
-    if (!value) return ''
-    const [y, m, d] = value.split('-')
-    return `${d} / ${m} / ${y}`
-  })
-
-  function handle(e: React.ChangeEvent<HTMLInputElement>) {
-    let raw = e.target.value.replace(/[^\d]/g, '').slice(0, 8)
-    let fmt = raw
-    if (raw.length >= 3 && raw.length < 5) fmt = `${raw.slice(0, 2)} / ${raw.slice(2)}`
-    else if (raw.length >= 5) fmt = `${raw.slice(0, 2)} / ${raw.slice(2, 4)} / ${raw.slice(4)}`
-    setDisplay(fmt)
-    if (raw.length === 8) onChange(`${raw.slice(4)}-${raw.slice(2, 4)}-${raw.slice(0, 2)}`)
-    else onChange('')
-  }
+  // Get tomorrow's date as minimum
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const minDate = tomorrow.toISOString().split('T')[0]
 
   return (
     <input
-      type="text"
-      inputMode="numeric"
-      placeholder="DD / MM / YYYY"
-      value={display}
-      onChange={handle}
-      style={baseInput}
+      type="date"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      min={minDate}
+      style={{
+        ...baseInput,
+        colorScheme: 'dark',
+      }}
       onFocus={e => (e.target.style.borderColor = 'rgba(184,150,90,0.6)')}
       onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.07)')}
     />
   )
 }
 
-function TimeInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [display, setDisplay] = useState(value || '')
-
-  function handle(e: React.ChangeEvent<HTMLInputElement>) {
-    let raw = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
-    const fmt = raw.length >= 3 ? `${raw.slice(0, 2)} : ${raw.slice(2)}` : raw
-    setDisplay(fmt)
-    if (raw.length === 4) onChange(`${raw.slice(0, 2)}:${raw.slice(2)}`)
-    else onChange('')
+const TIME_OPTIONS = (() => {
+  const options: string[] = []
+  for (let h = 9; h <= 23; h++) {
+    options.push(`${String(h).padStart(2, '0')}:00`)
+    options.push(`${String(h).padStart(2, '0')}:30`)
   }
+  // Add late night / early morning slots
+  for (let h = 0; h <= 3; h++) {
+    options.push(`${String(h).padStart(2, '0')}:00`)
+    if (h < 3) options.push(`${String(h).padStart(2, '0')}:30`)
+  }
+  return options
+})()
 
+function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      placeholder="HH : MM"
-      value={display}
-      onChange={handle}
-      style={baseInput}
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{
+        ...baseInput,
+        colorScheme: 'dark',
+        cursor: 'pointer',
+      }}
       onFocus={e => (e.target.style.borderColor = 'rgba(184,150,90,0.6)')}
       onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.07)')}
-    />
+    >
+      <option value="">Select time</option>
+      {TIME_OPTIONS.map(t => (
+        <option key={t} value={t}>{t}</option>
+      ))}
+    </select>
   )
 }
 
@@ -338,7 +339,7 @@ export function BookingForm({ model }: BookingFormProps) {
                     letterSpacing: '.05em',
                     transition: 'color .2s',
                   }}>
-                    £{Number(rate.price).toLocaleString()}
+                    £{Number(rate.price).toLocaleString('en-GB')}
                     {rate.call_type === 'outcall' && (
                       <span style={{ fontSize: 10, opacity: .6, marginLeft: 4 }}>+ taxi</span>
                     )}
@@ -360,7 +361,7 @@ export function BookingForm({ model }: BookingFormProps) {
           </div>
           <div>
             <p style={{ fontSize: 8, letterSpacing: '.25em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.45)', marginBottom: 10 }}>Preferred time</p>
-            <TimeInput value={form.time} onChange={v => setForm({ ...form, time: v })} />
+            <TimeSelect value={form.time} onChange={v => setForm({ ...form, time: v })} />
           </div>
         </div>
       </div>
@@ -420,7 +421,7 @@ export function BookingForm({ model }: BookingFormProps) {
               {serviceType === 'incall' ? 'Incall' : 'Outcall'} · {DURATION_LABELS[selectedRate.duration_type]}
             </span>
             <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#b8965a', whiteSpace: 'nowrap', marginLeft: 24 }}>
-              £{Number(selectedRate.price).toLocaleString()}
+              £{Number(selectedRate.price).toLocaleString('en-GB')}
               {selectedRate.call_type === 'outcall' && <span style={{ fontSize: 13, opacity: .6, marginLeft: 6 }}>+ taxi</span>}
             </span>
           </>

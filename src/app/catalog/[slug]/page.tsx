@@ -284,6 +284,11 @@ export default async function ModelProfilePage({ params }: Props) {
                     {stats.hairColour && <span>{stats.hairColour}</span>}
                   </div>
                 )}
+                {lowestPrice && (
+                  <div style={{ fontSize: 14, letterSpacing: '.12em', textTransform: 'uppercase', color: '#C5A572' }}>
+                    From £{lowestPrice.toLocaleString('en-GB')}/hour
+                  </div>
+                )}
                 <a href="#booking" className="btn-hero">Arrange a Meeting</a>
               </div>
             </div>
