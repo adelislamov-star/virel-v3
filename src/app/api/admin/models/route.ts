@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
         if (!serviceId) continue
         try {
           await prisma.$executeRawUnsafe(
-            `INSERT INTO model_services (model_id, service_id, is_enabled, extra_price)
+            `INSERT INTO model_services ("modelId", "serviceId", "isEnabled", extra_price)
              VALUES ($1, $2, true, $3)
-             ON CONFLICT (model_id, service_id) DO UPDATE SET
-               is_enabled = true, extra_price = EXCLUDED.extra_price`,
+             ON CONFLICT ("modelId", "serviceId") DO UPDATE SET
+               "isEnabled" = true, extra_price = EXCLUDED.extra_price`,
             model.id, serviceId, item.extraPrice ?? null
           )
         } catch {}
