@@ -70,15 +70,15 @@ Overnight – £1200
 
 SERVICES:
 GFE – Yes
-OWO – Yes
+OWO – Yes Extra £30
 69 – Yes
 DFK – Yes
 A Level – No
-B2B massage – Yes
+B2B massage – Yes Extra £20
 Striptease – Yes
 Toys – Yes`
 
-    const EXAMPLE_OUTPUT = `{"name":"Sophia","age":"24","height":"167","weight":"54","dressSizeUK":"8","feetSizeUK":"5","breastSize":"34C","breastType":"natural","eyesColour":"Green","hairColour":"Brown","smokingStatus":"no","tattooStatus":"small","piercingTypes":"Ears only","nationality":"Romanian","languages":["English","Romanian"],"orientation":"bisexual","workWithCouples":true,"workWithWomen":true,"blackClients":true,"disabledClients":false,"tubeStation":"Baker Street","addressStreet":"34 Baker Street","addressFlat":"4B","addressPostcode":"W1U 6RS","airportHeathrow":true,"airportGatwick":false,"airportStansted":false,"rate30min":"150","rate45min":"200","rate1hIn":"250","rate1hOut":"300","rate90minIn":"350","rate90minOut":"400","rate2hIn":"450","rate2hOut":"500","rateExtraHour":"200","rateOvernight":"1200","services":["GFE","OWO","69","DFK","B2B","STRIPTEASE","TOYS"]}`
+    const EXAMPLE_OUTPUT = `{"name":"Sophia","age":"24","height":"167","weight":"54","dressSizeUK":"8","feetSizeUK":"5","breastSize":"34C","breastType":"natural","eyesColour":"Green","hairColour":"Brown","smokingStatus":"no","tattooStatus":"small","piercingTypes":"Ears only","nationality":"Romanian","languages":["English","Romanian"],"orientation":"bisexual","workWithCouples":true,"workWithWomen":true,"blackClients":true,"disabledClients":false,"tubeStation":"Baker Street","addressStreet":"34 Baker Street","addressFlat":"4B","addressPostcode":"W1U 6RS","airportHeathrow":true,"airportGatwick":false,"airportStansted":false,"rate30min":"150","rate45min":"200","rate1hIn":"250","rate1hOut":"300","rate90minIn":"350","rate90minOut":"400","rate2hIn":"450","rate2hOut":"500","rateExtraHour":"200","rateOvernight":"1200","services":[{"code":"GFE"},{"code":"OWO","extraPrice":30},{"code":"69"},{"code":"DFK"},{"code":"B2B","extraPrice":20},{"code":"STRIPTEASE"},{"code":"TOYS"}]}`
 
     const response = await client.messages.create({
       model: 'claude-opus-4-5',
@@ -97,7 +97,9 @@ Field rules:
 - rates: number string, no currency symbols
 - languages: array of strings
 - booleans (workWithCouples, workWithWomen, blackClients, disabledClients, airports): true or false
-- services: ONLY codes from this exact list (yes/extra = include, no = exclude):
+- services: array of objects. Include service if answer is yes/extra, exclude if no.
+  Each object: {"code":"CODE"} or {"code":"CODE","extraPrice":NUMBER} if extra fee mentioned.
+  Use ONLY codes from this list:
   69, FK, DFK, GFE, OWO, OWC, COB, CIF, CIM, SWALLOW, SNOWBALLING, DT, FINGERING,
   A_LEVEL, DP, PSE, PARTY_GIRL, FACE_SITTING, DIRTY_TALK, LADY_SERVICES,
   WS_GIVING, WS_RECEIVING, RIMMING_GIVING, RIMMING_RECEIVING, SMOKING_FETISH,

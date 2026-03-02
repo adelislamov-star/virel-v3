@@ -72,18 +72,27 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Services — lookup by code
+    // Services — supports both string[] and {code, extraPrice}[] formats
     if (body.services && body.services.length > 0) {
-      const dbServices = await prisma.$queryRaw<{ id: string }[]>`
-        SELECT id FROM services WHERE code = ANY(${body.services}::text[])
+      const serviceItems: { code: string; extraPrice?: number }[] = body.services.map((s: any) =>
+        typeof s === 'string' ? { code: s } : s
+      )
+      const codes = serviceItems.map(s => s.code)
+      const dbServices = await prisma.$queryRaw<{ id: string; code: string }[]>`
+        SELECT id, code FROM services WHERE code = ANY(${codes}::text[])
       `
-      for (const svc of dbServices) {
+      const codeToId = Object.fromEntries(dbServices.map(s => [s.code, s.id]))
+      for (const item of serviceItems) {
+        const serviceId = codeToId[item.code]
+        if (!serviceId) continue
         try {
-          await prisma.$executeRaw`
-            INSERT INTO model_services ("modelId", "serviceId", "isEnabled")
-            VALUES (${model.id}, ${svc.id}, true)
-            ON CONFLICT DO NOTHING
-          `
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO model_services (model_id, service_id, is_enabled, extra_price)
+             VALUES ($1, $2, true, $3)
+             ON CONFLICT (model_id, service_id) DO UPDATE SET
+               is_enabled = true, extra_price = EXCLUDED.extra_price`,
+            model.id, serviceId, item.extraPrice ?? null
+          )
         } catch {}
       }
     }
