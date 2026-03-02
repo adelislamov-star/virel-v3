@@ -115,14 +115,14 @@ export default async function DistrictPage({ params }: Props) {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .district-root { font-family: 'DM Sans', sans-serif; background: #080808; color: #ddd5c8; min-height: 100vh; }
 
-        .district-hero { padding: 80px 40px 60px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .d-eyebrow { font-size: 10px; letter-spacing: .25em; color: #c9a84c; text-transform: uppercase; display: block; margin-bottom: 16px; }
+        .district-hero { padding: 120px 80px 80px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .d-eyebrow { font-size: 10px; letter-spacing: .25em; color: #808080; text-transform: uppercase; display: block; margin-bottom: 16px; }
         .d-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(40px,6vw,72px); font-weight: 300; color: #f0e8dc; margin: 0 0 16px; line-height: 1.05; }
-        .d-title em { font-style: italic; color: #c9a84c; }
+        .d-title em { font-style: italic; color: #f0e8dc; }
         .d-desc { font-size: 14px; color: #6b6560; max-width: 560px; line-height: 1.9; margin: 0; }
 
-        .d-section { max-width: 1280px; margin: 0 auto; padding: 60px 40px; }
-        .d-section-label { font-size: 10px; letter-spacing: .2em; color: #c9a84c; text-transform: uppercase; margin-bottom: 32px; display: block; }
+        .d-section { max-width: 1280px; margin: 0 auto; padding: 120px 80px; }
+        .d-section-label { font-size: 10px; letter-spacing: .2em; color: #808080; text-transform: uppercase; margin-bottom: 32px; display: block; }
 
         .d-models-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 2px; background: rgba(255,255,255,0.03); }
         @media(max-width:900px){.d-models-grid{grid-template-columns:repeat(2,1fr);}}
@@ -138,22 +138,22 @@ export default async function DistrictPage({ params }: Props) {
 
         .d-faq details { border-bottom: 1px solid rgba(255,255,255,0.06); }
         .d-faq summary { padding: 20px 0; cursor: pointer; font-size: 15px; color: #ddd5c8; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-        .d-faq summary::after { content: '+'; color: #c9a84c; font-size: 20px; font-weight: 300; transition: transform .2s; }
+        .d-faq summary::after { content: '+'; color: #808080; font-size: 20px; font-weight: 300; transition: transform .2s; }
         .d-faq details[open] summary::after { transform: rotate(45deg); }
         .d-faq .faq-answer { padding: 0 0 20px; font-size: 13px; color: #6b6560; line-height: 1.9; }
 
-        .d-other-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); }
+        .d-other-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; border: 1px solid rgba(255,255,255,0.05); }
         @media(max-width:700px){.d-other-grid{grid-template-columns:1fr 1fr;}}
         .d-other-link { background: #080808; padding: 22px 20px; text-decoration: none; display: flex; justify-content: space-between; align-items: center; transition: background .2s; }
         .d-other-link:hover { background: #0f0e0c; }
         .d-other-name { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:#9a9189; }
         .d-other-link:hover .d-other-name { color: #ddd5c8; }
         .d-other-arrow { color: #2a2520; font-size:14px; }
-        .d-other-link:hover .d-other-arrow { color: #c9a84c; }
+        .d-other-link:hover .d-other-arrow { color: #ddd5c8; }
 
         .d-breadcrumb { font-size:11px; letter-spacing:.1em; color:#3a3530; padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.04); }
         .d-breadcrumb a { color:#3a3530; text-decoration:none; }
-        .d-breadcrumb a:hover { color:#c9a84c; }
+        .d-breadcrumb a:hover { color:#ddd5c8; }
         .d-sep { margin: 0 12px; }
       `}</style>
 

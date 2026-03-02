@@ -77,18 +77,18 @@ export default async function LondonEscortsPage() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .catalog-root { font-family: 'DM Sans', sans-serif; background: #080808; color: #ddd5c8; min-height: 100vh; }
 
-        .catalog-header { padding: 80px 40px 60px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        @media(max-width:600px){ .catalog-header{padding:60px 20px 40px;} }
-        .catalog-eyebrow { font-size: 10px; letter-spacing: .25em; color: #c9a84c; text-transform: uppercase; display: block; margin-bottom: 16px; }
+        .catalog-header { padding: 120px 80px 80px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        @media(max-width:600px){ .catalog-header{padding:80px 24px 60px;} }
+        .catalog-eyebrow { font-size: 10px; letter-spacing: .25em; color: #808080; text-transform: uppercase; display: block; margin-bottom: 16px; }
         .catalog-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(48px, 6vw, 80px); font-weight: 300; color: #f0e8dc; margin: 0 0 12px; line-height: 1; }
-        .catalog-title em { font-style: italic; color: #c9a84c; }
+        .catalog-title em { font-style: italic; color: #f0e8dc; }
         .catalog-desc { font-size: 14px; color: #6b6560; max-width: 500px; line-height: 1.8; margin: 0; }
         .catalog-count { font-size: 11px; letter-spacing: .12em; color: #3a3530; text-transform: uppercase; margin-top: 20px; }
 
         .districts-bar { display: flex; gap: 0; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; }
         .districts-bar::-webkit-scrollbar { display: none; }
         .district-link { flex-shrink: 0; padding: 18px 24px; font-size: 11px; letter-spacing: .12em; color: #6b6560; text-decoration: none; text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.05); transition: color .2s, background .2s; white-space: nowrap; }
-        .district-link:hover { color: #c9a84c; background: rgba(201,168,76,0.04); }
+        .district-link:hover { color: #ddd5c8; background: rgba(255,255,255,0.03); }
       `}</style>
 
       <div className="catalog-root">

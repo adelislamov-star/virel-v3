@@ -141,11 +141,11 @@ export default async function HomePage() {
         .f-card-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%); }
 
         /* ── SOCIAL PROOF ── */
-        .social-proof { padding: 100px 40px; text-align: center; border-top: 1px solid #1A1A1A; }
-        @media (max-width: 600px) { .social-proof { padding: 64px 24px; } }
+        .social-proof { padding: 120px 80px; text-align: center; border-top: 1px solid #1A1A1A; }
+        @media (max-width: 600px) { .social-proof { padding: 80px 24px; } }
 
         /* ── FINAL CTA ── */
-        .final-cta { padding: 120px 40px; text-align: center; border-top: 1px solid #1A1A1A; }
+        .final-cta { padding: 120px 80px; text-align: center; border-top: 1px solid #1A1A1A; }
         @media (max-width: 600px) { .final-cta { padding: 80px 24px; } }
         .final-cta-buttons { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
         .btn-primary { display: inline-block; background: #C5A572; color: #0A0A0A; padding: 16px 36px; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; font-weight: 500; text-decoration: none; transition: background .2s; }
@@ -209,13 +209,14 @@ export default async function HomePage() {
         <div className="section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div>
-              <span style={{ fontSize: 10, letterSpacing: '.25em', color: '#C5A572', textTransform: 'uppercase', display: 'block', marginBottom: 20 }}>
+              <span style={{ fontSize: 10, letterSpacing: '.25em', color: '#808080', textTransform: 'uppercase', display: 'block', marginBottom: 20 }}>
                 Available Now
               </span>
               <h2 style={{
                 fontFamily: "'Cormorant Garamond', serif",
                 fontSize: 'clamp(36px, 5vw, 56px)',
                 fontWeight: 300,
+                fontStyle: 'italic',
                 lineHeight: 1.05,
                 color: '#FAFAFA',
                 margin: 0,
@@ -265,14 +266,13 @@ export default async function HomePage() {
 
         {/* ═══ 4. SOCIAL PROOF ═══ */}
         <section className="social-proof">
-          <p style={{ fontSize: 10, letterSpacing: '.25em', textTransform: 'uppercase', color: '#C5A572', marginBottom: 24 }}>
+          <p style={{ fontSize: 10, letterSpacing: '.25em', textTransform: 'uppercase', color: '#808080', marginBottom: 24 }}>
             Trusted Agency
           </p>
           <p style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: 'clamp(20px, 3vw, 28px)',
             fontWeight: 300,
-            fontStyle: 'italic',
             color: 'rgba(255,255,255,0.8)',
             maxWidth: 560,
             margin: '0 auto',
@@ -291,6 +291,7 @@ export default async function HomePage() {
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: 'clamp(32px, 4vw, 48px)',
             fontWeight: 300,
+            fontStyle: 'italic',
             color: '#FAFAFA',
             margin: '0 0 16px',
           }}>

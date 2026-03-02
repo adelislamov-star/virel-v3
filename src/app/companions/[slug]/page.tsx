@@ -242,30 +242,30 @@ export default async function ModelProfilePage({ params }: Props) {
         .hero-trust-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; flex-shrink:0; }
 
         /* GALLERY */
-        .gallery-section { padding:100px 0 100px 64px; overflow:hidden; }
-        .gallery-track { display:flex; gap:16px; overflow-x:auto; padding-right:64px; scrollbar-width:none; cursor:grab; -webkit-overflow-scrolling:touch; user-select:none; }
+        .gallery-section { padding:120px 0 120px 80px; overflow:hidden; }
+        .gallery-track { display:flex; gap:16px; overflow-x:auto; padding-right:80px; scrollbar-width:none; cursor:grab; -webkit-overflow-scrolling:touch; user-select:none; }
         .gallery-track::-webkit-scrollbar { display:none; }
         .gallery-track.grabbing { cursor:grabbing; }
         .gallery-item { flex-shrink:0; width:300px; height:420px; overflow:hidden; }
         .gallery-item img { width:100%; height:100%; object-fit:cover; object-position:top; transition:transform .7s ease; pointer-events:none; display:block; }
         .gallery-item:hover img { transform:scale(1.05); }
-        .gallery-hint { margin-top:20px; padding-right:64px; font-size:9px; letter-spacing:.18em; color:var(--muted); text-align:right; text-transform:uppercase; }
+        .gallery-hint { margin-top:20px; padding-right:80px; font-size:9px; letter-spacing:.18em; color:var(--muted); text-align:right; text-transform:uppercase; }
 
         /* SECTION LABEL */
-        .section-label { font-size:9px; letter-spacing:.3em; text-transform:uppercase; color:var(--gold); margin-bottom:40px; }
+        .section-label { font-size:9px; letter-spacing:.3em; text-transform:uppercase; color:var(--muted); margin-bottom:40px; }
 
         /* INTRO */
-        .intro-section { padding:0 64px 100px; display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:start; }
-        .intro-text { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; line-height:1.65; font-style:italic; color:var(--text); border-left:1px solid var(--gold); padding-left:36px; }
-        .intro-attrs { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); border:1px solid var(--border); }
+        .intro-section { padding:0 80px 120px; display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:start; }
+        .intro-text { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; line-height:1.65; color:var(--text); border-left:1px solid var(--border); padding-left:36px; }
+        .intro-attrs { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--border); }
         .attr-cell { background:var(--dark); padding:22px 24px; }
         .attr-lbl { font-size:8px; letter-spacing:.22em; text-transform:uppercase; color:#5a5450; margin-bottom:7px; }
         .attr-val { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:300; color:var(--text); }
 
         /* BOOKING */
-        .booking-outer { padding:0 80px 140px; }
+        .booking-outer { padding:0 80px 120px; }
         .booking-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:56px; border-bottom:1px solid var(--border); padding-bottom:24px; }
-        .booking-title { font-family:'Cormorant Garamond',serif; font-size:48px; font-weight:300; color:var(--white); margin:0; }
+        .booking-title { font-family:'Cormorant Garamond',serif; font-size:48px; font-weight:300; font-style:italic; color:var(--white); margin:0; }
         .booking-subtitle { font-size:10px; letter-spacing:.15em; color:var(--muted); text-transform:uppercase; }
         .booking-left-header { display:none; }
         .booking-left-intro { display:none; }
@@ -274,28 +274,28 @@ export default async function ModelProfilePage({ params }: Props) {
         .panel-name { display:none; }
 
         /* EXPERIENCES */
-        .exp-section { padding:0 64px 100px; }
-        .exp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-top:40px; }
+        .exp-section { padding:0 80px 120px; }
+        .exp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--border); margin-top:40px; }
         .exp-category { background:var(--dark); padding:36px 32px; }
-        .exp-cat-title { font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--gold); margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+        .exp-cat-title { font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); }
         .exp-list { list-style:none; padding:0; margin:0; }
         .exp-list li { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; color:var(--text); padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04); line-height:1.3; }
         .exp-list li:last-child { border-bottom:none; }
-        .exp-more-btn { margin-top:20px; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); cursor:pointer; background:none; border:none; font-family:'DM Sans',sans-serif; padding:0; display:inline-flex; align-items:center; gap:8px; transition:gap .3s; }
+        .exp-more-btn { margin-top:20px; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); cursor:pointer; background:none; border:none; font-family:'DM Sans',sans-serif; padding:0; display:inline-flex; align-items:center; gap:8px; transition:gap .3s; }
         .exp-more-btn:hover { gap:14px; }
 
         /* ASSURANCE */
-        .assurance-section { border-top:1px solid var(--border); display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); }
+        .assurance-section { border-top:1px solid var(--border); display:grid; grid-template-columns:repeat(3,1fr); gap:0; }
         .assurance-item { background:var(--black); padding:56px 48px; text-align:center; }
-        .assurance-glyph { font-size:22px; color:var(--gold); margin-bottom:20px; display:block; }
+        .assurance-glyph { font-size:22px; color:var(--muted); margin-bottom:20px; display:block; }
         .assurance-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; color:var(--text); margin-bottom:12px; }
         .assurance-desc { font-size:11px; letter-spacing:.06em; line-height:1.9; color:var(--muted); }
 
         /* RATES TABLE (3.2) */
-        .rates-section { padding:0 64px 100px; }
-        .rates-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-        .rates-table colgroup .col-dur { width:50%; }
-        .rates-table colgroup .col-price { width:25%; }
+        .rates-section { padding:0 80px 120px; }
+        .rates-table { width:100%; max-width:900px; border-collapse:collapse; table-layout:fixed; }
+        .rates-table col:nth-child(1) { width:50%; }
+        .rates-table col:nth-child(2), .rates-table col:nth-child(3) { width:25%; }
         .rates-table thead th { padding:12px 0; text-align:left; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#808080; font-weight:400; border-bottom:1px solid #2A2A2A; }
         .rates-table thead th:not(:first-child) { text-align:right; padding-left:16px; }
         .rates-table tbody td { padding:16px 0; border-bottom:1px solid #1A1A1A; }
@@ -305,10 +305,10 @@ export default async function ModelProfilePage({ params }: Props) {
         /* SERVICE TAGS (3.3) */
         .service-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
         .service-tag { display:inline-block; padding:6px 14px; border:1px solid #2A2A2A; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#808080; text-decoration:none; transition:border-color .2s, color .2s; }
-        .service-tag:hover { border-color:#C5A572; color:#C5A572; }
+        .service-tag:hover { border-color:var(--white); color:var(--white); }
 
         /* SIMILAR COMPANIONS (3.4) */
-        .similar-section { padding:100px 64px; border-top:1px solid #1A1A1A; }
+        .similar-section { padding:120px 80px; border-top:1px solid #1A1A1A; }
         .similar-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:40px; }
         .sim-card { position:relative; aspect-ratio:3/4; overflow:hidden; background:#111; display:block; text-decoration:none; }
         .sim-card img { width:100%; height:100%; object-fit:cover; transition:transform 1s cubic-bezier(.25,.46,.45,.94); filter:grayscale(10%); }
@@ -321,7 +321,7 @@ export default async function ModelProfilePage({ params }: Props) {
 
         /* BACK */
         .back-link { display:block; text-align:center; padding:48px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#5a5450; text-decoration:none; transition:color .2s; }
-        .back-link:hover { color:var(--gold); }
+        .back-link:hover { color:var(--white); }
 
         /* REVEAL — only hides when JS is confirmed running */
         body.js-ready .reveal { opacity:0; transform:translateY(18px); transition:opacity .75s ease,transform .75s ease; }
@@ -336,19 +336,19 @@ export default async function ModelProfilePage({ params }: Props) {
           .hero-split { flex-direction:column; min-height:auto; }
           .hero-photo { width:100%; height:60vh; min-height:400px; }
           .hero-info { width:100%; padding:40px 24px 60px; }
-          .gallery-section { padding:72px 0 72px 24px; }
+          .gallery-section { padding:80px 0 80px 24px; }
           .gallery-item { width:240px; height:340px; }
           .gallery-hint { padding-right:24px; }
-          .intro-section { grid-template-columns:1fr; padding:0 24px 72px; gap:48px; }
-          .rates-section { padding:0 24px 72px; }
+          .intro-section { grid-template-columns:1fr; padding:0 24px 80px; gap:48px; }
+          .rates-section { padding:0 24px 80px; }
           .booking-outer { padding:0 24px 80px; }
           .booking-header { flex-direction:column; gap:8px; }
           .booking-panel { position:static; }
-          .exp-section { padding:0 24px 72px; }
+          .exp-section { padding:0 24px 80px; }
           .exp-grid { grid-template-columns:1fr; }
           .assurance-section { grid-template-columns:1fr; }
           .assurance-item { padding:40px 32px; }
-          .similar-section { padding:72px 24px; }
+          .similar-section { padding:80px 24px; }
           .similar-grid { grid-template-columns:repeat(2,1fr); }
         }
         @media (max-width:600px) {
@@ -387,7 +387,7 @@ export default async function ModelProfilePage({ params }: Props) {
                 Available Now
               </div>
               <div className="hero-trust-item">
-                <span style={{ color: '#C5A572', fontSize: 8 }}>◈</span>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8 }}>◈</span>
                 Confirmed in 30 min
               </div>
             </div>
@@ -465,7 +465,7 @@ export default async function ModelProfilePage({ params }: Props) {
 
         {/* ── SERVICE TAGS (3.3) ── */}
         {cleanedServices.length > 0 && (
-          <section style={{ padding: '0 64px 80px' }} className="reveal">
+          <section style={{ padding: '0 80px 120px' }} className="reveal">
             <div className="service-tags">
               {cleanedServices.map((s: any) => (
                 <Link key={s.slug} href={`/services/${s.slug}`} className="service-tag">
