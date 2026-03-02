@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Link services — lookup by code via raw SQL
+    // Services — lookup by code
     if (body.services && body.services.length > 0) {
       const dbServices = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM services WHERE code = ANY(${body.services}::text[])
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Rates via raw SQL
+    // Rates — use model_id (snake_case) matching the actual table column
     const rateMap = [
       { duration_type: '30min',      call_type: 'incall',  price: body.rate30min },
       { duration_type: '45min',      call_type: 'incall',  price: body.rate45min },
@@ -100,12 +100,67 @@ export async function POST(request: NextRequest) {
 
     for (const rate of rateMap) {
       try {
-        await prisma.$executeRaw`
-          INSERT INTO model_rates (id, "modelId", duration_type, call_type, price, currency, is_active, created_at)
-          VALUES (gen_random_uuid(), ${model.id}, ${rate.duration_type}, ${rate.call_type}, ${Number(rate.price)}, 'GBP', true, now())
-        `
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'GBP', true)`,
+          model.id,
+          rate.duration_type,
+          rate.call_type,
+          Number(rate.price)
+        )
       } catch {}
     }
+
+    // Address — insert into model_addresses
+    const hasAddress = body.addressStreet || body.addressPostcode || body.tubeStation
+    if (hasAddress) {
+      try {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO model_addresses (
+             id, model_id, street, flat_number, post_code, tube_station,
+             heathrow_available, gatwick_available, stansted_available, is_active
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+           ON CONFLICT (model_id) DO UPDATE SET
+             street = EXCLUDED.street,
+             flat_number = EXCLUDED.flat_number,
+             post_code = EXCLUDED.post_code,
+             tube_station = EXCLUDED.tube_station,
+             heathrow_available = EXCLUDED.heathrow_available,
+             gatwick_available = EXCLUDED.gatwick_available,
+             stansted_available = EXCLUDED.stansted_available`,
+          `${model.id}-addr`,
+          model.id,
+          body.addressStreet || null,
+          body.addressFlat || null,
+          body.addressPostcode || null,
+          body.tubeStation || null,
+          body.airportHeathrow === true,
+          body.airportGatwick === true,
+          body.airportStansted === true
+        )
+      } catch {}
+    }
+
+    // Work preferences — insert into model_work_preferences
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO model_work_preferences (
+           id, model_id, work_with_couples, work_with_women,
+           black_clients_welcome, disabled_clients_welcome
+         ) VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (model_id) DO UPDATE SET
+           work_with_couples = EXCLUDED.work_with_couples,
+           work_with_women = EXCLUDED.work_with_women,
+           black_clients_welcome = EXCLUDED.black_clients_welcome,
+           disabled_clients_welcome = EXCLUDED.disabled_clients_welcome`,
+        `${model.id}-prefs`,
+        model.id,
+        body.workWithCouples === true,
+        body.workWithWomen === true,
+        body.blackClients !== false,
+        body.disabledClients !== false
+      )
+    } catch {}
 
     return NextResponse.json({ success: true, modelId: model.id, slug: model.slug })
   } catch (error: any) {
