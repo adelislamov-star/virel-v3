@@ -7,8 +7,8 @@ import * as XLSX from 'xlsx'
 
 const SERVICE_MAP: [string, string][] = [
   ['69', '69'],
-  ['french kissing without', 'FK'], ['fk ', 'FK'], ['fk(', 'FK'],
   ['deep french', 'DFK'], ['dfk', 'DFK'],
+  ['french kissing without', 'FK'], [' fk ', 'FK'], ['fk(', 'FK'],
   ['girlfriend experience', 'GFE'], ['gfe', 'GFE'],
   ['blow job without', 'OWO'], ['owo', 'OWO'],
   ['blow job with', 'OWC'], ['owc', 'OWC'],
