@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { DragGallery, ExpToggle, RevealInit } from '@/components/profile/ProfileInteractive'
+import { StickyBookBar } from '@/components/profile/StickyBookBar'
 import { prisma } from '@/lib/db/client'
 
 interface Props { params: { slug: string } }
@@ -80,6 +81,81 @@ export default async function ModelProfilePage({ params }: Props) {
   const stats = model.stats
   const lowestPrice = rates.length > 0 ? Math.min(...rates.map((r: any) => Number(r.price))) : null
 
+  // Organize rates by call_type for table display (3.2)
+  const incallRates = rates
+    .filter((r: any) => r.call_type === 'incall')
+    .sort((a: any, b: any) => RATE_ORDER.indexOf(a.duration_type) - RATE_ORDER.indexOf(b.duration_type))
+  const outcallRates = rates
+    .filter((r: any) => r.call_type === 'outcall')
+    .sort((a: any, b: any) => RATE_ORDER.indexOf(a.duration_type) - RATE_ORDER.indexOf(b.duration_type))
+  // Merge into unified table rows
+  const DURATION_LABELS: Record<string, string> = {
+    '30min': '30 minutes', '45min': '45 minutes', '1hour': '1 hour',
+    '90min': '1.5 hours', '2hours': '2 hours', 'extra_hour': 'Extra hour', 'overnight': 'Overnight',
+  }
+  const allDurations = [...new Set(rates.map((r: any) => r.duration_type))]
+    .sort((a, b) => RATE_ORDER.indexOf(a) - RATE_ORDER.indexOf(b))
+  const ratesTable = allDurations.map(dur => ({
+    duration: dur,
+    label: DURATION_LABELS[dur] || dur,
+    incall: incallRates.find((r: any) => r.duration_type === dur)?.price,
+    outcall: outcallRates.find((r: any) => r.duration_type === dur)?.price,
+  }))
+
+  // Fetch similar models (3.4) — same nationality or random, exclude current
+  let similarModels: any[] = []
+  try {
+    similarModels = await prisma.model.findMany({
+      where: {
+        status: 'active',
+        visibility: 'public',
+        id: { not: model.id },
+        ...(stats?.nationality ? { stats: { nationality: stats.nationality } } : {}),
+      },
+      include: {
+        stats: true,
+        media: { where: { isPrimary: true, isPublic: true }, take: 1 },
+      },
+      take: 3,
+      orderBy: { createdAt: 'desc' },
+    })
+    // If not enough with same nationality, fill with random
+    if (similarModels.length < 3) {
+      const existingIds = [model.id, ...similarModels.map((m: any) => m.id)]
+      const more = await prisma.model.findMany({
+        where: {
+          status: 'active',
+          visibility: 'public',
+          id: { notIn: existingIds },
+        },
+        include: {
+          stats: true,
+          media: { where: { isPrimary: true, isPublic: true }, take: 1 },
+        },
+        take: 3 - similarModels.length,
+        orderBy: { createdAt: 'desc' },
+      })
+      similarModels = [...similarModels, ...more]
+    }
+  } catch (e) {}
+
+  // Fetch min prices for similar models
+  let similarPrices: Record<string, number> = {}
+  try {
+    const simIds = similarModels.map((m: any) => m.id)
+    if (simIds.length > 0) {
+      const simRates: any[] = await prisma.$queryRaw`
+        SELECT model_id, MIN(price) as min_price
+        FROM model_rates
+        WHERE model_id = ANY(${simIds}::text[]) AND is_active = true
+        GROUP BY model_id
+      `
+      for (const r of simRates) {
+        similarPrices[r.model_id] = Number(r.min_price)
+      }
+    }
+  } catch (e) {}
+
   const cleanedServices = services.map((s: any) => ({
     ...s,
     displayTitle: SERVICE_REMAP[s.title] || s.title,
@@ -149,24 +225,20 @@ export default async function ModelProfilePage({ params }: Props) {
         .profile-root { font-family:'DM Sans',sans-serif; background:var(--black); color:var(--text); min-height:100vh; }
         .serif { font-family:'Cormorant Garamond',Georgia,serif; }
 
-        /* HERO */
-        .hero { position:relative; height:100vh; min-height:640px; overflow:hidden; display:flex; align-items:flex-end; }
-        .hero-bg { position:absolute; inset:0; background-size:cover; background-position:center 15%; transition:transform 9s ease; }
-        .hero:hover .hero-bg { transform:scale(1.04); }
-        .hero-overlay { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(10,10,10,.15) 0%, rgba(10,10,10,0) 35%, rgba(10,10,10,0) 52%, rgba(10,10,10,.72) 78%, rgba(10,10,10,1) 100%); }
-        .hero-content { position:relative; z-index:2; width:100%; padding:0 64px 72px; display:flex; align-items:flex-end; justify-content:space-between; gap:40px; }
-        .hero-left { animation:fadeUp .9s ease both; }
-        .hero-right { display:flex; flex-direction:column; align-items:flex-end; gap:18px; animation:fadeUp .9s .2s ease both; flex-shrink:0; }
-        .avail-badge { display:inline-flex; align-items:center; gap:12px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
-        .avail-line { display:inline-block; width:28px; height:1px; background:var(--gold); opacity:.55; }
-        .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(60px,8vw,108px); font-weight:300; color:#f5f0e8; margin:0; line-height:.92; letter-spacing:-.01em; }
-        .hero-sub { margin-top:14px; font-size:11px; letter-spacing:.14em; color:rgba(255,255,255,.35); text-transform:uppercase; }
-        .hero-attrs { display:flex; gap:24px; font-size:11px; letter-spacing:.1em; color:rgba(255,255,255,.35); }
-        .btn-hero { display:inline-block; padding:17px 44px; background:var(--gold); color:#080808; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; text-decoration:none; border:none; cursor:pointer; transition:background .3s,transform .3s; }
+        /* HERO — split layout (3.1) */
+        .hero-split { display:flex; min-height:100vh; position:relative; }
+        .hero-photo { width:60%; position:relative; overflow:hidden; }
+        .hero-photo img { width:100%; height:100%; object-fit:cover; object-position:center 15%; }
+        .hero-info { width:40%; display:flex; flex-direction:column; justify-content:center; padding:80px 56px; animation:fadeUp .9s ease both; }
+        .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,6vw,80px); font-weight:300; color:#f5f0e8; margin:0 0 12px; line-height:.95; letter-spacing:-.01em; }
+        .hero-sub { font-size:12px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase; margin:0 0 28px; }
+        .hero-price { font-size:16px; letter-spacing:.1em; text-transform:uppercase; color:#C5A572; margin:0 0 32px; font-weight:400; }
+        .hero-divider { width:48px; height:1px; background:rgba(255,255,255,.1); margin:0 0 32px; }
+        .btn-hero { display:inline-block; padding:17px 44px; background:var(--gold); color:#080808; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; text-decoration:none; border:none; cursor:pointer; transition:background .3s,transform .3s; text-align:center; }
         .btn-hero:hover { background:#d4b45a; transform:translateY(-2px); }
-        .scroll-hint { position:absolute; bottom:28px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px; font-size:8px; letter-spacing:.28em; text-transform:uppercase; color:rgba(255,255,255,.25); animation:fadeIn 2s 1.2s ease both; }
-        .scroll-line { width:1px; height:36px; background:var(--gold); animation:scrollLine 2.2s ease infinite; }
-        @keyframes scrollLine { 0%{transform:scaleY(0);transform-origin:top} 50%{transform:scaleY(1);transform-origin:top} 51%{transform:scaleY(1);transform-origin:bottom} 100%{transform:scaleY(0);transform-origin:bottom} }
+        .hero-trust { margin-top:28px; display:flex; flex-direction:column; gap:8px; }
+        .hero-trust-item { font-size:11px; letter-spacing:.08em; color:rgba(255,255,255,.35); display:flex; align-items:center; gap:10px; }
+        .hero-trust-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; flex-shrink:0; }
 
         /* GALLERY */
         .gallery-section { padding:100px 0 100px 64px; overflow:hidden; }
@@ -218,13 +290,35 @@ export default async function ModelProfilePage({ params }: Props) {
         .assurance-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; color:var(--text); margin-bottom:12px; }
         .assurance-desc { font-size:11px; letter-spacing:.06em; line-height:1.9; color:var(--muted); }
 
+        /* RATES TABLE (3.2) */
+        .rates-section { padding:0 64px 100px; }
+        .rates-table { width:100%; border-collapse:collapse; }
+        .rates-table thead th { padding:12px 0; text-align:left; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#808080; font-weight:400; border-bottom:1px solid #2A2A2A; }
+        .rates-table thead th:not(:first-child) { text-align:right; }
+        .rates-table tbody td { padding:16px 0; border-bottom:1px solid #1A1A1A; }
+        .rates-table tbody td:first-child { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:var(--text); }
+        .rates-table tbody td:not(:first-child) { text-align:right; font-size:14px; color:#C5A572; letter-spacing:.04em; }
+
+        /* SERVICE TAGS (3.3) */
+        .service-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
+        .service-tag { display:inline-block; padding:6px 14px; border:1px solid #2A2A2A; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#808080; text-decoration:none; transition:border-color .2s, color .2s; }
+        .service-tag:hover { border-color:#C5A572; color:#C5A572; }
+
+        /* SIMILAR COMPANIONS (3.4) */
+        .similar-section { padding:100px 64px; border-top:1px solid #1A1A1A; }
+        .similar-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:40px; }
+        .sim-card { position:relative; aspect-ratio:3/4; overflow:hidden; background:#111; display:block; text-decoration:none; }
+        .sim-card img { width:100%; height:100%; object-fit:cover; transition:transform 1s cubic-bezier(.25,.46,.45,.94); filter:grayscale(10%); }
+        .sim-card:hover img { transform:scale(1.06); filter:grayscale(0%); }
+        .sim-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.9) 0%,transparent 55%); }
+        .sim-content { position:absolute; bottom:0; left:0; right:0; padding:28px 24px; }
+        .sim-name { font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:300; color:#fff; margin:0 0 4px; }
+        .sim-meta { font-size:10px; letter-spacing:.1em; color:rgba(255,255,255,.4); text-transform:uppercase; margin:0; }
+        .sim-price { font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:#C5A572; margin:6px 0 0; }
+
         /* BACK */
         .back-link { display:block; text-align:center; padding:48px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#5a5450; text-decoration:none; transition:color .2s; }
         .back-link:hover { color:var(--gold); }
-
-        /* MOBILE CTA */
-        .sticky-cta { position:fixed; bottom:0; left:0; right:0; z-index:50; padding:12px 20px 20px; background:linear-gradient(to top,rgba(10,10,10,1) 60%,transparent); display:none; }
-        @media (max-width:1024px) { .sticky-cta { display:block; } }
 
         /* REVEAL — only hides when JS is confirmed running */
         body.js-ready .reveal { opacity:0; transform:translateY(18px); transition:opacity .75s ease,transform .75s ease; }
@@ -236,21 +330,26 @@ export default async function ModelProfilePage({ params }: Props) {
 
         /* MOBILE */
         @media (max-width:900px) {
-          .hero-content { padding:0 24px 60px; flex-direction:column; align-items:flex-start; }
-          .hero-right { align-items:flex-start; }
+          .hero-split { flex-direction:column; min-height:auto; }
+          .hero-photo { width:100%; height:60vh; min-height:400px; }
+          .hero-info { width:100%; padding:40px 24px 60px; }
           .gallery-section { padding:72px 0 72px 24px; }
           .gallery-item { width:240px; height:340px; }
           .gallery-hint { padding-right:24px; }
           .intro-section { grid-template-columns:1fr; padding:0 24px 72px; gap:48px; }
-          .booking-outer { grid-template-columns:1fr; padding:0 24px 72px; }
-          .booking-panel { position:static; }
+          .rates-section { padding:0 24px 72px; }
           .booking-outer { padding:0 24px 80px; }
           .booking-header { flex-direction:column; gap:8px; }
+          .booking-panel { position:static; }
           .exp-section { padding:0 24px 72px; }
           .exp-grid { grid-template-columns:1fr; }
           .assurance-section { grid-template-columns:1fr; }
           .assurance-item { padding:40px 32px; }
-          .booking-guarantees { grid-template-columns:1fr; }
+          .similar-section { padding:72px 24px; }
+          .similar-grid { grid-template-columns:repeat(2,1fr); }
+        }
+        @media (max-width:600px) {
+          .similar-grid { grid-template-columns:1fr; }
         }
       `}</style>
 
@@ -258,46 +357,39 @@ export default async function ModelProfilePage({ params }: Props) {
         <Header />
         <RevealInit />
 
-        {/* ── HERO ── */}
-        {primaryPhoto && (
-          <section className="hero">
-            <div className="hero-bg" style={{ backgroundImage: `url('${primaryPhoto}')` }} />
-            <div className="hero-overlay" />
-            <div className="hero-content">
-              <div className="hero-left">
-                <div className="avail-badge" style={{ marginBottom: 14 }}>
-                  <span className="avail-line" />
-                  Available in London
-                </div>
-                <h1 className="serif hero-name">{model.name}</h1>
-                {stats && (
-                  <p className="hero-sub">
-                    {[stats.age && `${stats.age} yrs`, stats.nationality, 'London'].filter(Boolean).join('  ·  ')}
-                  </p>
-                )}
+        {/* ── HERO — split layout (3.1) ── */}
+        <section className="hero-split">
+          <div className="hero-photo">
+            {primaryPhoto
+              ? <img src={primaryPhoto} alt={model.name} />
+              : <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#111,#1a1a1a)' }} />
+            }
+          </div>
+          <div className="hero-info">
+            <StickyBookBar modelName={model.name} minPrice={lowestPrice} />
+            <h1 className="hero-name">{model.name}</h1>
+            {stats && (
+              <p className="hero-sub">
+                {[stats.age, stats.nationality].filter(Boolean).join('  ·  ')}
+              </p>
+            )}
+            <div className="hero-divider" />
+            {lowestPrice && (
+              <p className="hero-price">From £{lowestPrice.toLocaleString('en-GB')}/hour</p>
+            )}
+            <a href="#booking" className="btn-hero">Book Now</a>
+            <div className="hero-trust">
+              <div className="hero-trust-item">
+                <span className="hero-trust-dot" />
+                Available Now
               </div>
-              <div className="hero-right">
-                {stats && (
-                  <div className="hero-attrs">
-                    {stats.height && <span>{stats.height} cm</span>}
-                    {stats.bustSize && <span>{stats.bustSize}</span>}
-                    {stats.hairColour && <span>{stats.hairColour}</span>}
-                  </div>
-                )}
-                {lowestPrice && (
-                  <div style={{ fontSize: 14, letterSpacing: '.12em', textTransform: 'uppercase', color: '#C5A572' }}>
-                    From £{lowestPrice.toLocaleString('en-GB')}/hour
-                  </div>
-                )}
-                <a href="#booking" className="btn-hero">Arrange a Meeting</a>
+              <div className="hero-trust-item">
+                <span style={{ color: '#C5A572', fontSize: 8 }}>◈</span>
+                Confirmed in 30 min
               </div>
             </div>
-            <div className="scroll-hint">
-              <div className="scroll-line" />
-              Discover
-            </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* ── DRAG GALLERY ── */}
         {galleryPhotos.length > 1 && (
@@ -331,6 +423,46 @@ export default async function ModelProfilePage({ params }: Props) {
                   <p className="attr-lbl">{label}</p>
                   <p className="attr-val">{value}</p>
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── RATES TABLE (3.2) ── */}
+        {ratesTable.length > 0 && (
+          <section className="rates-section reveal">
+            <p className="section-label">Rates</p>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="rates-table">
+                <thead>
+                  <tr>
+                    <th>Duration</th>
+                    <th>Incall</th>
+                    <th>Outcall</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ratesTable.map(row => (
+                    <tr key={row.duration}>
+                      <td>{row.label}</td>
+                      <td>{row.incall ? `£${Number(row.incall).toLocaleString('en-GB')}` : '—'}</td>
+                      <td>{row.outcall ? `£${Number(row.outcall).toLocaleString('en-GB')}` : 'On request'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* ── SERVICE TAGS (3.3) ── */}
+        {cleanedServices.length > 0 && (
+          <section style={{ padding: '0 64px 80px' }} className="reveal">
+            <div className="service-tags">
+              {cleanedServices.map((s: any) => (
+                <Link key={s.slug} href={`/services/${s.slug}`} className="service-tag">
+                  {s.displayTitle}
+                </Link>
               ))}
             </div>
           </section>
@@ -399,12 +531,46 @@ export default async function ModelProfilePage({ params }: Props) {
 
         <Link href="/london-escorts" className="back-link reveal">← All Companions</Link>
 
-        {/* MOBILE CTA */}
-        <div className="sticky-cta">
-          <a href="#booking" style={{ display:'block', background:'var(--gold)', color:'#080808', textAlign:'center', padding:'16px', fontFamily:'DM Sans,sans-serif', fontWeight:500, fontSize:12, letterSpacing:'.12em', textDecoration:'none', textTransform:'uppercase' }}>
-            Arrange a Meeting with {model.name}
-          </a>
-        </div>
+        {/* ── SIMILAR COMPANIONS (3.4) ── */}
+        {similarModels.length > 0 && (
+          <section className="similar-section reveal">
+            <h3 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 28,
+              fontWeight: 300,
+              color: '#FAFAFA',
+              margin: 0,
+            }}>
+              You may also like
+            </h3>
+            <div className="similar-grid">
+              {similarModels.map((sim: any) => {
+                const simPhoto = sim.media[0]?.url
+                const simAge = sim.stats?.age
+                const simNat = sim.stats?.nationality
+                const simPrice = similarPrices[sim.id]
+                return (
+                  <Link key={sim.id} href={`/catalog/${sim.slug}`} className="sim-card">
+                    {simPhoto
+                      ? <img src={simPhoto} alt={sim.name} loading="lazy" />
+                      : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#111', color:'#2a2520', fontSize:40 }}>◈</div>
+                    }
+                    <div className="sim-overlay" />
+                    <div className="sim-content">
+                      <p className="sim-name">{sim.name}</p>
+                      <p className="sim-meta">
+                        {[simAge && `${simAge} yrs`, simNat].filter(Boolean).join('  ·  ')}
+                      </p>
+                      {simPrice && (
+                        <p className="sim-price">From £{simPrice.toLocaleString('en-GB')}/hr</p>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         <Footer />
       </div>
