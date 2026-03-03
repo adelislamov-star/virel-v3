@@ -457,7 +457,7 @@ export function BookingForm({ model }: BookingFormProps) {
       <div style={{ display: 'flex', gap: 36, marginTop: 20, maxWidth: 600, fontSize: 9, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.35)', flexWrap: 'wrap' }}>
         {['Confirmed within 30 min', '100% discreet', 'Verified profile'].map(text => (
           <span key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: '#b8965a', fontSize: 8 }}>◈</span>
+            <span style={{ color: '#b8965a', fontSize: 8 }}>◆</span>
             {text}
           </span>
         ))}
