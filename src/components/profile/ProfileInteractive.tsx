@@ -133,3 +133,31 @@ export function ExpToggle({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
+
+// ── SERVICE TAGS COLLAPSE ──
+interface ServiceTag {
+  slug: string
+  displayTitle: string
+}
+
+export function ServiceTagsCollapse({ tags }: { tags: ServiceTag[] }) {
+  const [showAll, setShowAll] = useState(false)
+  const limit = 8
+  const visible = showAll ? tags : tags.slice(0, limit)
+  const remaining = tags.length - limit
+
+  return (
+    <div className="service-tags">
+      {visible.map(s => (
+        <a key={s.slug} href={`/services/${s.slug}`} className="service-tag">
+          {s.displayTitle}
+        </a>
+      ))}
+      {!showAll && remaining > 0 && (
+        <button onClick={() => setShowAll(true)} className="service-more-btn">
+          +{remaining} more
+        </button>
+      )}
+    </div>
+  )
+}

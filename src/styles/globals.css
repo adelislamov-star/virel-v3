@@ -48,11 +48,14 @@
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+  overflow-x: hidden;
 }
 
-/* Smooth scrolling */
+/* Smooth scrolling + prevent horizontal overflow on mobile */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Focus styles */
