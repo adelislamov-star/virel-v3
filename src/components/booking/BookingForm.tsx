@@ -185,6 +185,17 @@ export function BookingForm({ model }: BookingFormProps) {
     }
   }
 
+  const formStyles = `
+    .booking-duration-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
+    .booking-2col-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .booking-2col-grid-lg { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:640px) {
+      .booking-duration-grid { grid-template-columns:1fr 1fr; }
+      .booking-2col-grid, .booking-2col-grid-lg { grid-template-columns:1fr; }
+      .booking-duration-grid button { min-height:44px; }
+    }
+  `
+
   if (success) return (
     <div style={{ textAlign: 'center', padding: '64px 0' }}>
       <div style={{ fontSize: 28, color: '#b8965a', marginBottom: 28 }}>◈</div>
@@ -220,6 +231,7 @@ export function BookingForm({ model }: BookingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <style>{formStyles}</style>
 
       {error && (
         <div style={{ padding: '12px 20px', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: 11, marginBottom: 24, letterSpacing: '.04em' }}>
@@ -230,7 +242,7 @@ export function BookingForm({ model }: BookingFormProps) {
       {/* ── 01 LOCATION ── */}
       <div style={{ marginBottom: 48 }}>
         <StepLabel n="01" text="Location preference" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 480 }}>
+        <div className="booking-2col-grid" style={{ maxWidth: 480 }}>
           {([
             ['incall', 'Incall', 'Our private location, central London'],
             ['outcall', 'Outcall', 'Your hotel or residence + transport'],
@@ -281,11 +293,7 @@ export function BookingForm({ model }: BookingFormProps) {
       {currentRates.length > 0 && (
         <div style={{ marginBottom: 48 }}>
           <StepLabel n="02" text="Duration" />
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: 12,
-          }}>
+          <div className="booking-duration-grid">
             {currentRates.map(rate => {
               const sel = duration === rate.duration_type
               return (
@@ -354,7 +362,7 @@ export function BookingForm({ model }: BookingFormProps) {
       {/* ── 03 DATE & TIME ── */}
       <div style={{ marginBottom: 48 }}>
         <StepLabel n="03" text="Date & Time" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 480 }}>
+        <div className="booking-2col-grid-lg" style={{ maxWidth: 480 }}>
           <div>
             <p style={{ fontSize: 8, letterSpacing: '.25em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.45)', marginBottom: 10 }}>Date</p>
             <DateInput value={form.date} onChange={v => setForm({ ...form, date: v })} />
@@ -369,7 +377,7 @@ export function BookingForm({ model }: BookingFormProps) {
       {/* ── 04 CONTACT ── */}
       <div style={{ marginBottom: 48 }}>
         <StepLabel n="04" text="Your contact" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 600, marginBottom: 16 }}>
+        <div className="booking-2col-grid-lg" style={{ maxWidth: 600, marginBottom: 16 }}>
           <div>
             <p style={{ fontSize: 8, letterSpacing: '.25em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.45)', marginBottom: 10 }}>Name *</p>
             <FocusInput

@@ -11,9 +11,22 @@ export function Footer() {
         .f-link:hover { color:#ddd5c8; }
         .f-contact { font-size:11px; letter-spacing:.1em; color:#6b6560; text-decoration:none; text-transform:uppercase; transition:color .2s; }
         .f-contact:hover { color:#c9a84c; }
+        .footer-inner { max-width:1280px; margin:0 auto; padding:80px 40px 40px; }
+        .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:60px; margin-bottom:60px; }
+        .footer-bottom { padding-top:32px; border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+        .footer-district-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
+        @media (max-width:900px) {
+          .footer-inner { padding:60px 24px 32px; }
+          .footer-grid { grid-template-columns:1fr 1fr; gap:40px 24px; }
+        }
+        @media (max-width:640px) {
+          .footer-grid { grid-template-columns:1fr; gap:32px; }
+          .footer-district-list { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+          .footer-bottom { flex-direction:column; text-align:center; }
+        }
       `}</style>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 40px 40px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 60, marginBottom: 60 }}>
+      <div className="footer-inner">
+        <div className="footer-grid">
 
           {/* Brand */}
           <div>
@@ -30,7 +43,7 @@ export function Footer() {
           {/* Companions & Districts */}
           <div>
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Companions</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <ul className="footer-district-list">
               {[
                 ['/london-escorts', 'London Escorts'],
                 ['/escorts-in/mayfair', 'Escorts in Mayfair'],
@@ -48,7 +61,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Services */}
+          {/* Information */}
           <div>
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Information</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -70,7 +83,7 @@ export function Footer() {
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Contact</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <li><a href="https://t.me/virel_bookings" className="f-link">Telegram</a></li>
-              <li><a href="mailto:bookings@virel.com" className="f-link">bookings@virel.com</a></li>
+              <li><a href="mailto:bookings@virel.com" className="f-link" style={{ wordBreak: 'break-all' }}>bookings@virel.com</a></li>
               <li style={{ fontSize: 13, color: '#4a4540' }}>London, United Kingdom</li>
               <li style={{ fontSize: 13, color: '#4a4540' }}>Available 24/7</li>
             </ul>
@@ -78,8 +91,8 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div style={{ paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>© {currentYear} Virel. All rights reserved. · Adults only (18+)</p>
+        <div className="footer-bottom">
+          <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>&copy; {currentYear} Virel. All rights reserved. &middot; Adults only (18+)</p>
           <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>
             <Link href="/privacy" className="f-link" style={{ fontSize: 11, color: '#2a2520' }}>Privacy</Link>
             {' · '}

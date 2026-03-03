@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
-import { DragGallery, ExpToggle, RevealInit } from '@/components/profile/ProfileInteractive'
+import { DragGallery, ExpToggle, RevealInit, ServiceTagsCollapse } from '@/components/profile/ProfileInteractive'
 import { StickyBookBar } from '@/components/profile/StickyBookBar'
 import { prisma } from '@/lib/db/client'
 
@@ -233,7 +233,7 @@ export default async function ModelProfilePage({ params }: Props) {
         .hero-info { width:40%; display:flex; flex-direction:column; justify-content:center; padding:80px 56px; animation:fadeUp .9s ease both; }
         .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,6vw,80px); font-weight:300; color:#f5f0e8; margin:0 0 12px; line-height:.95; letter-spacing:-.01em; }
         .hero-sub { font-size:12px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase; margin:0 0 28px; }
-        .hero-price { font-size:16px; letter-spacing:.1em; text-transform:uppercase; color:#C5A572; margin:0 0 32px; font-weight:400; }
+        .hero-price { font-family:'Cormorant Garamond',serif; font-size:22px; letter-spacing:.06em; text-transform:uppercase; color:#C5A572; margin:0 0 32px; font-weight:600; }
         .hero-divider { width:48px; height:1px; background:rgba(255,255,255,.1); margin:0 0 32px; }
         .btn-hero { display:inline-block; padding:17px 44px; background:var(--gold); color:#080808; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; text-decoration:none; border:none; cursor:pointer; transition:background .3s,transform .3s; text-align:center; }
         .btn-hero:hover { background:#d4b45a; transform:translateY(-2px); }
@@ -303,9 +303,12 @@ export default async function ModelProfilePage({ params }: Props) {
         .rates-table tbody td:not(:first-child) { text-align:right; font-size:14px; color:#C5A572; letter-spacing:.04em; padding-left:16px; }
 
         /* SERVICE TAGS (3.3) */
+        .service-section { padding:0 64px 80px; }
         .service-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
         .service-tag { display:inline-block; padding:6px 14px; border:1px solid #2A2A2A; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#808080; text-decoration:none; transition:border-color .2s, color .2s; }
         .service-tag:hover { border-color:var(--white); color:var(--white); }
+        .service-more-btn { display:inline-block; padding:6px 14px; border:1px solid #2A2A2A; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#808080; background:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:border-color .2s,color .2s; }
+        .service-more-btn:hover { border-color:var(--white); color:var(--white); }
 
         /* SIMILAR COMPANIONS (3.4) */
         .similar-section { padding:120px 80px; border-top:1px solid #1A1A1A; }
@@ -341,6 +344,7 @@ export default async function ModelProfilePage({ params }: Props) {
           .gallery-hint { padding-right:24px; }
           .intro-section { grid-template-columns:1fr; padding:0 24px 80px; gap:48px; }
           .rates-section { padding:0 24px 80px; }
+          .service-section { padding:0 24px 80px; }
           .booking-outer { padding:0 24px 80px; }
           .booking-header { flex-direction:column; gap:8px; }
           .booking-panel { position:static; }
@@ -465,14 +469,8 @@ export default async function ModelProfilePage({ params }: Props) {
 
         {/* ── SERVICE TAGS (3.3) ── */}
         {cleanedServices.length > 0 && (
-          <section style={{ padding: '0 80px 120px' }} className="reveal">
-            <div className="service-tags">
-              {cleanedServices.map((s: any) => (
-                <Link key={s.slug} href={`/services/${s.slug}`} className="service-tag">
-                  {s.displayTitle}
-                </Link>
-              ))}
-            </div>
+          <section className="service-section reveal">
+            <ServiceTagsCollapse tags={cleanedServices.map((s: any) => ({ slug: s.slug, displayTitle: s.displayTitle }))} />
           </section>
         )}
 
