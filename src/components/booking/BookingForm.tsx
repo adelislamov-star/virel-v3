@@ -294,56 +294,55 @@ export function BookingForm({ model }: BookingFormProps) {
         <div style={{ marginBottom: 48 }}>
           <StepLabel n="02" text="Duration" />
           <div className="booking-duration-grid">
-            {currentRates.map(rate => {
-              const sel = duration === rate.duration_type
-              return (
-                <button
-                  key={rate.duration_type}
-                  type="button"
-                  onClick={() => setDuration(rate.duration_type)}
-                  style={{
-                    position: 'relative',
-                    padding: '20px 24px',
-                    border: sel ? '1px solid #b8965a' : '1px solid rgba(255,255,255,0.07)',
-                    background: sel ? 'rgba(184,150,90,0.06)' : '#161616',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: 'inherit',
-                    transition: 'all .25s',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* gradient overlay when selected */}
-                  {sel && (
-                    <span style={{
-                      position: 'absolute', inset: 0,
-                      background: 'linear-gradient(135deg, rgba(184,150,90,0.12), transparent)',
-                      pointerEvents: 'none',
-                    }} />
-                  )}
-                  {/* checkmark */}
-                  {sel && (
-                    <span style={{
-                      position: 'absolute', top: 10, right: 10,
-                      width: 18, height: 18, borderRadius: '50%',
-                      background: '#b8965a',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, color: '#0a0a0a', fontWeight: 700,
-                    }}>✓</span>
-                  )}
-                  <p style={{
-                    fontFamily: 'Cormorant Garamond, serif',
-                    fontSize: 22,
-                    fontWeight: 300,
-                    color: '#f5f0e8',
-                    margin: 0,
-                  }}>
-                    {DURATION_LABELS[rate.duration_type] || rate.duration_type}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
+            {currentRates
+              .filter((r: Rate) => r.duration_type !== 'extra_hour')
+              .map(rate => {
+                const sel = duration === rate.duration_type
+                return (
+                  <button
+                    key={rate.duration_type}
+                    type="button"
+                    onClick={() => setDuration(rate.duration_type)}
+                    style={{
+                      position: 'relative',
+                      padding: '20px 24px',
+                      border: sel ? '1px solid #b8965a' : '1px solid rgba(255,255,255,0.07)',
+                      background: sel ? 'rgba(184,150,90,0.06)' : '#161616',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: 'inherit',
+                      transition: 'all .25s',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {sel && (
+                      <span style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(135deg, rgba(184,150,90,0.12), transparent)',
+                        pointerEvents: 'none',
+                      }} />
+                    )}
+                    {sel && (
+                      <span style={{
+                        position: 'absolute', top: 10, right: 10,
+                        width: 18, height: 18, borderRadius: '50%',
+                        background: '#b8965a',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 9, color: '#0a0a0a', fontWeight: 700,
+                      }}>✓</span>
+                    )}
+                    <p style={{
+                      fontFamily: 'Cormorant Garamond, serif',
+                      fontSize: 22,
+                      fontWeight: 300,
+                      color: '#f5f0e8',
+                      margin: 0,
+                    }}>
+                      {DURATION_LABELS[rate.duration_type] || rate.duration_type}
+                    </p>
+                  </button>
+                )
+              })}
         </div>
       )}
 
