@@ -343,6 +343,7 @@ export function BookingForm({ model }: BookingFormProps) {
                   </button>
                 )
               })}
+          </div>
         </div>
       )}
 
