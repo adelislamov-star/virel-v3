@@ -230,7 +230,7 @@ export default async function ModelProfilePage({ params }: Props) {
         .hero-split { display:flex; min-height:100vh; position:relative; }
         .hero-photo { width:60%; position:relative; overflow:hidden; }
         .hero-photo img { width:100%; height:100%; object-fit:cover; object-position:center 15%; }
-        .hero-info { width:40%; display:flex; flex-direction:column; justify-content:center; padding:80px 56px; animation:fadeUp .9s ease both; }
+        .hero-info { width:40%; display:flex; flex-direction:column; justify-content:flex-start; padding:clamp(80px,18vh,200px) 56px 80px; animation:fadeUp .9s ease both; }
         .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,6vw,80px); font-weight:300; color:#f5f0e8; margin:0 0 12px; line-height:.95; letter-spacing:-.01em; }
         .hero-sub { font-size:12px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase; margin:0 0 28px; }
         .hero-price { font-family:'Cormorant Garamond',serif; font-size:22px; letter-spacing:.06em; text-transform:uppercase; color:#C5A572; margin:0 0 32px; font-weight:600; }
@@ -338,7 +338,7 @@ export default async function ModelProfilePage({ params }: Props) {
         @media (max-width:900px) {
           .hero-split { flex-direction:column; min-height:auto; }
           .hero-photo { width:100%; height:60vh; min-height:400px; }
-          .hero-info { width:100%; padding:40px 24px 60px; }
+          .hero-info { width:100%; padding:40px 24px 48px; }
           .gallery-section { padding:72px 0 72px 24px; }
           .gallery-item { width:240px; height:340px; }
           .gallery-hint { padding-right:24px; }
@@ -373,7 +373,6 @@ export default async function ModelProfilePage({ params }: Props) {
             }
           </div>
           <div className="hero-info">
-            <StickyBookBar modelName={model.name} minPrice={lowestPrice} />
             <h1 className="hero-name">{model.name}</h1>
             {stats && (
               <p className="hero-sub">
@@ -397,6 +396,8 @@ export default async function ModelProfilePage({ params }: Props) {
             </div>
           </div>
         </section>
+        {/* Sticky bar — observes .btn-hero, only appears after hero Book Now scrolls out of view */}
+        <StickyBookBar modelName={model.name} minPrice={lowestPrice} />
 
         {/* ── DRAG GALLERY ── */}
         {galleryPhotos.length > 1 && (
