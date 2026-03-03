@@ -30,7 +30,7 @@ export function RevealInit() {
 }
 
 // ── DRAG GALLERY ──
-export function DragGallery({ photos, modelName }: { photos: { id: string; url: string }[]; modelName: string }) {
+export function DragGallery({ photos, modelName }: { photos: { id: string; url: string; alt?: string }[]; modelName: string }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [lightboxIdx, setLightboxIdx] = useState(0)
@@ -75,7 +75,7 @@ export function DragGallery({ photos, modelName }: { photos: { id: string; url: 
       <div className="gallery-track" ref={trackRef}>
         {photos.map((photo, idx) => (
           <div key={photo.id} className="gallery-item" onClick={() => openLightbox(idx)} style={{ cursor: 'zoom-in', position: 'relative' }}>
-            <Image fill src={photo.url} alt={modelName} style={{ objectFit: 'cover', objectPosition: 'top' }} sizes="300px" />
+            <Image fill src={photo.url} alt={photo.alt || modelName} style={{ objectFit: 'cover', objectPosition: 'top' }} sizes="300px" />
           </div>
         ))}
       </div>

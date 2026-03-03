@@ -44,7 +44,7 @@ const baseInput: React.CSSProperties = {
 const stepLabelStyle: React.CSSProperties = {
   fontSize: 8,
   letterSpacing: '.3em',
-  color: '#b8965a',
+  color: 'rgba(232,224,212,0.42)',
   textTransform: 'uppercase' as const,
   marginBottom: 20,
   display: 'flex',
@@ -303,7 +303,7 @@ export function BookingForm({ model }: BookingFormProps) {
                   onClick={() => setDuration(rate.duration_type)}
                   style={{
                     position: 'relative',
-                    padding: '28px 24px',
+                    padding: '20px 24px',
                     border: sel ? '1px solid #b8965a' : '1px solid rgba(255,255,255,0.07)',
                     background: sel ? 'rgba(184,150,90,0.06)' : '#161616',
                     cursor: 'pointer',
@@ -336,21 +336,9 @@ export function BookingForm({ model }: BookingFormProps) {
                     fontSize: 22,
                     fontWeight: 300,
                     color: '#f5f0e8',
-                    margin: '0 0 8px',
+                    margin: 0,
                   }}>
                     {DURATION_LABELS[rate.duration_type] || rate.duration_type}
-                  </p>
-                  <p style={{
-                    fontSize: 14,
-                    color: sel ? '#b8965a' : 'rgba(184,150,90,0.55)',
-                    margin: 0,
-                    letterSpacing: '.05em',
-                    transition: 'color .2s',
-                  }}>
-                    £{Number(rate.price).toLocaleString('en-GB')}
-                    {rate.call_type === 'outcall' && (
-                      <span style={{ fontSize: 10, opacity: .6, marginLeft: 4 }}>+ taxi</span>
-                    )}
                   </p>
                 </button>
               )
@@ -462,12 +450,7 @@ export function BookingForm({ model }: BookingFormProps) {
         onMouseOver={e => { if (canSubmit) (e.target as HTMLButtonElement).style.background = '#d4af6e' }}
         onMouseOut={e => { if (canSubmit) (e.target as HTMLButtonElement).style.background = '#b8965a' }}
       >
-        {loading
-          ? 'Submitting…'
-          : selectedRate
-            ? `Request Booking — £${Number(selectedRate.price).toLocaleString('en-GB')}`
-            : 'Request Booking'
-        }
+        {loading ? 'Sending...' : 'Book Now'}
       </button>
 
       {/* Assurance row */}

@@ -26,18 +26,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const RATE_ORDER = ['30min','45min','1hour','90min','2hours','extra_hour','overnight']
 
 const SERVICE_REMAP: Record<string, string> = {
+  // Explicit acts → discreet names
   'COB (Cum on body)': 'Finishing on body',
+  'CIF (Cum in face)': 'Finishing on face',
   'OWC (Blow job with condom)': 'Protected oral',
+  'OWO (Blow job without condom)': 'Oral without protection',
   'DT (Deep throat)': 'Deep throat',
+  'A-Level (Anal sex)': 'A-level',
+  'A-Level': 'A-level',
+  'A-LEVEL (ANAL SEX)': 'A-level',
+  '69': '69',
+  'CIF (Cum in Face)': 'Finishing on face',
+  'COF (Cum on face)': 'Finishing on face',
+  // Acronyms → readable
   'DFK (Deep French kissing with tongue)': 'Deep French kissing',
   'FK (French kissing without tongue)': 'French kissing',
   'GFE': 'Girlfriend Experience',
   'PSE (Porn Star Experience)': 'Uninhibited experience',
+  'PSE': 'Uninhibited experience',
+  // Group experiences
   'MMF for double price (Male-Male-Female)': 'MMF duo (double rate)',
+  'MMF (Male-Male-Female)': 'MMF duo',
   'Bi DUO (lesbian show)': 'Bi duo experience',
   'Couples (includes Bi services)': 'Couples experience',
   'DUO (ladies serve client)': 'Duo — ladies serve',
+  // Body acts → neutral
   'Rimming Receiving (licking anal hole of lady)': 'Rimming receiving',
+  'Rimming Giving (licking anal hole of client)': 'Rimming giving',
+  'Squirting': 'Squirting',
+  'Fisting': 'Fisting',
+  'Watersports (giving)': 'Watersports — giving',
+  'Watersports (receiving)': 'Watersports — receiving',
+  'Striptease/Lapdance': 'Striptease & lapdance',
 }
 
 const CONNECTION_TAGS = ['Girlfriend Experience','Deep French kissing','French kissing','Dirty Talk','Roleplay']
@@ -171,7 +191,11 @@ export default async function ModelProfilePage({ params }: Props) {
     !SPECIAL_TAGS.includes(s.displayTitle)
   )
 
-  const galleryPhotos = gallery.map((p: any) => ({ id: p.id, url: p.url }))
+  const galleryPhotos = gallery.map((p: any, i: number) => ({
+    id: p.id,
+    url: p.url,
+    alt: `${model.name} — London companion, photograph ${i + 1}`,
+  }))
 
   const profileSchema = {
     '@context': 'https://schema.org',
@@ -227,15 +251,15 @@ export default async function ModelProfilePage({ params }: Props) {
         .serif { font-family:'Cormorant Garamond',Georgia,serif; }
 
         /* HERO — split layout (3.1) */
-        .hero-split { display:flex; min-height:100vh; position:relative; }
-        .hero-photo { width:60%; position:relative; overflow:hidden; }
+        .hero-split { display:flex; min-height:100vh; position:relative; align-items:stretch; }
+        .hero-photo { width:60%; position:relative; overflow:hidden; min-height:100vh; }
         .hero-photo img { width:100%; height:100%; object-fit:cover; object-position:center 15%; }
-        .hero-info { width:40%; display:flex; flex-direction:column; justify-content:flex-start; padding:clamp(80px,18vh,200px) 56px 80px; animation:fadeUp .9s ease both; }
+        .hero-info { width:40%; display:flex; flex-direction:column; justify-content:center; padding:120px 56px 80px; animation:fadeUp .9s ease both; }
         .hero-name { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,6vw,80px); font-weight:300; color:#f5f0e8; margin:0 0 12px; line-height:.95; letter-spacing:-.01em; }
         .hero-sub { font-size:12px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase; margin:0 0 28px; }
-        .hero-price { font-family:'Cormorant Garamond',serif; font-size:22px; letter-spacing:.06em; text-transform:uppercase; color:#C5A572; margin:0 0 32px; font-weight:600; }
+        .hero-price { font-family:'Cormorant Garamond',serif; font-size:27px; letter-spacing:.03em; color:#C5A572; margin:0 0 32px; font-weight:300; line-height:1; }
         .hero-divider { width:48px; height:1px; background:rgba(255,255,255,.1); margin:0 0 32px; }
-        .btn-hero { display:inline-block; padding:17px 44px; background:var(--gold); color:#080808; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; text-decoration:none; border:none; cursor:pointer; transition:background .3s,transform .3s; text-align:center; }
+        .btn-hero { display:inline-block; padding:17px 44px; background:var(--gold); color:#080808; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; text-decoration:none; border:none; cursor:pointer; transition:background .3s,transform .3s; text-align:center; align-self:flex-start; }
         .btn-hero:hover { background:#d4b45a; transform:translateY(-2px); }
         .hero-trust { margin-top:28px; display:flex; flex-direction:column; gap:8px; }
         .hero-trust-item { font-size:11px; letter-spacing:.08em; color:rgba(255,255,255,.35); display:flex; align-items:center; gap:10px; }
@@ -376,9 +400,21 @@ export default async function ModelProfilePage({ params }: Props) {
             <h1 className="hero-name">{model.name}</h1>
             {stats && (
               <p className="hero-sub">
-                {[stats.age, stats.nationality].filter(Boolean).join('  ·  ')}
+                {[stats.age, stats.nationality].filter(Boolean).join(' · ')}
               </p>
             )}
+            <p style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 17,
+              fontStyle: 'italic',
+              fontWeight: 300,
+              color: 'rgba(232,224,212,0.32)',
+              letterSpacing: '0.03em',
+              margin: '0 0 28px',
+              lineHeight: 1.6,
+            }}>
+              An evening that begins where ordinary ends
+            </p>
             <div className="hero-divider" />
             {lowestPrice && (
               <p className="hero-price">From £{lowestPrice.toLocaleString('en-GB')}/hour</p>
@@ -390,7 +426,7 @@ export default async function ModelProfilePage({ params }: Props) {
                 Available Now
               </div>
               <div className="hero-trust-item">
-                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8 }}>◈</span>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8 }}>◆</span>
                 Confirmed in 30 min
               </div>
             </div>
@@ -412,11 +448,17 @@ export default async function ModelProfilePage({ params }: Props) {
         {stats && (
           <section className="intro-section reveal">
             <div className="intro-text">
-              {model.name} brings a rare combination of warmth and sophistication
-              to every encounter. Fluent in English
-              {stats.languages?.includes('Portuguese') ? ' and Portuguese' : ''},
-              she creates an atmosphere of genuine connection where every detail
-              is attended to with complete discretion and care.
+              {(model as any).bio ? (
+                (model as any).bio
+              ) : (
+                <>
+                  {model.name} brings a rare combination of warmth and sophistication
+                  to every encounter. Fluent in English
+                  {stats.languages?.includes('Portuguese') ? ' and Portuguese' : ''},
+                  she creates an atmosphere of genuine connection where every detail
+                  is attended to with complete discretion and care.
+                </>
+              )}
             </div>
             <div className="intro-attrs">
               {[
@@ -475,18 +517,6 @@ export default async function ModelProfilePage({ params }: Props) {
           </section>
         )}
 
-        {/* ── BOOKING ── */}
-        <section className="booking-outer reveal" id="booking">
-          <div className="booking-header">
-            <h2 className="serif booking-title">Arrange a Meeting</h2>
-            <div className="booking-subtitle">Confirmation within 30 minutes</div>
-          </div>
-
-          <div className="booking-panel">
-            <BookingForm model={{ id: model.id, name: model.name, rates }} />
-          </div>
-        </section>
-
         {/* ── EXPERIENCES ── */}
         {cleanedServices.length > 0 && (
           <section className="exp-section reveal">
@@ -521,12 +551,24 @@ export default async function ModelProfilePage({ params }: Props) {
           </section>
         )}
 
+        {/* ── BOOKING ── */}
+        <section className="booking-outer reveal" id="booking">
+          <div className="booking-header">
+            <h2 className="serif booking-title">Arrange a Meeting</h2>
+            <div className="booking-subtitle">Confirmation within 30 minutes</div>
+          </div>
+
+          <div className="booking-panel">
+            <BookingForm model={{ id: model.id, name: model.name, rates }} />
+          </div>
+        </section>
+
         {/* ── ASSURANCE ── */}
         <section className="assurance-section reveal">
           {[
-            ['◈','Absolute Discretion','Your privacy is our highest priority. All enquiries and arrangements remain strictly confidential.'],
-            ['◉','Verified Authentic','Every profile on Virel is personally verified. The photographs and information you see are genuine.'],
-            ['✦','30-Minute Response','All enquiries are acknowledged within 30 minutes. We respect your time as much as your privacy.'],
+            ['◆','Absolute Discretion','Your privacy is our highest priority. All enquiries and arrangements remain strictly confidential.'],
+            ['◆','Verified Authentic','Every profile on Virel is personally verified. The photographs and information you see are genuine.'],
+            ['◆','30-Minute Response','All enquiries are acknowledged within 30 minutes. We respect your time as much as your privacy.'],
           ].map(([icon, title, desc]) => (
             <div key={title} className="assurance-item">
               <span className="assurance-glyph">{icon}</span>
@@ -548,7 +590,7 @@ export default async function ModelProfilePage({ params }: Props) {
               color: '#FAFAFA',
               margin: 0,
             }}>
-              You may also like
+              Discover
             </h3>
             <div className="similar-grid">
               {similarModels.map((sim: any) => {
@@ -566,7 +608,7 @@ export default async function ModelProfilePage({ params }: Props) {
                     <div className="sim-content">
                       <p className="sim-name">{sim.name}</p>
                       <p className="sim-meta">
-                        {[simAge && `${simAge} yrs`, simNat].filter(Boolean).join('  ·  ')}
+                        {[simAge && `${simAge} yrs`, simNat].filter(Boolean).join(' · ')}
                       </p>
                       {simPrice && (
                         <p className="sim-price">From £{simPrice.toLocaleString('en-GB')}/hr</p>
