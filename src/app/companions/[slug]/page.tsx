@@ -49,6 +49,8 @@ const SERVICE_REMAP: Record<string, string> = {
   'MMF (Male-Male-Female)': 'MMF duo',
   'Bi DUO (lesbian show)': 'Bi duo experience',
   'Couples (includes Bi services)': 'Couples experience',
+  'Couples (Includes Bi Services)': 'Couples experience',
+  'Couples (includes bi services)': 'Couples experience',
   'DUO (ladies serve client)': 'Duo — ladies serve',
   // Body acts → neutral
   'Rimming Receiving (licking anal hole of lady)': 'Rimming receiving',
