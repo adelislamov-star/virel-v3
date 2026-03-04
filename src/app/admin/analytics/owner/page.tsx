@@ -1,9 +1,7 @@
-// OWNER ANALYTICS — 21 metrics dashboard
+// OWNER ANALYTICS
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 type OwnerData = {
   revenue: { total: number; netMargin: number; commission: number; payout: number };
@@ -33,84 +31,89 @@ export default function OwnerAnalyticsPage() {
   }
 
   function MetricCard({ label, value, unit, danger }: { label: string; value: number | string; unit?: string; danger?: boolean }) {
+    const display = `${unit === '£' ? '£' : ''}${value}${unit === '%' ? '%' : ''}${unit === '/day' ? '/day' : ''}${unit === 'min' ? ' min' : ''}${unit === 'hrs' ? ' hrs' : ''}`;
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground mb-1">{label}</p>
-          <p className={`text-2xl font-bold ${danger ? 'text-red-600' : ''}`}>
-            {unit === '£' && '£'}{value}{unit === '%' ? '%' : ''}{unit === '/day' ? '/day' : ''}{unit === 'min' ? ' min' : ''}{unit === 'hrs' ? ' hrs' : ''}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</p>
+        <p className={`text-2xl font-semibold mt-2 ${danger ? 'text-red-400' : 'text-zinc-100'}`}>{display}</p>
+      </div>
     );
   }
 
-  if (loading) return <div className="p-6"><h1 className="text-3xl font-bold mb-4">Owner Analytics</h1><p>Loading...</p></div>;
-  if (!data) return <div className="p-6"><h1 className="text-3xl font-bold mb-4">Owner Analytics</h1><p>No data</p></div>;
+  if (loading) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Owner Analytics</h1>
+          <p className="text-sm text-zinc-500 mt-1">Loading...</p>
+        </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-zinc-800/30 rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return <div className="p-8 max-w-7xl mx-auto"><h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Owner Analytics</h1><p className="text-zinc-500 mt-2">No data</p></div>;
 
   return (
-    <div className="p-6 max-w-7xl">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Owner Analytics</h1>
-          <p className="text-muted-foreground">21 key business metrics</p>
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Owner Analytics</h1>
+          <p className="text-sm text-zinc-500 mt-1">21 key business metrics</p>
         </div>
         <div className="flex gap-2">
           {['week', 'month', 'quarter'].map(p => (
-            <Button key={p} size="sm" variant={period === p ? 'default' : 'outline'} onClick={() => setPeriod(p)}>
+            <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 ${period === p ? 'bg-amber-500 text-zinc-900' : 'border border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-zinc-200'}`}>
               This {p.charAt(0).toUpperCase() + p.slice(1)}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Row 1: Revenue */}
-      <h2 className="text-lg font-semibold mb-3">Revenue</h2>
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Revenue</h2>
+      <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricCard label="#1 Revenue" value={data.revenue.total.toFixed(0)} unit="£" />
         <MetricCard label="#2 Net Margin" value={data.revenue.netMargin.toFixed(1)} unit="%" />
         <MetricCard label="#3 Commission" value={data.revenue.commission.toFixed(0)} unit="£" />
         <MetricCard label="#4 Payout" value={data.revenue.payout.toFixed(0)} unit="£" />
       </div>
 
-      {/* Row 2: Lead & Operations */}
-      <h2 className="text-lg font-semibold mb-3">Leads & Operations</h2>
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Leads & Operations</h2>
+      <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricCard label="#5 Lead Conversion" value={data.leads.conversionRate.toFixed(1)} unit="%" />
         <MetricCard label="#6 Avg Response Time" value={data.leads.avgResponseTime} unit="min" />
         <MetricCard label="#7 SLA Breach Rate" value={data.operations.slaBreachRate.toFixed(1)} unit="%" danger={data.operations.slaBreachRate > 2} />
         <MetricCard label="#8 Cancellation Rate" value={data.operations.cancellationRate.toFixed(1)} unit="%" danger={data.operations.cancellationRate > 10} />
       </div>
 
-      {/* Row 3: Risk & Quality */}
-      <h2 className="text-lg font-semibold mb-3">Risk & Quality</h2>
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Risk & Quality</h2>
+      <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricCard label="#9 Chargeback Rate" value={data.risk.chargebackRate.toFixed(2)} unit="%" danger={data.risk.chargebackRate > 0.5} />
         <MetricCard label="#10 Fraud Cases" value={data.risk.fraudCases} />
-        <MetricCard label="#11 Avg Model Rating" value={`${data.risk.avgModelRating.toFixed(1)} ★`} />
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground mb-1">#12 Risk Distribution</p>
-            <div className="flex gap-3 text-lg font-bold">
-              <span className="text-green-600">{data.risk.riskDistribution.green}</span>
-              <span className="text-yellow-600">{data.risk.riskDistribution.yellow}</span>
-              <span className="text-red-600">{data.risk.riskDistribution.red}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <MetricCard label="#11 Avg Model Rating" value={`${data.risk.avgModelRating.toFixed(1)}`} />
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">#12 Risk Distribution</p>
+          <div className="flex gap-3 text-lg font-semibold mt-2">
+            <span className="text-emerald-400">{data.risk.riskDistribution.green}</span>
+            <span className="text-yellow-400">{data.risk.riskDistribution.yellow}</span>
+            <span className="text-red-400">{data.risk.riskDistribution.red}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Row 4: Membership */}
-      <h2 className="text-lg font-semibold mb-3">Membership</h2>
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Membership</h2>
+      <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricCard label="#17 MRR" value={data.membership.mrr.toFixed(0)} unit="£" />
         <MetricCard label="#18 Churn Rate" value={data.membership.churnRate.toFixed(1)} unit="%" danger={data.membership.churnRate > 5} />
         <MetricCard label="#19 ARPU" value={data.membership.arpu.toFixed(0)} unit="£" />
         <MetricCard label="#20 LTV/CAC Ratio" value={data.membership.ltvCacRatio.toFixed(1)} />
       </div>
 
-      {/* Row 5: System */}
-      <h2 className="text-lg font-semibold mb-3">System & Data</h2>
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">System & Data</h2>
       <div className="grid grid-cols-3 gap-4">
         <MetricCard label="#16 API Error Rate" value={data.system.apiErrorRate.toFixed(2)} unit="%" danger={data.system.apiErrorRate > 1} />
         <MetricCard label="#14 Booking Velocity" value={data.operations.bookingVelocity.toFixed(1)} unit="/day" />

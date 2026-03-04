@@ -6,20 +6,36 @@
   /* Dark theme (default) */
   --background: 0 0% 7%;
   --foreground: 0 0% 98%;
-  
+
   --primary: 43 96% 56%;
   --primary-foreground: 0 0% 9%;
-  
+
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
-  
+
   --accent: 43 96% 56%;
   --accent-foreground: 0 0% 9%;
-  
+
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  
+
   --border: 217.2 32.6% 17.5%;
+
+  /* Admin palette — muted dark */
+  --admin-bg: #0a0a0b;
+  --admin-surface: #111113;
+  --admin-surface-hover: #18181b;
+  --admin-border: #27272a;
+  --admin-border-subtle: #1e1e21;
+  --admin-text: #fafafa;
+  --admin-text-secondary: #a1a1aa;
+  --admin-text-muted: #71717a;
+  --admin-accent: #f59e0b;
+  --admin-accent-hover: #d97706;
+  --admin-success: #22c55e;
+  --admin-warning: #eab308;
+  --admin-error: #ef4444;
+  --admin-info: #3b82f6;
 }
 
 [data-theme="light"] {

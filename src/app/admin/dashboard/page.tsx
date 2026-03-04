@@ -1,10 +1,8 @@
-// DASHBOARD PAGE — UPDATED WITH PHASE 2 METRICS
+// DASHBOARD
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 type DashboardData = {
   revenue: { total: number; commission: number; avgBookingValue: number; mrr: number };
@@ -31,7 +29,24 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Dashboard</h1>
+          <p className="text-sm text-zinc-500 mt-1">Operations overview</p>
+        </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-zinc-800/30 rounded-xl" />)}
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-zinc-800/30 rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const d = data || {
     revenue: { total: 0, commission: 0, avgBookingValue: 0, mrr: 0 },
@@ -41,188 +56,122 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">📊 Dashboard</h1>
-        <p className="text-muted-foreground">Operations overview</p>
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Dashboard</h1>
+        <p className="text-sm text-zinc-500 mt-1">Operations overview</p>
       </div>
 
-      {/* Row 1: Revenue Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Revenue (this month)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">£{d.revenue.total.toFixed(0)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Commission</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">£{d.revenue.commission.toFixed(0)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Avg Booking Value</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">£{d.revenue.avgBookingValue.toFixed(0)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">MRR</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-muted-foreground">£{d.revenue.mrr}</div>
-            <p className="text-xs text-muted-foreground">Phase 3</p>
-          </CardContent>
-        </Card>
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Revenue</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Revenue (this month)</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">£{d.revenue.total.toFixed(0)}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Commission</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">£{d.revenue.commission.toFixed(0)}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Avg Booking Value</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">£{d.revenue.avgBookingValue.toFixed(0)}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">MRR</p>
+          <p className="text-2xl font-semibold text-zinc-400 mt-2">£{d.revenue.mrr}</p>
+        </div>
       </div>
 
-      {/* Row 2: Operations Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Active Bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{d.operations.activeBookings}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Cancellation Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${d.operations.cancellationRate > 20 ? 'text-red-600' : d.operations.cancellationRate > 10 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {d.operations.cancellationRate}%
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Open Incidents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${d.operations.openIncidents > 0 ? 'text-orange-600' : ''}`}>
-              {d.operations.openIncidents}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${d.operations.pendingReviews > 0 ? 'text-yellow-600' : ''}`}>
-              {d.operations.pendingReviews}
-            </div>
-          </CardContent>
-        </Card>
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Operations</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Active Bookings</p>
+          <p className="text-2xl font-semibold text-emerald-400 mt-2">{d.operations.activeBookings}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Cancellation Rate</p>
+          <p className={`text-2xl font-semibold mt-2 ${d.operations.cancellationRate > 20 ? 'text-red-400' : d.operations.cancellationRate > 10 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+            {d.operations.cancellationRate}%
+          </p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Open Incidents</p>
+          <p className={`text-2xl font-semibold mt-2 ${d.operations.openIncidents > 0 ? 'text-amber-400' : 'text-zinc-100'}`}>
+            {d.operations.openIncidents}
+          </p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Pending Reviews</p>
+          <p className={`text-2xl font-semibold mt-2 ${d.operations.pendingReviews > 0 ? 'text-yellow-400' : 'text-zinc-100'}`}>
+            {d.operations.pendingReviews}
+          </p>
+        </div>
       </div>
 
-      {/* Row 3: Model Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Published Models</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{d.models.published}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Avg Completeness Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${d.models.avgCompleteness >= 80 ? 'text-green-600' : d.models.avgCompleteness >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-              {d.models.avgCompleteness}%
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Risk Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <span className="text-green-600 font-bold">🟢 {d.models.riskDistribution.green}</span>
-              <span className="text-yellow-600 font-bold">🟡 {d.models.riskDistribution.yellow}</span>
-              <span className="text-red-600 font-bold">🔴 {d.models.riskDistribution.red}</span>
-            </div>
-          </CardContent>
-        </Card>
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Models</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Published Models</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">{d.models.published}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Avg Completeness</p>
+          <p className={`text-2xl font-semibold mt-2 ${d.models.avgCompleteness >= 80 ? 'text-emerald-400' : d.models.avgCompleteness >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {d.models.avgCompleteness}%
+          </p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Risk Distribution</p>
+          <div className="flex items-center gap-4 mt-2">
+            <span className="text-lg font-semibold text-emerald-400">{d.models.riskDistribution.green}</span>
+            <span className="text-lg font-semibold text-yellow-400">{d.models.riskDistribution.yellow}</span>
+            <span className="text-lg font-semibold text-red-400">{d.models.riskDistribution.red}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Row 4: Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Link href="/admin/reviews">
-              <Button className="w-full justify-start" variant="outline">
-                ⭐ Review Queue ({d.quickLinks.pendingReviews})
-              </Button>
-            </Link>
-            <Link href="/admin/incidents">
-              <Button className="w-full justify-start" variant="outline">
-                ⚠️ Open Incidents ({d.quickLinks.openIncidents})
-              </Button>
-            </Link>
-            <Link href="/admin/fraud">
-              <Button className="w-full justify-start" variant="outline">
-                🛡️ Fraud Alerts ({d.quickLinks.fraudAlerts})
-              </Button>
-            </Link>
-            <Link href="/admin/action-center">
-              <Button className="w-full justify-start" variant="outline">
-                🎯 Action Center
-              </Button>
-            </Link>
-            <Link href="/admin/bookings">
-              <Button className="w-full justify-start" variant="outline">
-                📅 All Bookings
-              </Button>
-            </Link>
-            <Link href="/admin/reports">
-              <Button className="w-full justify-start" variant="outline">
-                📋 Reports
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Quick Actions</h3>
+          <div className="space-y-2">
+            {[
+              { href: '/admin/reviews', label: 'Review Queue', count: d.quickLinks.pendingReviews },
+              { href: '/admin/incidents', label: 'Open Incidents', count: d.quickLinks.openIncidents },
+              { href: '/admin/fraud', label: 'Fraud Alerts', count: d.quickLinks.fraudAlerts },
+              { href: '/admin/action-center', label: 'Action Center' },
+              { href: '/admin/bookings', label: 'All Bookings' },
+              { href: '/admin/reports', label: 'Reports' },
+            ].map(link => (
+              <Link key={link.href} href={link.href}>
+                <div className="px-3 py-2 rounded-lg hover:bg-zinc-800/50 text-sm text-zinc-400 hover:text-zinc-200 transition-colors duration-150 flex justify-between items-center">
+                  <span>{link.label}</span>
+                  {link.count !== undefined && (
+                    <span className="text-xs font-medium text-zinc-500">{link.count}</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>System Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Database</span>
-              <span className="text-sm font-semibold text-green-600">✓ Connected</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">API Server</span>
-              <span className="text-sm font-semibold text-green-600">✓ Running</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Queue Worker</span>
-              <span className="text-sm font-semibold text-yellow-600">⚠ Not Running</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Telegram Bots</span>
-              <span className="text-sm font-semibold text-yellow-600">⚠ Not Configured</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">System Status</h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Database', status: 'Connected', ok: true },
+              { label: 'API Server', status: 'Running', ok: true },
+              { label: 'Queue Worker', status: 'Not Running', ok: false },
+              { label: 'Telegram Bots', status: 'Not Configured', ok: false },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">{item.label}</span>
+                <span className={`font-medium ${item.ok ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

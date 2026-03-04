@@ -3,16 +3,19 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
+const statusStyles: Record<string, string> = {
+  active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  draft: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  published: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  suspended: 'bg-red-500/10 text-red-400 border-red-500/20',
+};
 
 export default function ModelsPage() {
   const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    loadModels();
-  }, []);
+  useEffect(() => { loadModels(); }, []);
   
   async function loadModels() {
     try {
@@ -27,24 +30,34 @@ export default function ModelsPage() {
   }
   
   if (loading) {
-    return <div className="p-6">Loading models...</div>;
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Models</h1>
+          <p className="text-sm text-zinc-500 mt-1">Loading...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-40 bg-zinc-800/30 rounded-xl" />)}
+        </div>
+      </div>
+    );
   }
   
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">👤 Models</h1>
-          <p className="text-muted-foreground">{models.length} total models</p>
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Models</h1>
+          <p className="text-sm text-zinc-500 mt-1">{models.length} total models</p>
         </div>
         <div className="flex gap-2">
           <Link href="/admin/quick-upload"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-500 transition-colors text-sm flex items-center gap-1"
+            className="px-4 py-2 rounded-lg border border-zinc-700 hover:border-zinc-600 text-zinc-300 hover:text-zinc-100 text-sm font-medium transition-colors duration-150"
           >
-            ⚡ Quick Upload
+            Quick Upload
           </Link>
           <Link href="/admin/models/new"
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
+            className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
           >
             + Add Model
           </Link>
@@ -53,47 +66,42 @@ export default function ModelsPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {models.map(model => (
-          <Card key={model.id}>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="font-semibold text-xl">{model.name}</h3>
-                  <p className="text-sm text-muted-foreground">{model.publicCode}</p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Badge variant={model.status === 'active' ? 'default' : 'secondary'}>
-                    {model.status}
-                  </Badge>
-                  <Badge variant="outline">
-                    {model.visibility}
-                  </Badge>
-                </div>
-                
-                {model.ratingInternal && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Internal Rating: </span>
-                    <span className="font-semibold">⭐ {model.ratingInternal}/5</span>
-                  </div>
-                )}
-                
-                <button
-                  onClick={() => window.location.href = `/admin/models/${model.id}`}
-                  className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-                >
-                  Edit Profile
-                </button>
+          <div key={model.id} className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5 hover:bg-zinc-800/30 transition-colors duration-100">
+            <div className="space-y-3">
+              <div>
+                <h3 className="font-semibold text-lg text-zinc-100">{model.name}</h3>
+                <p className="text-xs text-zinc-500">{model.publicCode}</p>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="flex gap-2">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${statusStyles[model.status] || statusStyles.draft}`}>
+                  {model.status}
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">
+                  {model.visibility}
+                </span>
+              </div>
+              
+              {model.ratingInternal && (
+                <div className="text-sm text-zinc-400">
+                  Internal Rating: <span className="font-semibold text-zinc-200">{model.ratingInternal}/5</span>
+                </div>
+              )}
+              
+              <button
+                onClick={() => window.location.href = `/admin/models/${model.id}`}
+                className="w-full px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
+              >
+                Edit Profile
+              </button>
+            </div>
+          </div>
         ))}
         
         {models.length === 0 && (
-          <Card className="col-span-full">
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              No models found
-            </CardContent>
-          </Card>
+          <div className="col-span-full rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-8 text-center">
+            <p className="text-zinc-500">No models found</p>
+          </div>
         )}
       </div>
     </div>
