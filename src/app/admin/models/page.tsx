@@ -21,7 +21,7 @@ export default function ModelsPage() {
   
   async function loadModels() {
     try {
-      const res = await fetch('/api/v1/models');
+      const res = await fetch('/api/v1/models?all=true');
       const data = await res.json();
       setModels(data.data?.models || []);
       setLoading(false);
