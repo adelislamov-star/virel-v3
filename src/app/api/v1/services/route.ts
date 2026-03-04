@@ -1,9 +1,12 @@
 // GET ALL SERVICES — returns in categories format for ServicesTab component
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
+import { ensureServices } from '@/lib/db/ensure-services';
 
 export async function GET(request: NextRequest) {
   try {
+    await ensureServices();
+
     const services = await prisma.service.findMany({
       where: { status: 'active' },
       select: {

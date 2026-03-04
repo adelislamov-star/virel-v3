@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import QuickUploadModal from '@/components/models/QuickUploadModal';
 
 const statusStyles: Record<string, string> = {
   active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -14,6 +15,7 @@ const statusStyles: Record<string, string> = {
 export default function ModelsPage() {
   const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quickUploadOpen, setQuickUploadOpen] = useState(false);
   
   useEffect(() => { loadModels(); }, []);
   
@@ -51,11 +53,12 @@ export default function ModelsPage() {
           <p className="text-sm text-zinc-500 mt-1">{models.length} total models</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/admin/quick-upload"
+          <button
+            onClick={() => setQuickUploadOpen(true)}
             className="px-4 py-2 rounded-lg border border-zinc-700 hover:border-zinc-600 text-zinc-300 hover:text-zinc-100 text-sm font-medium transition-colors duration-150"
           >
             Quick Upload
-          </Link>
+          </button>
           <Link href="/admin/models/new"
             className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
           >
@@ -104,6 +107,11 @@ export default function ModelsPage() {
           </div>
         )}
       </div>
+
+      <QuickUploadModal
+        open={quickUploadOpen}
+        onClose={() => setQuickUploadOpen(false)}
+      />
     </div>
   );
 }
