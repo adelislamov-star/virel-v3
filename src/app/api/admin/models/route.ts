@@ -73,25 +73,27 @@ export async function POST(request: NextRequest) {
     })
 
     // Services — supports both string[] and {code, extraPrice}[] formats
+    // Codes from AI parsing are uppercase (GFE, OWO), slugs in DB are lowercase (gfe, owo)
     if (body.services && body.services.length > 0) {
       const serviceItems: { code: string; extraPrice?: number }[] = body.services.map((s: any) =>
         typeof s === 'string' ? { code: s } : s
       )
-      const codes = serviceItems.map(s => s.code)
-      const dbServices = await prisma.$queryRaw<{ id: string; code: string }[]>`
-        SELECT id, code FROM services WHERE code = ANY(${codes}::text[])
+      const slugs = serviceItems.map(s => s.code.toLowerCase().replace(/_/g, '-'))
+      const dbServices = await prisma.$queryRaw<{ id: string; slug: string }[]>`
+        SELECT id, slug FROM services WHERE slug = ANY(${slugs}::text[])
       `
-      const codeToId = Object.fromEntries(dbServices.map(s => [s.code, s.id]))
+      const slugToId = Object.fromEntries(dbServices.map(s => [s.slug, s.id]))
       for (const item of serviceItems) {
-        const serviceId = codeToId[item.code]
+        const slug = item.code.toLowerCase().replace(/_/g, '-')
+        const serviceId = slugToId[slug]
         if (!serviceId) continue
         try {
           await prisma.$executeRawUnsafe(
-            `INSERT INTO model_services ("modelId", "serviceId", "isEnabled", extra_price)
-             VALUES ($1, $2, true, $3)
+            `INSERT INTO model_services ("modelId", "serviceId", "isEnabled")
+             VALUES ($1, $2, true)
              ON CONFLICT ("modelId", "serviceId") DO UPDATE SET
-               "isEnabled" = true, extra_price = EXCLUDED.extra_price`,
-            model.id, serviceId, item.extraPrice ?? null
+               "isEnabled" = true`,
+            model.id, serviceId
           )
         } catch {}
       }

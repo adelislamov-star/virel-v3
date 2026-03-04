@@ -36,6 +36,16 @@ async function main() {
       where: { code: 'FINANCE' },
       update: {},
       create: { code: 'FINANCE', name: 'Finance', description: 'Manage finances' }
+    }),
+    prisma.role.upsert({
+      where: { code: 'INTEGRATIONS_ADMIN' },
+      update: {},
+      create: { code: 'INTEGRATIONS_ADMIN', name: 'Integrations Admin', description: 'Manage integrations' }
+    }),
+    prisma.role.upsert({
+      where: { code: 'READ_ONLY' },
+      update: {},
+      create: { code: 'READ_ONLY', name: 'Read Only', description: 'Read-only access' }
     })
   ]);
   
@@ -322,7 +332,7 @@ async function main() {
   
   console.log('✅ Seed complete!');
   console.log('\n📊 Created:');
-  console.log('- 5 Roles');
+  console.log('- 7 Roles');
   console.log('- 6 Users (1 Owner, 1 Manager, 4 Operators)');
   console.log('- 3 Locations');
   console.log('- 3 Services');

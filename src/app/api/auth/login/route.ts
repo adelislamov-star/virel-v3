@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/client';
 import bcrypt from 'bcryptjs';
 
 export const runtime = 'nodejs';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { roles: true },
+      include: { roles: { include: { role: true } } },
     });
 
     if (!user) {
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ 
       success: true, 
-      user: { id: user.id, email: user.email, name: user.name, role: (user as any).roles?.[0]?.name } 
+      user: { id: user.id, email: user.email, name: user.name, role: user.roles?.[0]?.role?.code }
     });
     
     response.cookies.set('virel-token', user.id, {

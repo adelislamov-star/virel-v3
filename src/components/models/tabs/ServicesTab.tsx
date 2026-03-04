@@ -11,7 +11,6 @@ interface Service {
   id: string;
   title: string;
   slug: string;
-  code?: string;
   hasExtraPrice: boolean;
   isPopular: boolean;
 }
@@ -125,7 +124,7 @@ export default function ServicesTab({ model, onSave, saving }: any) {
     services: (cat.services || []).filter(s =>
       !searchQuery ||
       s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.code && s.code.toLowerCase().includes(searchQuery.toLowerCase()))
+      (s.slug && s.slug.toLowerCase().includes(searchQuery.toLowerCase()))
     )
   })).filter(cat => cat.services.length > 0);
 
@@ -198,8 +197,8 @@ export default function ServicesTab({ model, onSave, saving }: any) {
                           <span className="text-xs text-amber-500">★</span>
                         )}
                       </div>
-                      {service.code && (
-                        <span className="text-xs text-muted-foreground">{service.code}</span>
+                      {service.slug && (
+                        <span className="text-xs text-muted-foreground">{service.slug}</span>
                       )}
                     </div>
 
