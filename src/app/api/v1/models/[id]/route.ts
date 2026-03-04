@@ -118,23 +118,23 @@ export async function PATCH(
     
     // Update work preferences
     if (body.workPreferences) {
-      await prisma.$executeRawUnsafe(`
-        INSERT INTO model_work_preferences (
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO model_work_preferences (
           id, model_id, work_with_couples, work_with_women,
           black_clients_welcome, disabled_clients_welcome
-        ) VALUES (
-          '${params.id}-prefs', '${params.id}',
-          ${body.workPreferences.workWithCouples || false},
-          ${body.workPreferences.workWithWomen || false},
-          ${body.workPreferences.blackClientsWelcome !== false},
-          ${body.workPreferences.disabledClientsWelcome !== false}
-        )
-        ON CONFLICT (id) DO UPDATE SET
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (model_id) DO UPDATE SET
           work_with_couples = EXCLUDED.work_with_couples,
           work_with_women = EXCLUDED.work_with_women,
           black_clients_welcome = EXCLUDED.black_clients_welcome,
-          disabled_clients_welcome = EXCLUDED.disabled_clients_welcome
-      `);
+          disabled_clients_welcome = EXCLUDED.disabled_clients_welcome`,
+        `${params.id}-prefs`,
+        params.id,
+        body.workPreferences.workWithCouples || false,
+        body.workPreferences.workWithWomen || false,
+        body.workPreferences.blackClientsWelcome !== false,
+        body.workPreferences.disabledClientsWelcome !== false,
+      );
     }
     
     // Update services
@@ -195,7 +195,7 @@ export async function PATCH(
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true
          )
-         ON CONFLICT (id) DO UPDATE SET
+         ON CONFLICT (model_id) DO UPDATE SET
            street = EXCLUDED.street,
            flat_number = EXCLUDED.flat_number,
            flat_floor = EXCLUDED.flat_floor,
@@ -218,11 +218,53 @@ export async function PATCH(
       );
     }
 
+    // ── Learning system: detect admin corrections to AI parse ──
+    try {
+      const modelRecord = await prisma.model.findUnique({
+        where: { id: params.id },
+        select: { aiParseExampleId: true },
+      });
+
+      if (modelRecord?.aiParseExampleId) {
+        const example = await prisma.aIParseExample.findUnique({
+          where: { id: modelRecord.aiParseExampleId },
+        });
+
+        if (example && !example.wasEdited) {
+          const editedFields: Record<string, any> = {};
+
+          if (body.stats) editedFields.stats = body.stats;
+          if (body.services) editedFields.services = body.services;
+          if (body.rates) editedFields.rates = body.rates;
+          if (body.address !== undefined) editedFields.address = body.address;
+          if (body.workPreferences) editedFields.workPreferences = body.workPreferences;
+          if (body.basicInfo?.name) editedFields.name = body.basicInfo.name;
+          if (body.basicInfo?.notesInternal) editedFields.bio_text = body.basicInfo.notesInternal;
+
+          if (Object.keys(editedFields).length > 0) {
+            const originalOutput = example.outputJson as Record<string, any>;
+            const correctedJson = { ...originalOutput, ...editedFields };
+
+            await prisma.aIParseExample.update({
+              where: { id: example.id },
+              data: {
+                wasEdited: true,
+                editedJson: correctedJson,
+              },
+            });
+            console.log(`[model-update] Learning: AI parse example ${example.id} marked as edited`);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[model-update] Learning comparison failed (non-fatal):', e);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Model updated'
     });
-    
+
   } catch (error: any) {
     console.error('Update model error:', error);
     return NextResponse.json({

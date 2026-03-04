@@ -139,6 +139,10 @@ model Model {
   ratingInternal  Float?   // 0-5
   notesInternal   String?  @db.Text
 
+  // AI Learning
+  aiParseExampleId  String?
+  aiParseExample    AIParseExample? @relation(fields: [aiParseExampleId], references: [id])
+
   // Quality & Risk Scoring
   dataCompletenessScore  Int      @default(0)   // 0-100
   modelRiskIndex         String   @default("green") // green, yellow, red
@@ -1175,4 +1179,26 @@ model DataQualityCheck {
   @@index([status, severity])
   @@index([entityType, entityId])
   @@map("data_quality_checks")
+}
+
+// ============================================
+// AI LEARNING
+// ============================================
+
+model AIParseExample {
+  id          String   @id @default(cuid())
+  inputType   String   // 'document' | 'photo_arrangement'
+  inputHash   String   // SHA-256 hash of input text
+  inputText   String?  @db.Text
+  outputJson  Json     // the successful parsed result
+  wasEdited   Boolean  @default(false)
+  editedJson  Json?    // the corrected version after admin edits
+  createdAt   DateTime @default(now())
+
+  // Relation
+  models      Model[]
+
+  @@index([inputType, createdAt])
+  @@index([inputHash])
+  @@map("ai_parse_examples")
 }

@@ -16,6 +16,9 @@ interface UploadSummary {
   photos: number
   hasBio: boolean
   hasAddress: boolean
+  photosArrangedByAI?: boolean
+  parsedByAI?: boolean
+  parsedByRegex?: boolean
 }
 
 const DOC_EXTENSIONS = ['docx', 'doc', 'txt', 'pdf']
@@ -226,6 +229,18 @@ export default function QuickUploadModal({ open, onClose }: QuickUploadModalProp
                     <span className="text-emerald-400">Saved</span>
                   </div>
                 )}
+                <div className="flex justify-between text-sm border-t border-zinc-800/50 pt-2 mt-2">
+                  <span className="text-zinc-400">Document Parser</span>
+                  <span className={summary.parsedByAI ? 'text-emerald-400' : summary.parsedByRegex ? 'text-amber-400' : 'text-zinc-500'}>
+                    {summary.parsedByAI ? '🤖 AI' : summary.parsedByRegex ? '⚙️ Regex Fallback' : 'None'}
+                  </span>
+                </div>
+                {summary.photosArrangedByAI && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-400">Photo Arrangement</span>
+                    <span className="text-emerald-400">🤖 AI Sorted</span>
+                  </div>
+                )}
               </div>
             </div>
           ) : processing ? (
@@ -233,7 +248,7 @@ export default function QuickUploadModal({ open, onClose }: QuickUploadModalProp
             <div className="flex flex-col items-center py-10 gap-4">
               <div className="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-zinc-300 font-medium">Processing files...</p>
-              <p className="text-zinc-500 text-sm">Parsing document, uploading images</p>
+              <p className="text-zinc-500 text-sm">AI is parsing your document and arranging photos...</p>
             </div>
           ) : (
             <>
