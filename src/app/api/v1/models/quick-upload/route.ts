@@ -20,34 +20,18 @@ function slugify(name: string) {
     .trim()
 }
 
-const EXTRACTION_PROMPT = `You are a data extraction assistant for a London escort agency. Analyze these profile images and extract ALL visible information. Return ONLY valid JSON:
-{
-  "name": "string",
-  "age": number or null,
-  "height_cm": number or null,
-  "weight_kg": number or null,
-  "nationality": "string or null",
-  "languages": ["English"],
-  "hair_colour": "string or null",
-  "eye_colour": "string or null",
-  "bust_size": "string or null",
-  "dress_size": "string or null",
-  "orientation": "string or null",
-  "bio_text": "string or null",
-  "services": ["GFE", "OWO"],
-  "rates": {
-    "30min": {"incall": null, "outcall": null},
-    "45min": {"incall": null, "outcall": null},
-    "1hour": {"incall": null, "outcall": null},
-    "90min": {"incall": null, "outcall": null},
-    "2hours": {"incall": null, "outcall": null},
-    "overnight": {"incall": null, "outcall": null}
-  },
-  "location": "string or null",
-  "phone": "string or null",
-  "email": "string or null"
-}
-Rates in GBP as numbers only. Use null for anything not visible.`
+const EXTRACTION_PROMPT = `You are a data extraction assistant for a London escort agency. Analyze these profile images and extract ALL visible information.
+
+If the images are glamour/portrait photos with no text visible, describe what you can see:
+- Estimate hair colour, eye colour from the photos
+- Estimate age range, body type, nationality if possible
+- Use "Model" as the name if no name is visible
+- Leave everything else as null
+
+Return ONLY valid JSON, no markdown, no explanation:
+{"name":"string","age":null,"height_cm":null,"weight_kg":null,"nationality":null,"languages":[],"hair_colour":null,"eye_colour":null,"bust_size":null,"dress_size":null,"orientation":null,"bio_text":null,"services":[],"rates":{"30min":{"incall":null,"outcall":null},"45min":{"incall":null,"outcall":null},"1hour":{"incall":null,"outcall":null},"90min":{"incall":null,"outcall":null},"2hours":{"incall":null,"outcall":null},"overnight":{"incall":null,"outcall":null}},"location":null,"phone":null,"email":null}
+
+Rates in GBP as numbers only. Use null for anything not visible. Always return valid JSON.`
 
 export const runtime = 'nodejs'
 // Allow up to 60s for AI processing + uploads
@@ -98,19 +82,50 @@ export async function POST(request: NextRequest) {
       messages: [{ role: 'user', content: blocks }],
     })
 
-    const rawText = (message.content[0] as any).text
-      .replace(/```json|```/g, '')
-      .trim()
+    const fullText = (message.content[0] as any).text || ''
+    console.log('[quick-upload] Raw Claude response:', fullText.substring(0, 500))
 
     let extracted: any
     try {
-      extracted = JSON.parse(rawText)
-    } catch {
-      return NextResponse.json({
-        success: false,
-        error: 'AI could not parse the images into structured data',
-        raw: rawText,
-      }, { status: 422 })
+      // Try multiple extraction strategies
+      // 1. Strip markdown fences
+      let cleaned = fullText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+
+      // 2. Try direct parse first
+      try {
+        extracted = JSON.parse(cleaned)
+      } catch {
+        // 3. Find JSON object within the text using regex
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          extracted = JSON.parse(jsonMatch[0])
+        } else {
+          throw new Error('No JSON object found in response')
+        }
+      }
+    } catch (parseError: any) {
+      console.error('[quick-upload] JSON parse failed:', parseError.message)
+      console.error('[quick-upload] Full response was:', fullText)
+      // Fallback: create model with defaults instead of failing
+      extracted = {
+        name: 'New Model',
+        age: null,
+        height_cm: null,
+        weight_kg: null,
+        nationality: null,
+        languages: [],
+        hair_colour: null,
+        eye_colour: null,
+        bust_size: null,
+        dress_size: null,
+        orientation: null,
+        bio_text: null,
+        services: [],
+        rates: {},
+        location: null,
+        phone: null,
+        email: null,
+      }
     }
 
     // 3. Create model in database
