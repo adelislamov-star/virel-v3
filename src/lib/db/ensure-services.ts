@@ -73,6 +73,19 @@ const DEFAULT_SERVICES: { title: string; slug: string; isPopular: boolean }[] = 
   { title: 'Tie & Tease', slug: 'tie-and-tease', isPopular: false },
   // Other common
   { title: 'Dinner Date', slug: 'dinner-date', isPopular: true },
+  // Exact slugs from parsed documents to improve matching
+  { title: 'Anal Sex', slug: 'anal-sex', isPopular: false },
+  { title: 'Filming with Mask', slug: 'filming-with-mask', isPopular: false },
+  { title: 'Open Mind', slug: 'open-mind', isPopular: false },
+  { title: 'Light Domination', slug: 'light-domination', isPopular: false },
+  { title: 'DUO Bi', slug: 'duo-bi', isPopular: false },
+  { title: 'Couples Service', slug: 'couples-service', isPopular: false },
+  { title: 'Prostate Massage', slug: 'prostate-massage', isPopular: false },
+  { title: 'Body-to-Body Massage', slug: 'body-to-body-massage', isPopular: false },
+  { title: 'Sensual Massage', slug: 'sensual-massage', isPopular: false },
+  { title: 'Fisting', slug: 'fisting', isPopular: false },
+  { title: 'Light Spanking Receiving', slug: 'light-spanking-receiving', isPopular: false },
+  { title: 'Tie Up and Tease', slug: 'tie-up-and-tease', isPopular: false },
 ]
 
 /**

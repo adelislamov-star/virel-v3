@@ -1,16 +1,16 @@
 // POST /api/v1/models/quick-upload
-// Accepts multipart form data with images, uses Claude vision to extract profile data,
-// creates model + stats + rates + services + media records
+// Accepts multipart form data: images + documents (DOCX/TXT/PDF)
+// TASK A: Parse document with regex (no AI) for structured data
+// TASK B: Claude Vision arranges photos + generates bio
+// Creates model + stats + rates + services + address + work prefs + media
 
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/db/client'
 import { uploadMedia, generateThumbnail, buildKey } from '@/lib/storage/r2'
 import { ensureExtensionTables } from '@/lib/db/ensure-tables'
 import { ensureServices } from '@/lib/db/ensure-services'
+import { parseProfileDocument, type ParsedProfile } from '@/lib/parsing/parse-profile-document'
 import { randomUUID } from 'crypto'
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 function slugify(name: string) {
   return name.toLowerCase()
@@ -20,21 +20,125 @@ function slugify(name: string) {
     .trim()
 }
 
-const EXTRACTION_PROMPT = `You are a data extraction assistant for a London escort agency. Analyze these profile images and extract ALL visible information.
+async function extractTextFromFile(buffer: Buffer, filename: string, mimeType: string): Promise<string> {
+  const ext = filename.toLowerCase().split('.').pop()
 
-If the images are glamour/portrait photos with no text visible, describe what you can see:
-- Estimate hair colour, eye colour from the photos
-- Estimate age range, body type, nationality if possible
-- Use "Model" as the name if no name is visible
-- Leave everything else as null
+  if (ext === 'docx' || ext === 'doc' || mimeType.includes('word') || mimeType.includes('openxmlformats')) {
+    const mammoth = require('mammoth')
+    const result = await mammoth.extractRawText({ buffer })
+    return result.value
+  }
 
-Return ONLY valid JSON, no markdown, no explanation:
-{"name":"string","age":null,"height_cm":null,"weight_kg":null,"nationality":null,"languages":[],"hair_colour":null,"eye_colour":null,"bust_size":null,"dress_size":null,"orientation":null,"bio_text":null,"services":[],"rates":{"30min":{"incall":null,"outcall":null},"45min":{"incall":null,"outcall":null},"1hour":{"incall":null,"outcall":null},"90min":{"incall":null,"outcall":null},"2hours":{"incall":null,"outcall":null},"overnight":{"incall":null,"outcall":null}},"location":null,"phone":null,"email":null}
+  if (ext === 'txt' || mimeType.includes('text/plain')) {
+    return buffer.toString('utf-8')
+  }
 
-Rates in GBP as numbers only. Use null for anything not visible. Always return valid JSON.`
+  if (ext === 'pdf' || mimeType.includes('pdf')) {
+    try {
+      const pdfParse = require('pdf-parse')
+      const data = await pdfParse(buffer)
+      return data.text || ''
+    } catch (e) {
+      console.error('[quick-upload] PDF parse failed:', e)
+      return ''
+    }
+  }
+
+  return ''
+}
+
+interface PhotoOrder {
+  index: number
+  role: string
+  sortOrder: number
+}
+
+async function arrangePhotosWithAI(
+  imageBuffers: { buffer: Buffer; mediaType: string }[]
+): Promise<PhotoOrder[] | null> {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey || imageBuffers.length <= 1) return null
+
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const client = new Anthropic({ apiKey })
+
+    const blocks: any[] = []
+    for (let i = 0; i < imageBuffers.length; i++) {
+      blocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: imageBuffers[i].mediaType,
+          data: imageBuffers[i].buffer.toString('base64'),
+        },
+      })
+      blocks.push({ type: 'text', text: `Photo ${i} (index ${i})` })
+    }
+    blocks.push({
+      type: 'text',
+      text: `You are a professional photo editor for a high-end London escort agency. Arrange these profile photos to maximize client appeal and conversion. Photo 1 (cover) must be the most striking, well-lit image showing face and figure — this is the thumbnail clients see first. Remaining photos should flow naturally: face closeups, full body, lifestyle/setting shots. Return ONLY a JSON array: [{"index": 0, "role": "cover", "sortOrder": 1}, {"index": 3, "role": "gallery", "sortOrder": 2}, ...] where index is the original upload position (0-based) and sortOrder is the display position (1-based). Return ONLY valid JSON, nothing else.`,
+    })
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250514',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: blocks }],
+    })
+
+    const responseText = (message.content[0] as any)?.text || ''
+    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) return null
+
+    const order: PhotoOrder[] = JSON.parse(jsonMatch[0])
+    return order
+  } catch (e) {
+    console.error('[quick-upload] Photo arrangement AI failed (non-fatal):', e)
+    return null
+  }
+}
+
+async function generateBioFromPhotos(
+  imageBuffers: { buffer: Buffer; mediaType: string }[]
+): Promise<string | null> {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) return null
+
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const client = new Anthropic({ apiKey })
+
+    const blocks: any[] = []
+    for (let i = 0; i < Math.min(imageBuffers.length, 3); i++) {
+      blocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: imageBuffers[i].mediaType,
+          data: imageBuffers[i].buffer.toString('base64'),
+        },
+      })
+    }
+    blocks.push({
+      type: 'text',
+      text: `Write a brief, elegant 2-3 sentence description of this person's appearance for a companion profile. Mention hair colour, eye colour, body type, and overall impression. Be tasteful and professional. Return ONLY the description text, nothing else.`,
+    })
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250514',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: blocks }],
+    })
+
+    return (message.content[0] as any)?.text?.trim() || null
+  } catch (e) {
+    console.error('[quick-upload] Bio generation failed (non-fatal):', e)
+    return null
+  }
+}
 
 export const runtime = 'nodejs'
-// Allow up to 60s for AI processing + uploads
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
@@ -43,178 +147,178 @@ export async function POST(request: NextRequest) {
     await ensureServices()
 
     const formData = await request.formData()
-    const files = formData.getAll('photos') as File[]
+    const allFiles = formData.getAll('files') as File[]
 
-    if (!files || files.length === 0) {
-      return NextResponse.json({ success: false, error: 'No photos provided' }, { status: 400 })
-    }
-    if (files.length > 5) {
-      return NextResponse.json({ success: false, error: 'Maximum 5 photos allowed' }, { status: 400 })
+    if (!allFiles || allFiles.length === 0) {
+      return NextResponse.json({ success: false, error: 'No files provided' }, { status: 400 })
     }
 
-    // 1. Read files and build vision blocks for Claude
+    // Separate images from documents
+    const imageFiles: File[] = []
+    const docFiles: File[] = []
+
+    for (const file of allFiles) {
+      const ext = file.name.toLowerCase().split('.').pop() || ''
+      if (file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+        imageFiles.push(file)
+      } else if (['docx', 'doc', 'txt', 'pdf'].includes(ext) || file.type.includes('word') || file.type.includes('text') || file.type.includes('pdf')) {
+        docFiles.push(file)
+      }
+    }
+
+    if (imageFiles.length > 10) {
+      return NextResponse.json({ success: false, error: 'Maximum 10 photos allowed' }, { status: 400 })
+    }
+
+    // ── TASK A: Parse document ──
+    let documentText = ''
+    for (const doc of docFiles) {
+      const buffer = Buffer.from(await doc.arrayBuffer())
+      const text = await extractTextFromFile(buffer, doc.name, doc.type)
+      documentText += text + '\n'
+    }
+
+    const parsed = parseProfileDocument(documentText)
+
+    // ── Read image buffers ──
     const imageBuffers: { buffer: Buffer; mediaType: string; name: string }[] = []
-    const blocks: any[] = []
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
+    for (const file of imageFiles) {
       const buffer = Buffer.from(await file.arrayBuffer())
-      const mediaType = file.type || 'image/jpeg'
-      imageBuffers.push({ buffer, mediaType, name: file.name })
-
-      blocks.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: mediaType,
-          data: buffer.toString('base64'),
-        },
-      })
-      blocks.push({ type: 'text', text: `Photo ${i + 1}` })
+      imageBuffers.push({ buffer, mediaType: file.type || 'image/jpeg', name: file.name })
     }
 
-    blocks.push({ type: 'text', text: EXTRACTION_PROMPT })
+    // ── TASK B: AI photo arrangement + bio (parallel, non-blocking) ──
+    const [photoOrder, bioText] = await Promise.all([
+      imageBuffers.length > 1 ? arrangePhotosWithAI(imageBuffers) : null,
+      imageBuffers.length > 0 ? generateBioFromPhotos(imageBuffers) : null,
+    ])
 
-    // 2. Call Claude vision
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: blocks }],
-    })
-
-    const fullText = (message.content[0] as any).text || ''
-    console.log('[quick-upload] Raw Claude response:', fullText.substring(0, 500))
-
-    let extracted: any
-    try {
-      // Try multiple extraction strategies
-      // 1. Strip markdown fences
-      let cleaned = fullText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-
-      // 2. Try direct parse first
-      try {
-        extracted = JSON.parse(cleaned)
-      } catch {
-        // 3. Find JSON object within the text using regex
-        const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          extracted = JSON.parse(jsonMatch[0])
-        } else {
-          throw new Error('No JSON object found in response')
-        }
-      }
-    } catch (parseError: any) {
-      console.error('[quick-upload] JSON parse failed:', parseError.message)
-      console.error('[quick-upload] Full response was:', fullText)
-      // Fallback: create model with defaults instead of failing
-      extracted = {
-        name: 'New Model',
-        age: null,
-        height_cm: null,
-        weight_kg: null,
-        nationality: null,
-        languages: [],
-        hair_colour: null,
-        eye_colour: null,
-        bust_size: null,
-        dress_size: null,
-        orientation: null,
-        bio_text: null,
-        services: [],
-        rates: {},
-        location: null,
-        phone: null,
-        email: null,
+    // Build photo sort order
+    const sortMap = new Map<number, { sortOrder: number; role: string }>()
+    if (photoOrder) {
+      for (const p of photoOrder) {
+        sortMap.set(p.index, { sortOrder: p.sortOrder, role: p.role })
       }
     }
 
-    // 3. Create model in database
-    const name = extracted.name || 'New Model'
+    // ── Create model ──
+    const name = parsed.name || 'New Model'
     let slug = slugify(name)
+    if (!slug) slug = 'model'
     const existing = await prisma.model.findUnique({ where: { slug } })
     if (existing) slug = `${slug}-${Date.now()}`
 
-    const publicCode = `${name.toUpperCase().replace(/\s+/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
-
-    // Resolve location
-    let primaryLocationId: string | null = null
-    if (extracted.location) {
-      const locSlug = slugify(extracted.location)
-      let loc = await prisma.location.findFirst({ where: { slug: locSlug } })
-      if (!loc) {
-        loc = await prisma.location.create({
-          data: { title: extracted.location, slug: locSlug, status: 'active' },
-        })
-      }
-      primaryLocationId = loc.id
-    }
+    const publicCode = `${name.toUpperCase().replace(/[^A-Z0-9]/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
 
     const model = await prisma.model.create({
       data: {
         name,
         slug,
         publicCode,
-        status: 'active',
+        status: 'draft',
         visibility: 'public',
-        notesInternal: extracted.bio_text || null,
-        primaryLocationId,
+        notesInternal: bioText || null,
         stats: {
           create: {
-            age: extracted.age ? Number(extracted.age) : null,
-            height: extracted.height_cm ? Number(extracted.height_cm) : null,
-            weight: extracted.weight_kg ? Number(extracted.weight_kg) : null,
-            bustSize: extracted.bust_size || null,
-            dressSize: extracted.dress_size || null,
-            eyeColour: extracted.eye_colour || null,
-            hairColour: extracted.hair_colour || null,
-            nationality: extracted.nationality || null,
-            orientation: extracted.orientation || null,
-            languages: Array.isArray(extracted.languages) ? extracted.languages : [],
+            age: parsed.age,
+            height: parsed.heightCm,
+            weight: parsed.weightKg,
+            bustSize: parsed.bustSize || null,
+            dressSize: parsed.dressSize || null,
+            eyeColour: parsed.eyeColour || null,
+            hairColour: parsed.hairColour || null,
+            nationality: parsed.nationality || null,
+            orientation: parsed.orientation || null,
+            languages: parsed.languages,
           },
         },
       },
     })
 
-    // 4. Match and link services
-    if (extracted.services && extracted.services.length > 0) {
-      const slugs = extracted.services.map((s: string) => s.toLowerCase().replace(/_/g, '-'))
-      const dbServices = await prisma.$queryRaw<{ id: string; slug: string }[]>`
-        SELECT id, slug FROM services WHERE slug = ANY(${slugs}::text[])
-      `
-      for (const svc of dbServices) {
+    // ── Link services ──
+    let linkedServices = 0
+    if (parsed.services.length > 0) {
+      const slugs = parsed.services.filter(s => s.enabled).map(s => s.slug)
+      const dbServices = await prisma.service.findMany({
+        where: { slug: { in: slugs } },
+        select: { id: true, slug: true },
+      })
+      const slugToId = new Map(dbServices.map(s => [s.slug, s.id]))
+
+      for (const svc of parsed.services.filter(s => s.enabled)) {
+        const serviceId = slugToId.get(svc.slug)
+        if (!serviceId) continue
         try {
           await prisma.$executeRawUnsafe(
             `INSERT INTO model_services ("modelId", "serviceId", "isEnabled")
              VALUES ($1, $2, true)
              ON CONFLICT ("modelId", "serviceId") DO NOTHING`,
-            model.id, svc.id,
+            model.id, serviceId,
           )
+          linkedServices++
         } catch {}
       }
     }
 
-    // 5. Insert rates
-    if (extracted.rates) {
-      const rateEntries: { duration_type: string; call_type: string; price: number }[] = []
-      for (const [duration, types] of Object.entries(extracted.rates as Record<string, any>)) {
-        if (types?.incall) rateEntries.push({ duration_type: duration, call_type: 'incall', price: Number(types.incall) })
-        if (types?.outcall) rateEntries.push({ duration_type: duration, call_type: 'outcall', price: Number(types.outcall) })
-      }
-      for (const rate of rateEntries) {
-        try {
-          await prisma.$executeRawUnsafe(
-            `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'GBP', true)`,
-            model.id, rate.duration_type, rate.call_type, rate.price,
-          )
-        } catch {}
+    // ── Insert rates ──
+    let insertedRates = 0
+    for (const rate of parsed.rates) {
+      try {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'GBP', true)`,
+          model.id, rate.duration, rate.callType, rate.price,
+        )
+        insertedRates++
+      } catch (e) {
+        console.error('[quick-upload] Rate insert failed:', e)
       }
     }
 
-    // 6. Upload images to R2 and create media records
+    // ── Insert address ──
+    if (parsed.address.street || parsed.address.postcode) {
+      try {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO model_addresses (id, model_id, street, flat_number, flat_floor, post_code, tube_station, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+           ON CONFLICT (id) DO UPDATE SET
+             street = EXCLUDED.street, flat_number = EXCLUDED.flat_number,
+             flat_floor = EXCLUDED.flat_floor, post_code = EXCLUDED.post_code,
+             tube_station = EXCLUDED.tube_station`,
+          `${model.id}-addr`, model.id,
+          parsed.address.street, parsed.address.flat, parsed.address.floor,
+          parsed.address.postcode, parsed.address.tubeStation,
+        )
+      } catch (e) {
+        console.error('[quick-upload] Address insert failed:', e)
+      }
+    }
+
+    // ── Insert work preferences ──
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO model_work_preferences (id, model_id, work_with_couples, work_with_women)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO UPDATE SET
+           work_with_couples = EXCLUDED.work_with_couples,
+           work_with_women = EXCLUDED.work_with_women`,
+        `${model.id}-prefs`, model.id,
+        parsed.worksWithCouples, parsed.servesWomen,
+      )
+    } catch (e) {
+      console.error('[quick-upload] Work prefs insert failed:', e)
+    }
+
+    // ── Upload images to R2 ──
+    let uploadedPhotos = 0
     for (let i = 0; i < imageBuffers.length; i++) {
       const { buffer, mediaType, name: fileName } = imageBuffers[i]
       const key = buildKey(model.id, `${i}-${Date.now()}.${fileName.split('.').pop() || 'jpg'}`)
+
+      // Use AI sort order if available, otherwise original order
+      const orderInfo = sortMap.get(i)
+      const sortOrder = orderInfo ? orderInfo.sortOrder - 1 : i
+      const isCover = orderInfo ? orderInfo.role === 'cover' : i === 0
 
       try {
         const result = await uploadMedia(buffer, key, mediaType)
@@ -227,11 +331,12 @@ export async function POST(request: NextRequest) {
             storageKey: result.key,
             url: result.url,
             thumbUrl: thumb.url,
-            isPrimary: i === 0,
+            isPrimary: isCover,
             isPublic: true,
-            sortOrder: i,
+            sortOrder,
           },
         })
+        uploadedPhotos++
       } catch (e) {
         console.error(`[quick-upload] Failed to upload photo ${i}:`, e)
       }
@@ -241,7 +346,18 @@ export async function POST(request: NextRequest) {
       success: true,
       modelId: model.id,
       slug: model.slug,
-      extracted,
+      summary: {
+        name,
+        age: parsed.age,
+        nationality: parsed.nationality,
+        services: linkedServices,
+        rates: insertedRates,
+        photos: uploadedPhotos,
+        hasBio: !!bioText,
+        hasAddress: !!(parsed.address.street || parsed.address.postcode),
+        photosArrangedByAI: !!photoOrder,
+      },
+      parsed,
     })
   } catch (error: any) {
     console.error('[quick-upload] Error:', error)
