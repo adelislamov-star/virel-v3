@@ -1,7 +1,7 @@
 // BOOKING STATE MACHINE
 // Enforces valid state transitions for bookings
 
-export type BookingStatus = 
+export type BookingStatus =
   | 'draft'
   | 'pending'
   | 'deposit_required'
@@ -10,7 +10,8 @@ export type BookingStatus =
   | 'completed'
   | 'cancelled'
   | 'no_show'
-  | 'expired';
+  | 'expired'
+  | 'disputed';
 
 // Valid transitions map
 const BOOKING_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
@@ -18,15 +19,25 @@ const BOOKING_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   pending: ['deposit_required', 'confirmed', 'cancelled', 'expired'],
   deposit_required: ['confirmed', 'cancelled', 'expired'],
   confirmed: ['in_progress', 'cancelled', 'no_show'],
-  in_progress: ['completed', 'cancelled'],
+  in_progress: ['completed', 'cancelled', 'disputed'],
   // Terminal states:
   completed: [],
   cancelled: [],
   no_show: [],
-  expired: []
+  expired: [],
+  disputed: ['completed', 'cancelled']
 };
 
+const REQUIRES_REASON: BookingStatus[] = ['cancelled', 'disputed', 'no_show'];
+
 export class BookingStateMachine {
+  /**
+   * Check if transition requires a reason code
+   */
+  static requiresReason(to: BookingStatus): boolean {
+    return REQUIRES_REASON.includes(to);
+  }
+
   /**
    * Check if transition is valid
    */
@@ -49,13 +60,21 @@ export class BookingStateMachine {
     from: BookingStatus,
     to: BookingStatus,
     userId: string,
-    reason?: string
+    reasonCode?: string
   ): Promise<{ success: boolean; error?: string }> {
     // Check if transition is valid
     if (!this.canTransition(from, to)) {
       return {
         success: false,
         error: `Invalid transition: ${from} → ${to}`
+      };
+    }
+
+    // Check if reason is required
+    if (this.requiresReason(to) && !reasonCode) {
+      return {
+        success: false,
+        error: `Reason code is required for transition to ${to}`
       };
     }
 
@@ -96,7 +115,8 @@ export class BookingStateMachine {
       completed: 'Completed',
       cancelled: 'Cancelled',
       no_show: 'No Show',
-      expired: 'Expired'
+      expired: 'Expired',
+      disputed: 'Disputed'
     };
     return labels[status];
   }
@@ -114,7 +134,8 @@ export class BookingStateMachine {
       completed: 'green',
       cancelled: 'red',
       no_show: 'red',
-      expired: 'gray'
+      expired: 'gray',
+      disputed: 'purple'
     };
     return colors[status];
   }

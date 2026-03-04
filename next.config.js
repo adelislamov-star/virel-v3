@@ -10,7 +10,7 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'pub-5deecadad4ab46f9bf12b2691c52ec6d.r2.dev' },
-      { protocol: 'https', hostname: 'cdn.auraescort.co.uk' },
+      { protocol: 'https', hostname: 'cdn.virel.co.uk' },
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: '**.railway.app' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },

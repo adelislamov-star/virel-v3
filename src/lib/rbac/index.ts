@@ -58,7 +58,27 @@ export type Permission =
   | 'audit.read'
   // Integrations
   | 'integrations.read'
-  | 'integrations.update';
+  | 'integrations.update'
+  // Reviews
+  | 'reviews.read'
+  | 'reviews.moderate'
+  | 'reviews.reply'
+  // Fraud
+  | 'fraud.read'
+  | 'fraud.update'
+  // Incidents
+  | 'incidents.read'
+  | 'incidents.create'
+  | 'incidents.update'
+  // Reports
+  | 'reports.read'
+  | 'reports.generate'
+  // SEO
+  | 'seo.read'
+  | 'seo.update'
+  // System
+  | 'system.health'
+  | 'system.metrics';
 
 // Role -> Permissions mapping
 export const ROLE_PERMISSIONS: Record<RoleCode, Permission[]> = {
@@ -74,7 +94,13 @@ export const ROLE_PERMISSIONS: Record<RoleCode, Permission[]> = {
     'settings.read', 'settings.update',
     'automation.read', 'automation.create', 'automation.update',
     'audit.read',
-    'integrations.read', 'integrations.update'
+    'integrations.read', 'integrations.update',
+    'reviews.read', 'reviews.moderate', 'reviews.reply',
+    'fraud.read', 'fraud.update',
+    'incidents.read', 'incidents.create', 'incidents.update',
+    'reports.read', 'reports.generate',
+    'seo.read', 'seo.update',
+    'system.health', 'system.metrics'
   ],
 
   OPS_MANAGER: [
@@ -88,7 +114,13 @@ export const ROLE_PERMISSIONS: Record<RoleCode, Permission[]> = {
     'users.read', 'users.update', // Can manage operators
     'settings.read',
     'automation.read', 'automation.create', 'automation.update',
-    'audit.read'
+    'audit.read',
+    'reviews.read', 'reviews.moderate', 'reviews.reply',
+    'fraud.read', 'fraud.update',
+    'incidents.read', 'incidents.create', 'incidents.update',
+    'reports.read', 'reports.generate',
+    'seo.read', 'seo.update',
+    'system.health'
   ],
 
   OPERATOR: [
@@ -97,20 +129,26 @@ export const ROLE_PERMISSIONS: Record<RoleCode, Permission[]> = {
     'bookings.read', 'bookings.update', 'bookings.confirm',
     'inquiries.read', 'inquiries.update',
     'tasks.read', 'tasks.update', 'tasks.complete',
-    'exceptions.read', 'exceptions.resolve'
+    'exceptions.read', 'exceptions.resolve',
+    'reviews.read',
+    'fraud.read',
+    'incidents.read', 'incidents.create'
   ],
 
   CONTENT_MANAGER: [
     // Content only
     'models.read', 'models.create', 'models.update', 'models.publish',
-    'settings.read' // SEO settings
+    'settings.read', // SEO settings
+    'seo.read', 'seo.update',
+    'reviews.read'
   ],
 
   FINANCE: [
     // Finance only
     'payments.read', 'payments.create', 'payments.refund',
     'bookings.read', // To see payment context
-    'audit.read' // Payment audit
+    'audit.read', // Payment audit
+    'reports.read'
   ],
 
   INTEGRATIONS_ADMIN: [

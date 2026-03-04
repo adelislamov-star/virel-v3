@@ -5,5 +5,9 @@
       "src": "package.json",
       "use": "@vercel/next"
     }
+  ],
+  "crons": [
+    { "path": "/api/cron/sla-check", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/data-quality", "schedule": "0 0 * * *" }
   ]
 }
