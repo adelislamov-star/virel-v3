@@ -2,9 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 
 type FraudClient = {
@@ -36,10 +33,12 @@ type FraudStats = {
   totalChargebacks: number;
 };
 
-function getRiskColor(status: string): any {
-  const colors: Record<string, string> = { normal: 'default', monitoring: 'yellow', restricted: 'orange', blocked: 'destructive' };
-  return colors[status] || 'default';
-}
+const riskStyles: Record<string, string> = {
+  normal: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  monitoring: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  restricted: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  blocked: 'bg-red-500/10 text-red-400 border-red-500/20',
+};
 
 export default function FraudMonitorPage() {
   const [stats, setStats] = useState<FraudStats>({ clientsMonitored: 0, clientsBlocked: 0, signalsThisWeek: 0, totalChargebacks: 0 });
@@ -87,137 +86,111 @@ export default function FraudMonitorPage() {
     }
   }
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Fraud Monitor</h1>
+          <p className="text-sm text-zinc-500 mt-1">Loading...</p>
+        </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-zinc-800/30 rounded-xl" />)}
+          </div>
+          {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-zinc-800/30 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">🛡️ Fraud Monitor</h1>
-        <p className="text-muted-foreground">Risk monitoring and fraud detection</p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Clients Monitored</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">{stats.clientsMonitored}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Blocked</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">{stats.clientsBlocked}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Signals This Week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.signalsThisWeek}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Chargebacks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">{stats.totalChargebacks}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Clients at Risk */}
+    <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Clients at Risk</h2>
+        <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Fraud Monitor</h1>
+        <p className="text-sm text-zinc-500 mt-1">Risk monitoring and fraud detection</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Clients Monitored</p>
+          <p className="text-2xl font-semibold text-yellow-400 mt-2">{stats.clientsMonitored}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Blocked</p>
+          <p className="text-2xl font-semibold text-red-400 mt-2">{stats.clientsBlocked}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Signals This Week</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">{stats.signalsThisWeek}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Chargebacks</p>
+          <p className="text-2xl font-semibold text-red-400 mt-2">{stats.totalChargebacks}</p>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">Clients at Risk</h2>
         <div className="space-y-3">
           {clients.map(client => (
-            <Card key={client.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant={getRiskColor(client.riskStatus)}>
-                        {client.riskStatus}
-                      </Badge>
-                      {client.chargebackCount > 0 && (
-                        <Badge variant="destructive">{client.chargebackCount} chargebacks</Badge>
-                      )}
-                    </div>
-                    <h3 className="font-semibold mb-1">{client.fullName || 'Unknown'}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      {client.email && <span>{client.email}</span>}
-                      {client.phone && <span>{client.phone}</span>}
-                      <span>£{client.totalSpent.toFixed(0)} spent</span>
-                      <span>{client.bookingCount} bookings</span>
-                    </div>
+            <div key={client.id} className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${riskStyles[client.riskStatus] || riskStyles.normal}`}>{client.riskStatus}</span>
+                    {client.chargebackCount > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-red-500/10 text-red-400 border-red-500/20">{client.chargebackCount} chargebacks</span>}
                   </div>
-                  <div>
-                    <select
-                      className="rounded-md border p-2 text-sm bg-background"
-                      value={client.riskStatus}
-                      disabled={submitting}
-                      onChange={e => changeRiskStatus(client.id, e.target.value)}
-                    >
-                      <option value="normal">Normal</option>
-                      <option value="monitoring">Monitoring</option>
-                      <option value="restricted">Restricted</option>
-                      <option value="blocked">Blocked</option>
-                    </select>
+                  <h3 className="text-sm font-medium text-zinc-200 mb-1">{client.fullName || 'Unknown'}</h3>
+                  <div className="flex items-center gap-4 text-xs text-zinc-500">
+                    {client.email && <span>{client.email}</span>}
+                    {client.phone && <span>{client.phone}</span>}
+                    <span>£{client.totalSpent.toFixed(0)} spent</span>
+                    <span>{client.bookingCount} bookings</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <select
+                  className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm text-zinc-200 focus:outline-none focus:border-zinc-600 transition-colors duration-150"
+                  value={client.riskStatus}
+                  disabled={submitting}
+                  onChange={e => changeRiskStatus(client.id, e.target.value)}
+                >
+                  <option value="normal">Normal</option>
+                  <option value="monitoring">Monitoring</option>
+                  <option value="restricted">Restricted</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+              </div>
+            </div>
           ))}
           {clients.length === 0 && (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                ✅ No clients at risk.
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-8 text-center">
+              <p className="text-zinc-500">No clients at risk.</p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Recent Fraud Signals */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Recent Fraud Signals</h2>
+        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">Recent Fraud Signals</h2>
         <div className="space-y-3">
           {signals.map(signal => (
-            <Card key={signal.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">{signal.signalType.replace(/_/g, ' ')}</Badge>
-                      <Badge variant={signal.riskScoreImpact >= 20 ? 'destructive' : 'yellow'}>
-                        +{signal.riskScoreImpact} risk
-                      </Badge>
-                      {signal.booking?.shortId && (
-                        <Badge variant="outline">{signal.booking.shortId}</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{signal.client?.fullName || 'Unknown'}</span>
-                      {signal.model?.name && <span>Model: {signal.model.name}</span>}
-                      <span>{formatDistanceToNow(new Date(signal.createdAt), { addSuffix: true })}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div key={signal.id} className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-400">{signal.signalType.replace(/_/g, ' ')}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${signal.riskScoreImpact >= 20 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>+{signal.riskScoreImpact} risk</span>
+                {signal.booking?.shortId && <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">{signal.booking.shortId}</span>}
+              </div>
+              <div className="flex items-center gap-4 text-xs text-zinc-500">
+                <span>{signal.client?.fullName || 'Unknown'}</span>
+                {signal.model?.name && <span>Model: {signal.model.name}</span>}
+                <span>{formatDistanceToNow(new Date(signal.createdAt), { addSuffix: true })}</span>
+              </div>
+            </div>
           ))}
           {signals.length === 0 && (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                ✅ No recent fraud signals.
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-8 text-center">
+              <p className="text-zinc-500">No recent fraud signals.</p>
+            </div>
           )}
         </div>
       </div>

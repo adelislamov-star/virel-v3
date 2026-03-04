@@ -4,6 +4,18 @@ import { prisma } from '@/lib/db/client'
 
 export const dynamic = 'force-dynamic'
 
+const statusStyles: Record<string, string> = {
+  new: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  reviewing: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+}
+
+const sourceStyles: Record<string, string> = {
+  self: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  admin: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+}
+
 export default async function ApplicationsPage() {
   let applications: any[] = []
   try {
@@ -20,90 +32,80 @@ export default async function ApplicationsPage() {
     rejected: applications.filter(a => a.status === 'rejected').length,
   }
 
-  const statusColor: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-700',
-    reviewing: 'bg-yellow-100 text-yellow-700',
-    approved: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700',
-  }
-
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Applications</h1>
-          <p className="text-muted-foreground text-sm">Model intake forms (self-registration & back office)</p>
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Applications</h1>
+          <p className="text-sm text-zinc-500 mt-1">Model intake forms (self-registration & back office)</p>
         </div>
         <Link href="/admin/models/new"
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
+          className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
         >
           + Add Manually
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-5 gap-3 mb-8">
         {Object.entries(counts).map(([key, val]) => (
-          <div key={key} className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold">{val}</p>
-            <p className="text-xs text-muted-foreground capitalize mt-1">{key}</p>
+          <div key={key} className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-4 text-center">
+            <p className="text-2xl font-semibold text-zinc-100">{val}</p>
+            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mt-1">{key}</p>
           </div>
         ))}
       </div>
 
-      {/* Table */}
       {applications.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <p className="text-4xl mb-4">📋</p>
-          <p className="font-medium">No applications yet</p>
-          <p className="text-sm mt-1">Applications from /join and /admin/models/new will appear here</p>
+        <div className="text-center py-20">
+          <p className="text-zinc-500 font-medium">No applications yet</p>
+          <p className="text-sm text-zinc-600 mt-1">Applications from /join and /admin/models/new will appear here</p>
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 border-b border-border">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Age / Nationality</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Rates</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Services</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Source</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
+        <div className="rounded-xl border border-zinc-800/50 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-800/50">
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Age / Nationality</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Rates</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Services</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Source</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Date</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-zinc-800/30">
               {applications.map((app: any) => (
-                <tr key={app.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-semibold">{app.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {[app.age && `${app.age}y`, app.nationality].filter(Boolean).join(' · ') || '—'}
+                <tr key={app.id} className="hover:bg-zinc-800/20 transition-colors duration-100">
+                  <td className="px-4 py-3 text-sm font-medium text-zinc-200">{app.name}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-400">
+                    {[app.age && `${app.age}y`, app.nationality].filter(Boolean).join(' \u00b7 ') || '\u2014'}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {app.rate1hIn ? `£${app.rate1hIn}/1h` : '—'}
+                  <td className="px-4 py-3 text-sm text-zinc-400">
+                    {app.rate1hIn ? `\u00a3${app.rate1hIn}/1h` : '\u2014'}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {app.services?.length ? `${app.services.length} services` : '—'}
+                  <td className="px-4 py-3 text-sm text-zinc-400">
+                    {app.services?.length ? `${app.services.length} services` : '\u2014'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${app.source === 'self' ? 'bg-purple-100 text-purple-700' : 'bg-zinc-100 text-zinc-600'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${sourceStyles[app.source] || sourceStyles.admin}`}>
                       {app.source === 'self' ? 'Self-reg' : 'Admin'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${statusColor[app.status] || 'bg-muted text-muted-foreground'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${statusStyles[app.status] || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
                       {app.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                  <td className="px-4 py-3 text-xs text-zinc-500">
                     {new Date(app.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/applications/${app.id}`}
-                      className="text-primary text-xs hover:underline font-medium"
+                      className="text-amber-400 text-xs hover:text-amber-300 font-medium transition-colors duration-150"
                     >
-                      View →
+                      View
                     </Link>
                   </td>
                 </tr>

@@ -1,31 +1,13 @@
+// ANALYTICS
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Stats {
-  revenue: {
-    total: number;
-    thisMonth: number;
-    lastMonth: number;
-    growth: number;
-  };
-  bookings: {
-    total: number;
-    completed: number;
-    cancelled: number;
-    inProgress: number;
-    conversionRate: number;
-  };
-  inquiries: {
-    total: number;
-    converted: number;
-    conversionRate: number;
-  };
-  models: {
-    total: number;
-    active: number;
-  };
+  revenue: { total: number; thisMonth: number; lastMonth: number; growth: number };
+  bookings: { total: number; completed: number; cancelled: number; inProgress: number; conversionRate: number };
+  inquiries: { total: number; converted: number; conversionRate: number };
+  models: { total: number; active: number };
   topModels: Array<{ name: string; bookings: number; revenue: number }>;
   recentActivity: Array<{ type: string; description: string; time: string }>;
 }
@@ -35,36 +17,45 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30d');
 
-  useEffect(() => {
-    loadStats();
-  }, [period]);
+  useEffect(() => { loadStats(); }, [period]);
 
   async function loadStats() {
     try {
       const res = await fetch(`/api/v1/analytics?period=${period}`);
       const data = await res.json();
       if (data.success) setStats(data.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   }
 
-  if (loading) return <div className="p-6 text-muted-foreground">Loading analytics...</div>;
-  if (!stats) return <div className="p-6 text-red-500">Failed to load analytics</div>;
+  if (loading) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Analytics</h1>
+          <p className="text-sm text-zinc-500 mt-1">Loading...</p>
+        </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-zinc-800/30 rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) return <div className="p-8 max-w-7xl mx-auto text-red-400">Failed to load analytics</div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">📊 Analytics</h1>
-          <p className="text-muted-foreground">Business performance overview</p>
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Analytics</h1>
+          <p className="text-sm text-zinc-500 mt-1">Business performance overview</p>
         </div>
         <select
           value={period}
           onChange={e => setPeriod(e.target.value)}
-          className="border border-border rounded-md px-3 py-2 bg-background"
+          className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm text-zinc-200 focus:outline-none focus:border-zinc-600 transition-colors duration-150"
         >
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
@@ -73,124 +64,88 @@ export default function AnalyticsPage() {
         </select>
       </div>
 
-      {/* Revenue Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">£{stats.revenue.total.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">£{stats.revenue.thisMonth.toLocaleString()}</p>
-            <p className={`text-sm mt-1 ${stats.revenue.growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {stats.revenue.growth >= 0 ? '↑' : '↓'} {Math.abs(stats.revenue.growth)}% vs last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total Bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.bookings.total}</p>
-            <p className="text-sm text-muted-foreground mt-1">{stats.bookings.completed} completed</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Inquiry Conversion</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.inquiries.conversionRate}%</p>
-            <p className="text-sm text-muted-foreground mt-1">{stats.inquiries.converted}/{stats.inquiries.total} converted</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Total Revenue</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">£{stats.revenue.total.toLocaleString()}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">This Month</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">£{stats.revenue.thisMonth.toLocaleString()}</p>
+          <p className={`text-xs mt-1 ${stats.revenue.growth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {stats.revenue.growth >= 0 ? '↑' : '↓'} {Math.abs(stats.revenue.growth)}% vs last month
+          </p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Total Bookings</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">{stats.bookings.total}</p>
+          <p className="text-xs text-zinc-500 mt-1">{stats.bookings.completed} completed</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Inquiry Conversion</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">{stats.inquiries.conversionRate}%</p>
+          <p className="text-xs text-zinc-500 mt-1">{stats.inquiries.converted}/{stats.inquiries.total} converted</p>
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Booking Status Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Booking Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Booking Status</h3>
+          <div className="space-y-3">
             {[
-              { label: 'Completed', value: stats.bookings.completed, color: 'bg-green-500' },
+              { label: 'Completed', value: stats.bookings.completed, color: 'bg-emerald-500' },
               { label: 'In Progress', value: stats.bookings.inProgress, color: 'bg-blue-500' },
               { label: 'Cancelled', value: stats.bookings.cancelled, color: 'bg-red-500' },
             ].map(item => (
               <div key={item.label}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span>{item.label}</span>
-                  <span className="font-medium">{item.value}</span>
+                  <span className="text-zinc-400">{item.label}</span>
+                  <span className="font-medium text-zinc-200">{item.value}</span>
                 </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className={`${item.color} h-2 rounded-full`}
-                    style={{ width: stats.bookings.total ? `${(item.value / stats.bookings.total) * 100}%` : '0%' }}
-                  />
+                <div className="w-full bg-zinc-800/50 rounded-full h-1.5">
+                  <div className={`${item.color} h-1.5 rounded-full transition-all duration-300`} style={{ width: stats.bookings.total ? `${(item.value / stats.bookings.total) * 100}%` : '0%' }} />
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Top Models */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Models</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats.topModels.length > 0 ? (
-              <div className="space-y-3">
-                {stats.topModels.map((model, i) => (
-                  <div key={model.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">{i + 1}</span>
-                      <span className="font-medium">{model.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">£{model.revenue.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">{model.bookings} bookings</p>
-                    </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Top Models</h3>
+          {stats.topModels.length > 0 ? (
+            <div className="space-y-3">
+              {stats.topModels.map((model, i) => (
+                <div key={model.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-xs font-bold text-amber-400">{i + 1}</span>
+                    <span className="text-sm font-medium text-zinc-200">{model.name}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No data yet</p>
-            )}
-          </CardContent>
-        </Card>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-zinc-100">£{model.revenue.toLocaleString()}</p>
+                    <p className="text-xs text-zinc-500">{model.bookings} bookings</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500 text-sm">No data yet</p>
+          )}
+        </div>
       </div>
 
-      {/* Models Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Models Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-muted rounded-xl">
-              <p className="text-3xl font-bold">{stats.models.total}</p>
-              <p className="text-muted-foreground text-sm">Total Models</p>
-            </div>
-            <div className="text-center p-4 bg-muted rounded-xl">
-              <p className="text-3xl font-bold text-green-500">{stats.models.active}</p>
-              <p className="text-muted-foreground text-sm">Active Models</p>
-            </div>
+      <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+        <h3 className="text-sm font-semibold text-zinc-300 mb-4">Models Overview</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-4 rounded-xl bg-zinc-800/30">
+            <p className="text-2xl font-semibold text-zinc-100">{stats.models.total}</p>
+            <p className="text-xs text-zinc-500 mt-1">Total Models</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="text-center p-4 rounded-xl bg-zinc-800/30">
+            <p className="text-2xl font-semibold text-emerald-400">{stats.models.active}</p>
+            <p className="text-xs text-zinc-500 mt-1">Active Models</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

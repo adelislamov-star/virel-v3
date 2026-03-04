@@ -1,11 +1,8 @@
-// ACTION CENTER - Main operator dashboard (UPDATED WITH REVIEWS, INCIDENTS, FRAUD)
+// ACTION CENTER
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 type ActionItem = {
   id: string;
@@ -20,6 +17,30 @@ type ActionItem = {
   slaBreached?: boolean;
   slaMinutesRemaining?: number | null;
   createdAt: string;
+};
+
+const badgeStyles: Record<string, string> = {
+  critical: 'bg-red-500/10 text-red-400 border-red-500/20',
+  high: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  normal: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  low: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+};
+
+const typeBadgeStyles: Record<string, string> = {
+  task: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  exception: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  review: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  incident: 'bg-red-500/10 text-red-400 border-red-500/20',
+  fraud_alert: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+};
+
+const typeLabels: Record<string, string> = {
+  task: 'Task',
+  exception: 'Exception',
+  review: 'Review',
+  incident: 'Incident',
+  fraud_alert: 'Fraud',
 };
 
 export default function ActionCenterPage() {
@@ -58,7 +79,7 @@ export default function ActionCenterPage() {
           id: r.id,
           type: 'review' as const,
           priority: r.toxicityFlag || r.suspiciousFlag ? 'high' : 'normal',
-          subject: `Review by ${r.client?.fullName || 'Unknown'} for ${r.model?.name || 'Unknown'} — ${r.rating}★`,
+          subject: `Review by ${r.client?.fullName || 'Unknown'} for ${r.model?.name || 'Unknown'}`,
           entityType: 'review',
           entityId: r.id,
           status: r.status,
@@ -78,7 +99,7 @@ export default function ActionCenterPage() {
           id: s.id,
           type: 'fraud_alert' as const,
           priority: s.riskScoreImpact >= 20 ? 'high' : 'normal',
-          subject: `Fraud signal: ${s.signalType.replace(/_/g, ' ')} — ${s.client?.fullName || 'Unknown'}`,
+          subject: `Fraud signal: ${s.signalType.replace(/_/g, ' ')}`,
           entityType: 'fraud',
           entityId: s.clientId,
           status: 'open',
@@ -116,28 +137,20 @@ export default function ActionCenterPage() {
     }
   }
 
-  function getPriorityColor(priority: string) {
-    const colors: any = { critical: 'destructive', high: 'orange', medium: 'yellow', normal: 'default', low: 'secondary' };
-    return colors[priority] || 'default';
-  }
-
-  function getTypeIcon(type: string) {
-    const icons: Record<string, string> = {
-      task: '📋 Task',
-      exception: '⚠️ Exception',
-      review: '⭐ Review',
-      incident: '🚨 Incident',
-      fraud_alert: '🛡️ Fraud'
-    };
-    return icons[type] || type;
-  }
-
   function getSLALabel(item: ActionItem) {
     if (!item.slaMinutesRemaining) return null;
-    if (item.slaBreached) return <Badge variant="destructive">SLA BREACHED</Badge>;
-    if (item.slaMinutesRemaining < 15) return <Badge variant="destructive">{item.slaMinutesRemaining}min left</Badge>;
-    if (item.slaMinutesRemaining < 30) return <Badge variant="orange">{item.slaMinutesRemaining}min left</Badge>;
-    return <Badge variant="secondary">{item.slaMinutesRemaining}min left</Badge>;
+    if (item.slaBreached) return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-red-500/10 text-red-400 border-red-500/20">SLA BREACHED</span>
+    );
+    if (item.slaMinutesRemaining < 15) return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-red-500/10 text-red-400 border-red-500/20">{item.slaMinutesRemaining}min left</span>
+    );
+    if (item.slaMinutesRemaining < 30) return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-amber-500/10 text-amber-400 border-amber-500/20">{item.slaMinutesRemaining}min left</span>
+    );
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-zinc-500/10 text-zinc-400 border-zinc-500/20">{item.slaMinutesRemaining}min left</span>
+    );
   }
 
   const urgentItems = items.filter(i => i.slaBreached || i.priority === 'critical' || i.severity === 'critical');
@@ -146,146 +159,117 @@ export default function ActionCenterPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6">Action Center</h1>
-        <p>Loading...</p>
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Action Center</h1>
+          <p className="text-sm text-zinc-500 mt-1">Items requiring attention</p>
+        </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-zinc-800/30 rounded-xl" />)}
+          </div>
+          <div className="h-20 bg-zinc-800/30 rounded-xl" />
+          <div className="h-20 bg-zinc-800/30 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  function renderItem(item: ActionItem, urgent?: boolean) {
+    return (
+      <div
+        key={item.id}
+        className={`rounded-xl border p-5 transition-colors duration-100 ${
+          urgent
+            ? 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10'
+            : 'border-zinc-800/50 bg-zinc-900/50 hover:bg-zinc-800/30'
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${typeBadgeStyles[item.type] || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
+                {typeLabels[item.type] || item.type}
+              </span>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${badgeStyles[item.priority] || badgeStyles.normal}`}>
+                {item.priority}
+              </span>
+              {getSLALabel(item)}
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">
+                {item.entityType}
+              </span>
+            </div>
+            <h3 className="text-sm font-medium text-zinc-200 mb-1 truncate">{item.subject || item.summary}</h3>
+            <p className="text-xs text-zinc-500">
+              Created {new Date(item.createdAt).toLocaleString()}
+            </p>
+          </div>
+          <div className="flex gap-2 ml-4 shrink-0">
+            <button
+              onClick={() => handleView(item)}
+              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-xs font-medium transition-colors duration-150"
+            >
+              View
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">🎯 Action Center</h1>
-        <p className="text-muted-foreground">{items.length} items requiring attention</p>
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Action Center</h1>
+        <p className="text-sm text-zinc-500 mt-1">{items.length} items requiring attention</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Urgent</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">{urgentItems.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">High Priority</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{highPriorityItems.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Normal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{normalItems.length}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Urgent</p>
+          <p className={`text-2xl font-semibold mt-2 ${urgentItems.length > 0 ? 'text-red-400' : 'text-zinc-100'}`}>{urgentItems.length}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">High Priority</p>
+          <p className={`text-2xl font-semibold mt-2 ${highPriorityItems.length > 0 ? 'text-amber-400' : 'text-zinc-100'}`}>{highPriorityItems.length}</p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Normal</p>
+          <p className="text-2xl font-semibold text-zinc-100 mt-2">{normalItems.length}</p>
+        </div>
       </div>
 
       {urgentItems.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-red-600">🔴 URGENT ({urgentItems.length})</h2>
+          <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-3">Urgent ({urgentItems.length})</h2>
           <div className="space-y-3">
-            {urgentItems.map(item => (
-              <Card key={item.id} className="border-red-300 bg-red-50">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant={getPriorityColor(item.priority)}>{getTypeIcon(item.type)}</Badge>
-                        {getSLALabel(item)}
-                        <Badge variant="outline">{item.entityType}</Badge>
-                      </div>
-                      <h3 className="font-semibold mb-1">{item.subject || item.summary}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Created {new Date(item.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleView(item)}>View</Button>
-                      <Button size="sm" variant="outline">Assign to Me</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {urgentItems.map(item => renderItem(item, true))}
           </div>
         </div>
       )}
 
       {highPriorityItems.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-orange-600">🟡 HIGH PRIORITY ({highPriorityItems.length})</h2>
+          <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wider mb-3">High Priority ({highPriorityItems.length})</h2>
           <div className="space-y-3">
-            {highPriorityItems.map(item => (
-              <Card key={item.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant={getPriorityColor(item.priority)}>{getTypeIcon(item.type)}</Badge>
-                        {getSLALabel(item)}
-                        <Badge variant="outline">{item.entityType}</Badge>
-                      </div>
-                      <h3 className="font-semibold mb-1">{item.subject || item.summary}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Created {new Date(item.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleView(item)}>View</Button>
-                      <Button size="sm" variant="outline">Assign</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {highPriorityItems.map(item => renderItem(item))}
           </div>
         </div>
       )}
 
       {normalItems.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">NORMAL ({normalItems.length})</h2>
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Normal ({normalItems.length})</h2>
           <div className="space-y-3">
-            {normalItems.map(item => (
-              <Card key={item.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="default">{getTypeIcon(item.type)}</Badge>
-                        <Badge variant="outline">{item.entityType}</Badge>
-                      </div>
-                      <h3 className="font-semibold mb-1">{item.subject || item.summary}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Created {new Date(item.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleView(item)}>View</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {normalItems.map(item => renderItem(item))}
           </div>
         </div>
       )}
 
       {items.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              ✅ All clear! No items requiring attention.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-8 text-center">
+          <p className="text-zinc-500">All clear — no items requiring attention.</p>
+        </div>
       )}
     </div>
   );

@@ -1,8 +1,7 @@
-// AVAILABILITY PAGE v2 - BEST PRACTICES DESIGN
+// AVAILABILITY PAGE v2
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import ConflictsBanner from '@/components/availability/v2/ConflictsBanner';
 import ModelSelector from '@/components/availability/v2/ModelSelector';
 import TimelineView from '@/components/availability/v2/TimelineView';
@@ -19,43 +18,28 @@ export default function AvailabilityPageV2() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
   
   useEffect(() => {
-    if (selectedModelIds.length > 0) {
-      loadSlots();
-    }
+    if (selectedModelIds.length > 0) loadSlots();
   }, [selectedModelIds, viewDate, viewMode]);
   
   async function loadData() {
     try {
       const bookingsRes = await fetch('/api/v1/bookings?limit=10');
       const bookingsData = await bookingsRes.json();
-      
       const uniqueModels = new Map();
       bookingsData.data?.bookings?.forEach((b: any) => {
         if (b.model && !uniqueModels.has(b.model.id)) {
-          uniqueModels.set(b.model.id, {
-            id: b.model.id,
-            name: b.model.name,
-            publicCode: b.model.publicCode
-          });
+          uniqueModels.set(b.model.id, { id: b.model.id, name: b.model.name, publicCode: b.model.publicCode });
         }
       });
-      
       const modelsList = Array.from(uniqueModels.values());
       setModels(modelsList);
-      
-      if (modelsList.length > 0) {
-        setSelectedModelIds([modelsList[0].id]);
-      }
-      
+      if (modelsList.length > 0) setSelectedModelIds([modelsList[0].id]);
       const conflictsRes = await fetch('/api/v1/availability/mismatches');
       const conflictsData = await conflictsRes.json();
       setConflicts(conflictsData.data?.mismatches || []);
-      
       setLoading(false);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -67,12 +51,9 @@ export default function AvailabilityPageV2() {
     try {
       const from = getViewStart();
       const to = getViewEnd();
-      
       const promises = selectedModelIds.map(modelId => 
-        fetch(`/api/v1/availability/slots?model_id=${modelId}&from=${from.toISOString()}&to=${to.toISOString()}`)
-          .then(res => res.json())
+        fetch(`/api/v1/availability/slots?model_id=${modelId}&from=${from.toISOString()}&to=${to.toISOString()}`).then(res => res.json())
       );
-      
       const results = await Promise.all(promises);
       const allSlots = results.flatMap(r => r.data?.slots || []);
       setSlots(allSlots);
@@ -83,9 +64,8 @@ export default function AvailabilityPageV2() {
   
   function getViewStart() {
     const date = new Date(viewDate);
-    if (viewMode === 'day') {
-      date.setHours(0, 0, 0, 0);
-    } else {
+    if (viewMode === 'day') { date.setHours(0, 0, 0, 0); }
+    else {
       const day = date.getDay();
       const diff = date.getDate() - day + (day === 0 ? -6 : 1);
       date.setDate(diff);
@@ -96,11 +76,8 @@ export default function AvailabilityPageV2() {
   
   function getViewEnd() {
     const date = new Date(getViewStart());
-    if (viewMode === 'day') {
-      date.setDate(date.getDate() + 1);
-    } else {
-      date.setDate(date.getDate() + 7);
-    }
+    if (viewMode === 'day') date.setDate(date.getDate() + 1);
+    else date.setDate(date.getDate() + 7);
     return date;
   }
   
@@ -113,52 +90,49 @@ export default function AvailabilityPageV2() {
   const selectedModels = models.filter(m => selectedModelIds.includes(m.id));
   
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Availability PRO</h1>
+          <p className="text-sm text-zinc-500 mt-1">Loading...</p>
+        </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-12 bg-zinc-800/30 rounded-xl" />
+          <div className="h-64 bg-zinc-800/30 rounded-xl" />
+        </div>
+      </div>
+    );
   }
   
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">📅 Availability Management</h1>
-          <p className="text-muted-foreground">
-            Manage model schedules, detect conflicts, optimize bookings
-          </p>
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Availability PRO</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage model schedules, detect conflicts, optimize bookings</p>
         </div>
-        
-        <Button 
+        <button 
           onClick={() => setShowAddForm(!showAddForm)}
-          size="lg"
+          className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
         >
-          ➕ Add Availability
-        </Button>
+          + Add Availability
+        </button>
       </div>
       
       <ConflictsBanner 
         conflicts={conflicts}
-        onResolve={(bookingId) => {
-          console.log('Resolve:', bookingId);
-        }}
+        onResolve={(bookingId) => { console.log('Resolve:', bookingId); }}
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
-          <ModelSelector
-            models={models}
-            selectedIds={selectedModelIds}
-            onChange={setSelectedModelIds}
-          />
-          
+          <ModelSelector models={models} selectedIds={selectedModelIds} onChange={setSelectedModelIds} />
           {showAddForm && selectedModelIds.length === 1 && (
             <div className="mt-4">
-              <AddSlotForm
-                modelId={selectedModelIds[0]}
-                onSuccess={handleSlotCreated}
-              />
+              <AddSlotForm modelId={selectedModelIds[0]} onSuccess={handleSlotCreated} />
             </div>
           )}
         </div>
-        
         <div className="lg:col-span-3">
           <TimelineView
             models={selectedModels}

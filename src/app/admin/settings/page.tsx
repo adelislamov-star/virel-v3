@@ -1,88 +1,70 @@
 // SETTINGS PAGE
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-
 export default function SettingsPage() {
+  const badgeActive = 'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+  const badgeInactive = 'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+  const badgeInfo = 'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20';
+
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">⚙️ Settings</h1>
-        <p className="text-muted-foreground">System configuration</p>
+    <div className="p-8 max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Settings</h1>
+        <p className="text-sm text-zinc-500 mt-1">System configuration</p>
       </div>
-      
+
       <div className="space-y-6">
-        {/* Database */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Database</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span>Provider</span>
-              <Badge>PostgreSQL (Neon.tech)</Badge>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Database</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-zinc-400">Provider</span>
+              <span className={badgeInfo}>PostgreSQL (Neon.tech)</span>
             </div>
-            <div className="flex justify-between">
-              <span>Tables</span>
-              <Badge variant="outline">30+ tables</Badge>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-zinc-400">Tables</span>
+              <span className={badgeInactive}>30+ tables</span>
             </div>
-            <div className="flex justify-between">
-              <span>Status</span>
-              <Badge variant="default">✓ Connected</Badge>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-zinc-400">Status</span>
+              <span className={badgeActive}>Connected</span>
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Integrations */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Integrations</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span>Telegram (DivaReceptionBot)</span>
-              <Badge variant="secondary">Not configured</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Telegram (KeshaZeroGapBot)</span>
-              <Badge variant="secondary">Not configured</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Stripe Payments</span>
-              <Badge variant="secondary">Not configured</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Email (Resend)</span>
-              <Badge variant="secondary">Not configured</Badge>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* System Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>System Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Version</span>
-              <span className="font-mono">v3.0.0</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Release</span>
-              <span>Release 1 (Foundation)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Environment</span>
-              <span>Development</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Node.js</span>
-              <span>v20.x</span>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Integrations</h3>
+          <div className="space-y-3">
+            {[
+              'Telegram (DivaReceptionBot)',
+              'Telegram (KeshaZeroGapBot)',
+              'Stripe Payments',
+              'Email (Resend)',
+            ].map(name => (
+              <div key={name} className="flex justify-between items-center">
+                <span className="text-sm text-zinc-400">{name}</span>
+                <span className={badgeInactive}>Not configured</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">System Information</h3>
+          <div className="space-y-3 text-sm">
+            {[
+              { label: 'Version', value: 'v3.0.0' },
+              { label: 'Release', value: 'Release 1 (Foundation)' },
+              { label: 'Environment', value: 'Development' },
+              { label: 'Node.js', value: 'v20.x' },
+            ].map(item => (
+              <div key={item.label} className="flex justify-between items-center">
+                <span className="text-zinc-500">{item.label}</span>
+                <span className="font-mono text-zinc-300">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

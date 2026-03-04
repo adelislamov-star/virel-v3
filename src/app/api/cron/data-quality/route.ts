@@ -3,10 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runDataQualityChecks } from '@/lib/data-governance/checker';
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse('Unauthorized', { status: 401 });
+  // Verify cron secret (skip if not set)
+  const secret = process.env.CRON_SECRET?.trim();
+  if (secret) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${secret}`) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
   }
 
   try {
