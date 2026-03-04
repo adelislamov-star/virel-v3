@@ -281,12 +281,13 @@ export async function POST(request: NextRequest) {
         await prisma.$executeRawUnsafe(
           `INSERT INTO model_addresses (id, model_id, street, flat_number, flat_floor, post_code, tube_station, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, true)
-           ON CONFLICT (id) DO UPDATE SET
+           ON CONFLICT (model_id) DO UPDATE SET
              street = EXCLUDED.street, flat_number = EXCLUDED.flat_number,
              flat_floor = EXCLUDED.flat_floor, post_code = EXCLUDED.post_code,
              tube_station = EXCLUDED.tube_station`,
           `${model.id}-addr`, model.id,
-          parsed.address.street, parsed.address.flat, parsed.address.floor,
+          parsed.address.street, parsed.address.flat,
+          parsed.address.floor ? parseInt(parsed.address.floor) : null,
           parsed.address.postcode, parsed.address.tubeStation,
         )
       } catch (e) {
@@ -299,7 +300,7 @@ export async function POST(request: NextRequest) {
       await prisma.$executeRawUnsafe(
         `INSERT INTO model_work_preferences (id, model_id, work_with_couples, work_with_women)
          VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id) DO UPDATE SET
+         ON CONFLICT (model_id) DO UPDATE SET
            work_with_couples = EXCLUDED.work_with_couples,
            work_with_women = EXCLUDED.work_with_women`,
         `${model.id}-prefs`, model.id,
@@ -330,7 +331,6 @@ export async function POST(request: NextRequest) {
             type: 'photo',
             storageKey: result.key,
             url: result.url,
-            thumbUrl: thumb.url,
             isPrimary: isCover,
             isPublic: true,
             sortOrder,
