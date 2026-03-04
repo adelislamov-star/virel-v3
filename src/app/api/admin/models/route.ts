@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { randomUUID } from 'crypto'
+import { ensureExtensionTables } from '@/lib/db/ensure-tables'
 
 function slugify(name: string) {
   return name.toLowerCase()
@@ -12,6 +13,7 @@ function slugify(name: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureExtensionTables()
     const body = await request.json()
 
     // Unique slug

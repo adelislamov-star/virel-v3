@@ -2,12 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
+import { ensureExtensionTables } from '@/lib/db/ensure-tables';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await ensureExtensionTables();
+
     const model = await prisma.model.findUnique({
       where: { id: params.id },
       include: {

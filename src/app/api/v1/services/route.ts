@@ -1,4 +1,4 @@
-// GET ALL SERVICES (fixed: removed service_categories reference)
+// GET ALL SERVICES — returns in categories format for ServicesTab component
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 
@@ -16,9 +16,24 @@ export async function GET(request: NextRequest) {
       orderBy: { title: 'asc' }
     });
 
+    // ServicesTab expects categories with nested services
+    // Wrap all services in a single "All Services" category
+    const categories = [
+      {
+        id: 'all',
+        name: 'All Services',
+        slug: 'all',
+        sort_order: 0,
+        services: services.map(s => ({
+          ...s,
+          hasExtraPrice: false,
+        })),
+      }
+    ];
+
     return NextResponse.json({
       success: true,
-      data: { services }
+      data: { categories, services }
     });
 
   } catch (error: any) {
