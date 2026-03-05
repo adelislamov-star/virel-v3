@@ -69,7 +69,9 @@ export async function POST(request: NextRequest) {
         const modelInfo = await prisma.model.findUnique({ where: { id: modelId }, select: { name: true } })
         const durationLabel: Record<string, string> = {
           '30min':'30 min','45min':'45 min','1hour':'1 hour',
-          '90min':'90 min','2hours':'2 hours','extra_hour':'Extra hour','overnight':'Overnight'
+          '90min':'90 min','2hours':'2 hours','3hours':'3 hours',
+          '4hours':'4 hours','6hours':'6 hours',
+          'extra_hour':'Extra hour','overnight':'Overnight',
         }
         const lines = [
           '\uD83D\uDCF2 *New Booking Request*',

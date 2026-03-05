@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 interface Rate {
   duration_type: string
@@ -12,16 +12,14 @@ interface BookingFormProps {
   model: { id: string; name: string; rates?: Rate[] }
 }
 
-const RATE_ORDER = ['30min', '45min', '1hour', '90min', '2hours', 'extra_hour', 'overnight']
-const DURATION_LABELS: Record<string, string> = {
-  '30min': '30 min',
-  '45min': '45 min',
-  '1hour': '1 hour',
-  '90min': '1.5 hours',
-  '2hours': '2 hours',
-  'extra_hour': 'Extra hour',
-  'overnight': 'Overnight',
-}
+const DURATION_PRESETS = [
+  { value: '1hour', label: '1 hour' },
+  { value: '2hours', label: '2 hours' },
+  { value: '3hours', label: '3 hours' },
+  { value: '4hours', label: '4 hours' },
+  { value: '6hours', label: '6 hours' },
+  { value: 'overnight', label: 'Overnight' },
+]
 
 const baseInput: React.CSSProperties = {
   width: '100%',
@@ -62,7 +60,6 @@ function StepLabel({ n, text }: { n: string; text: string }) {
 }
 
 function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  // Get tomorrow's date as minimum
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const minDate = tomorrow.toISOString().split('T')[0]
@@ -89,7 +86,6 @@ const TIME_OPTIONS = (() => {
     options.push(`${String(h).padStart(2, '0')}:00`)
     options.push(`${String(h).padStart(2, '0')}:30`)
   }
-  // Add late night / early morning slots
   for (let h = 0; h <= 3; h++) {
     options.push(`${String(h).padStart(2, '0')}:00`)
     if (h < 3) options.push(`${String(h).padStart(2, '0')}:30`)
@@ -140,6 +136,352 @@ function FocusTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>)
   )
 }
 
+/* ─────────────────────────────────────────────
+   Duration Selector — elegant single-field dropdown
+   ───────────────────────────────────────────── */
+
+function DurationSelector({
+  value,
+  onChange,
+  rates,
+  serviceType,
+}: {
+  value: string
+  onChange: (v: string) => void
+  rates: Rate[]
+  serviceType: 'incall' | 'outcall'
+}) {
+  const [open, setOpen] = useState(false)
+  const [customValue, setCustomValue] = useState('')
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const [isMobile, setIsMobile] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const customInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const closeDropdown = useCallback(() => {
+    if (customValue.trim()) {
+      onChange(customValue.trim())
+      setCustomValue('')
+    }
+    setOpen(false)
+    setFocusedIndex(-1)
+  }, [customValue, onChange])
+
+  useEffect(() => {
+    if (!open) return
+    const handle = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        closeDropdown()
+      }
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [open, closeDropdown])
+
+  useEffect(() => {
+    if (!open) return
+    const handle = (e: KeyboardEvent) => { if (e.key === 'Escape') closeDropdown() }
+    document.addEventListener('keydown', handle)
+    return () => document.removeEventListener('keydown', handle)
+  }, [open, closeDropdown])
+
+  useEffect(() => {
+    if (open && isMobile) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
+  }, [open, isMobile])
+
+  function findPrice(presetValue: string): number | undefined {
+    if (presetValue === 'overnight') {
+      return rates.find(r => r.call_type === serviceType && r.duration_type.startsWith('overnight'))?.price
+    }
+    return rates.find(r => r.call_type === serviceType && r.duration_type === presetValue)?.price
+  }
+
+  const displayLabel = (() => {
+    if (!value) return ''
+    const preset = DURATION_PRESETS.find(p => p.value === value)
+    return preset ? preset.label : value
+  })()
+
+  function selectPreset(val: string) {
+    onChange(val)
+    setOpen(false)
+    setFocusedIndex(-1)
+  }
+
+  function handleFieldKeyDown(e: React.KeyboardEvent) {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        setOpen(true)
+        setFocusedIndex(0)
+      }
+      return
+    }
+    const total = DURATION_PRESETS.length + 1
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setFocusedIndex(i => (i + 1) % total)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setFocusedIndex(i => (i - 1 + total) % total)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (focusedIndex >= 0 && focusedIndex < DURATION_PRESETS.length) {
+        selectPreset(DURATION_PRESETS[focusedIndex].value)
+      } else if (focusedIndex === DURATION_PRESETS.length) {
+        customInputRef.current?.focus()
+      }
+    }
+  }
+
+  const panelContent = (
+    <>
+      {DURATION_PRESETS.map((opt, i) => {
+        const price = findPrice(opt.value)
+        const selected = value === opt.value
+        const focused = focusedIndex === i
+        return (
+          <div
+            key={opt.value}
+            role="option"
+            aria-selected={selected}
+            onClick={() => selectPreset(opt.value)}
+            style={{
+              padding: '14px 20px',
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: focused ? 'rgba(255,255,255,0.04)' : selected ? 'rgba(184,150,90,0.05)' : 'transparent',
+              borderLeft: selected ? '2px solid #b8965a' : '2px solid transparent',
+              transition: 'background .12s',
+            }}
+            onMouseEnter={(e) => {
+              setFocusedIndex(i)
+              if (!selected) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+            }}
+            onMouseLeave={(e) => {
+              if (!selected && !focused) e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            <span style={{
+              fontSize: 15,
+              fontFamily: 'Cormorant Garamond, serif',
+              color: selected ? '#e8e2d6' : 'rgba(232,226,214,0.65)',
+              fontWeight: 300,
+            }}>
+              {opt.label}
+            </span>
+            {price !== undefined && (
+              <span style={{
+                fontSize: 12,
+                color: 'rgba(184,150,90,0.45)',
+                fontFamily: 'inherit',
+                fontWeight: 300,
+                letterSpacing: '.02em',
+              }}>
+                £{price.toLocaleString('en-GB')}
+              </span>
+            )}
+          </div>
+        )
+      })}
+
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 20px' }} />
+
+      <div style={{ padding: '10px 20px 16px' }}>
+        <p style={{
+          fontSize: 8,
+          letterSpacing: '.25em',
+          textTransform: 'uppercase',
+          color: 'rgba(232,226,214,0.35)',
+          margin: '0 0 8px',
+        }}>
+          Custom duration
+        </p>
+        <input
+          ref={customInputRef}
+          type="text"
+          placeholder="e.g. 5 hours, 90 min, Weekend"
+          value={customValue}
+          onChange={e => setCustomValue(e.target.value)}
+          onFocus={() => setFocusedIndex(DURATION_PRESETS.length)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && customValue.trim()) {
+              e.stopPropagation()
+              onChange(customValue.trim())
+              setOpen(false)
+              setCustomValue('')
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setFocusedIndex(DURATION_PRESETS.length - 1)
+              containerRef.current?.focus()
+            }
+          }}
+          style={{
+            width: '100%',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: focusedIndex === DURATION_PRESETS.length
+              ? '1px solid rgba(184,150,90,0.4)'
+              : '1px solid rgba(255,255,255,0.08)',
+            padding: '8px 0',
+            color: '#e8e2d6',
+            fontSize: 13,
+            fontFamily: 'inherit',
+            outline: 'none',
+            letterSpacing: '.03em',
+            fontWeight: 300,
+            boxSizing: 'border-box',
+            transition: 'border-color .2s',
+          }}
+        />
+      </div>
+    </>
+  )
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', maxWidth: 480 }}>
+      <div
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        tabIndex={0}
+        onClick={() => setOpen(!open)}
+        onKeyDown={handleFieldKeyDown}
+        style={{
+          cursor: 'pointer',
+          padding: '16px 0',
+          borderBottom: open ? '1px solid rgba(184,150,90,0.6)' : '1px solid rgba(255,255,255,0.12)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          transition: 'border-color .2s',
+          outline: 'none',
+        }}
+      >
+        <span style={{
+          fontSize: 8,
+          letterSpacing: '.3em',
+          textTransform: 'uppercase',
+          color: 'rgba(232,224,212,0.42)',
+        }}>
+          Duration
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            fontSize: 15,
+            fontWeight: 300,
+            color: value ? '#e8e2d6' : 'rgba(232,226,214,0.3)',
+            fontFamily: 'Cormorant Garamond, serif',
+          }}>
+            {displayLabel || 'Select'}
+          </span>
+          <span style={{
+            fontSize: 7,
+            color: 'rgba(232,226,214,0.2)',
+            transform: open ? 'rotate(180deg)' : 'rotate(0)',
+            transition: 'transform .2s',
+            display: 'inline-block',
+          }}>
+            ▼
+          </span>
+        </span>
+      </div>
+
+      {/* Desktop dropdown */}
+      {open && !isMobile && (
+        <div
+          role="listbox"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            background: '#141414',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.55)',
+            borderRadius: 2,
+            overflow: 'hidden',
+            animation: 'durationFadeIn 150ms ease',
+          }}
+        >
+          {panelContent}
+        </div>
+      )}
+
+      {/* Mobile bottom sheet */}
+      {open && isMobile && (
+        <>
+          <div
+            onClick={() => closeDropdown()}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 999,
+              animation: 'durationFadeIn 150ms ease',
+            }}
+          />
+          <div
+            role="listbox"
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1000,
+              background: '#141414',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '12px 12px 0 0',
+              maxHeight: '70vh',
+              overflowY: 'auto',
+              animation: 'durationSlideUp 200ms ease',
+              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+              <div style={{ width: 32, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2 }} />
+            </div>
+            <div style={{
+              padding: '8px 20px 12px',
+              fontSize: 8,
+              letterSpacing: '.3em',
+              textTransform: 'uppercase',
+              color: 'rgba(232,224,212,0.42)',
+            }}>
+              Duration
+            </div>
+            {panelContent}
+          </div>
+        </>
+      )}
+
+      <style>{`
+        @keyframes durationFadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes durationSlideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+      `}</style>
+    </div>
+  )
+}
+
+
+/* ─────────────────────────────────────────────
+   Booking Form
+   ───────────────────────────────────────────── */
+
 export function BookingForm({ model }: BookingFormProps) {
   const [serviceType, setServiceType] = useState<'incall' | 'outcall'>('incall')
   const [duration, setDuration] = useState('')
@@ -148,11 +490,23 @@ export function BookingForm({ model }: BookingFormProps) {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
-  const currentRates = (model.rates || [])
-    .filter(r => r.call_type === serviceType)
-    .sort((a, b) => RATE_ORDER.indexOf(a.duration_type) - RATE_ORDER.indexOf(b.duration_type))
+  const rates = model.rates || []
 
-  const selectedRate = currentRates.find(r => r.duration_type === duration)
+  // Find price for summary display
+  const selectedPrice = (() => {
+    if (!duration) return undefined
+    if (duration === 'overnight') {
+      return rates.find(r => r.call_type === serviceType && r.duration_type.startsWith('overnight'))?.price
+    }
+    return rates.find(r => r.call_type === serviceType && r.duration_type === duration)?.price
+  })()
+
+  const selectedLabel = (() => {
+    if (!duration) return ''
+    const preset = DURATION_PRESETS.find(p => p.value === duration)
+    return preset ? preset.label : duration
+  })()
+
   const canSubmit = !loading && form.name.trim() && form.phone.trim()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -186,19 +540,16 @@ export function BookingForm({ model }: BookingFormProps) {
   }
 
   const formStyles = `
-    .booking-duration-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
     .booking-2col-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .booking-2col-grid-lg { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     @media (max-width:640px) {
-      .booking-duration-grid { grid-template-columns:1fr 1fr; }
       .booking-2col-grid, .booking-2col-grid-lg { grid-template-columns:1fr; }
-      .booking-duration-grid button { min-height:44px; }
     }
   `
 
   if (success) return (
     <div style={{ textAlign: 'center', padding: '64px 0' }}>
-      <div style={{ fontSize: 28, color: '#b8965a', marginBottom: 28 }}>◈</div>
+      <div style={{ fontSize: 28, color: '#b8965a', marginBottom: 28 }}>&#9670;</div>
       <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 34, fontWeight: 300, color: '#f5f0e8', marginBottom: 16 }}>
         Your request has been received
       </p>
@@ -290,62 +641,15 @@ export function BookingForm({ model }: BookingFormProps) {
       </div>
 
       {/* ── 02 DURATION ── */}
-      {currentRates.length > 0 && (
-        <div style={{ marginBottom: 48 }}>
-          <StepLabel n="02" text="Duration" />
-          <div className="booking-duration-grid">
-            {currentRates
-              .filter((r: Rate) => r.duration_type !== 'extra_hour')
-              .map(rate => {
-                const sel = duration === rate.duration_type
-                return (
-                  <button
-                    key={rate.duration_type}
-                    type="button"
-                    onClick={() => setDuration(rate.duration_type)}
-                    style={{
-                      position: 'relative',
-                      padding: '20px 24px',
-                      border: sel ? '1px solid #b8965a' : '1px solid rgba(255,255,255,0.07)',
-                      background: sel ? 'rgba(184,150,90,0.06)' : '#161616',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: 'inherit',
-                      transition: 'all .25s',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {sel && (
-                      <span style={{
-                        position: 'absolute', inset: 0,
-                        background: 'linear-gradient(135deg, rgba(184,150,90,0.12), transparent)',
-                        pointerEvents: 'none',
-                      }} />
-                    )}
-                    {sel && (
-                      <span style={{
-                        position: 'absolute', top: 10, right: 10,
-                        width: 18, height: 18, borderRadius: '50%',
-                        background: '#b8965a',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 9, color: '#0a0a0a', fontWeight: 700,
-                      }}>✓</span>
-                    )}
-                    <p style={{
-                      fontFamily: 'Cormorant Garamond, serif',
-                      fontSize: 22,
-                      fontWeight: 300,
-                      color: '#f5f0e8',
-                      margin: 0,
-                    }}>
-                      {DURATION_LABELS[rate.duration_type] || rate.duration_type}
-                    </p>
-                  </button>
-                )
-              })}
-          </div>
-        </div>
-      )}
+      <div style={{ marginBottom: 48 }}>
+        <StepLabel n="02" text="Duration" />
+        <DurationSelector
+          value={duration}
+          onChange={setDuration}
+          rates={rates}
+          serviceType={serviceType}
+        />
+      </div>
 
       {/* ── 03 DATE & TIME ── */}
       <div style={{ marginBottom: 48 }}>
@@ -391,7 +695,7 @@ export function BookingForm({ model }: BookingFormProps) {
           <p style={{ fontSize: 8, letterSpacing: '.25em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.45)', marginBottom: 10 }}>Notes (optional)</p>
           <FocusTextarea
             rows={3}
-            placeholder="Any preferences or special requests…"
+            placeholder="Any preferences or special requests..."
             value={form.notes}
             onChange={e => setForm({ ...form, notes: (e.target as HTMLTextAreaElement).value })}
           />
@@ -403,23 +707,29 @@ export function BookingForm({ model }: BookingFormProps) {
         maxWidth: 600,
         marginBottom: 24,
         padding: '28px 36px',
-        border: `1px solid ${selectedRate ? '#b8965a' : 'rgba(255,255,255,0.07)'}`,
-        background: selectedRate ? 'rgba(184,150,90,0.04)' : 'transparent',
+        border: `1px solid ${duration ? '#b8965a' : 'rgba(255,255,255,0.07)'}`,
+        background: duration ? 'rgba(184,150,90,0.04)' : 'transparent',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         minHeight: 80,
         transition: 'border-color .3s, background .3s',
       }}>
-        {selectedRate ? (
+        {duration ? (
           <>
             <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 300, fontStyle: 'italic', color: '#f5f0e8' }}>
-              {serviceType === 'incall' ? 'Incall' : 'Outcall'} · {DURATION_LABELS[selectedRate.duration_type]}
+              {serviceType === 'incall' ? 'Incall' : 'Outcall'} &middot; {selectedLabel}
             </span>
-            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#b8965a', whiteSpace: 'nowrap', marginLeft: 24 }}>
-              £{Number(selectedRate.price).toLocaleString('en-GB')}
-              {selectedRate.call_type === 'outcall' && <span style={{ fontSize: 13, opacity: .6, marginLeft: 6 }}>+ taxi</span>}
-            </span>
+            {selectedPrice !== undefined ? (
+              <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#b8965a', whiteSpace: 'nowrap', marginLeft: 24 }}>
+                £{Number(selectedPrice).toLocaleString('en-GB')}
+                {serviceType === 'outcall' && <span style={{ fontSize: 13, opacity: .6, marginLeft: 6 }}>+ taxi</span>}
+              </span>
+            ) : (
+              <span style={{ fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(184,150,90,0.5)', whiteSpace: 'nowrap', marginLeft: 24 }}>
+                On request
+              </span>
+            )}
           </>
         ) : (
           <span style={{ fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.3)' }}>
@@ -457,7 +767,7 @@ export function BookingForm({ model }: BookingFormProps) {
       <div style={{ display: 'flex', gap: 36, marginTop: 20, maxWidth: 600, fontSize: 9, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(232,226,214,0.35)', flexWrap: 'wrap' }}>
         {['Confirmed within 30 min', '100% discreet', 'Verified profile'].map(text => (
           <span key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: '#b8965a', fontSize: 8 }}>◆</span>
+            <span style={{ color: '#b8965a', fontSize: 8 }}>&#9670;</span>
             {text}
           </span>
         ))}
