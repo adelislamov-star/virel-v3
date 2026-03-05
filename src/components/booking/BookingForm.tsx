@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { sortRates } from '@/lib/sortRates'
+import { sortRates, deduplicateByLabel } from '@/lib/sortRates'
 import { durationLabel } from '@/lib/durationLabel'
 
 interface Rate {
@@ -151,11 +151,12 @@ function DurationSelector({
   const containerRef = useRef<HTMLDivElement>(null)
   const customInputRef = useRef<HTMLInputElement>(null)
 
-  // Derive presets dynamically from the model's rates
+  // Derive presets dynamically from the model's rates — sorted, deduplicated by label
   const presets = useMemo(() => {
     const uniqueTypes = [...new Set(rates.map(r => r.duration_type))]
-    const sorted = sortRates(uniqueTypes.map(d => ({ duration_type: d }))).map(d => d.duration_type)
-    return sorted.map(d => ({ value: d, label: durationLabel(d) }))
+    const sorted = sortRates(uniqueTypes.map(d => ({ duration_type: d })))
+    const deduped = deduplicateByLabel(sorted)
+    return deduped.map(d => ({ value: d.duration_type, label: durationLabel(d.duration_type) }))
   }, [rates])
 
   useEffect(() => {
@@ -200,8 +201,11 @@ function DurationSelector({
   }, [open, isMobile])
 
   function findPrice(presetValue: string): number | undefined {
-    if (presetValue === 'overnight') {
-      return rates.find(r => r.call_type === serviceType && r.duration_type.startsWith('overnight'))?.price
+    // For overnight-type durations, match any overnight variant
+    const label = durationLabel(presetValue)
+    if (label === 'Overnight') {
+      const matches = rates.filter(r => r.call_type === serviceType && durationLabel(r.duration_type) === 'Overnight')
+      return matches.length ? Math.max(...matches.map(r => Number(r.price))) : undefined
     }
     return rates.find(r => r.call_type === serviceType && r.duration_type === presetValue)?.price
   }
@@ -495,8 +499,10 @@ export function BookingForm({ model }: BookingFormProps) {
   // Find price for summary display
   const selectedPrice = (() => {
     if (!duration) return undefined
-    if (duration === 'overnight') {
-      return rates.find(r => r.call_type === serviceType && r.duration_type.startsWith('overnight'))?.price
+    const label = durationLabel(duration)
+    if (label === 'Overnight') {
+      const matches = rates.filter(r => r.call_type === serviceType && durationLabel(r.duration_type) === 'Overnight')
+      return matches.length ? Math.max(...matches.map(r => Number(r.price))) : undefined
     }
     return rates.find(r => r.call_type === serviceType && r.duration_type === duration)?.price
   })()

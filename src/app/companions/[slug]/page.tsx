@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
-import { sortRates } from '@/lib/sortRates'
+import { sortRates, deduplicateByLabel } from '@/lib/sortRates'
 import { durationLabel } from '@/lib/durationLabel'
 import { DragGallery, ExpToggle, RevealInit, ServiceTagsCollapse } from '@/components/profile/ProfileInteractive'
 import { StickyBookBar } from '@/components/profile/StickyBookBar'
@@ -107,16 +107,23 @@ export default async function ModelProfilePage({ params }: Props) {
   // Organize rates by call_type for table display (3.2)
   const incallRates = rates.filter((r: any) => r.call_type === 'incall')
   const outcallRates = rates.filter((r: any) => r.call_type === 'outcall')
-  // Merge into unified table rows — durations derived from DB, sorted via shared utility
-  const allDurations = sortRates(
+  // Merge into unified table rows — sorted, deduplicated by label (e.g. overnight + overnight_9h → one "Overnight")
+  const uniqueDurations = sortRates(
     [...new Set(rates.map((r: any) => r.duration_type))].map(d => ({ duration_type: d }))
-  ).map(d => d.duration_type)
-  const ratesTable = allDurations.map(dur => ({
-    duration: dur,
-    label: durationLabel(dur),
-    incall: incallRates.find((r: any) => r.duration_type === dur)?.price,
-    outcall: outcallRates.find((r: any) => r.duration_type === dur)?.price,
-  }))
+  )
+  const dedupedDurations = deduplicateByLabel(uniqueDurations)
+  const allDurations = dedupedDurations.map(d => d.duration_type)
+  const ratesTable = allDurations.map(dur => {
+    // For overnight-type durations, also check sister types (overnight / overnight_9h)
+    const label = durationLabel(dur)
+    const matchesDur = (r: any) => durationLabel(r.duration_type) === label
+    return {
+      duration: dur,
+      label,
+      incall: incallRates.find(matchesDur)?.price,
+      outcall: outcallRates.find(matchesDur)?.price,
+    }
+  })
 
   // Fetch similar models (3.4) — same nationality or random, exclude current
   let similarModels: any[] = []
