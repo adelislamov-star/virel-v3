@@ -407,7 +407,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         publicCode,
-        status: 'draft',
+        status: 'active',
         visibility: 'public',
         notesInternal: aiParsed?.bio_text || null,
         stats: {

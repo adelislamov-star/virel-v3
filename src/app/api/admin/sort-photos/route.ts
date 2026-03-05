@@ -34,11 +34,15 @@ export async function POST(req: NextRequest) {
       messages: [{ role: 'user', content: blocks }]
     })
 
-    const raw = (message.content[0] as any).text
-      .replace(/```json|```/g, '')
-      .trim()
+    const rawText = (message.content[0] as any)?.text || ''
+    const cleaned = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) {
+      console.error('[sort-photos] Could not extract JSON array from AI response:', cleaned.substring(0, 200))
+      return NextResponse.json({ success: false, error: 'AI returned invalid JSON' }, { status: 500 })
+    }
 
-    const order: { index: number; role: string }[] = JSON.parse(raw)
+    const order: { index: number; role: string }[] = JSON.parse(jsonMatch[0])
     return NextResponse.json({ success: true, order })
   } catch (e: any) {
     console.error('sort-photos error:', e)

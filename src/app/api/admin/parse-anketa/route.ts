@@ -8,9 +8,19 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 async function extractText(file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase()
   const buf = Buffer.from(await file.arrayBuffer())
-  if (ext === 'docx') {
+  if (ext === 'docx' || ext === 'doc') {
     const r = await mammoth.extractRawText({ buffer: buf })
     return r.value
+  }
+  if (ext === 'pdf' || file.type.includes('pdf')) {
+    try {
+      const pdfParse = require('pdf-parse')
+      const data = await pdfParse(buf)
+      return data.text || ''
+    } catch (e) {
+      console.error('[parse-anketa] PDF parse failed:', e)
+      return ''
+    }
   }
   if (ext === 'xlsx' || ext === 'xls') {
     const wb = XLSX.read(buf)

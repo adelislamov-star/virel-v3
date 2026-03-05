@@ -5,6 +5,7 @@ import Link from 'next/link'
 interface PhotoFile { file: File; previewUrl: string; id: string }
 interface SortedPhoto extends PhotoFile { sortOrder: number; isPrimary: boolean; role: string }
 type Stage = 'drop' | 'preview' | 'uploading' | 'done' | 'error'
+type ParseError = { message: string } | null
 
 function uid() { return Math.random().toString(36).slice(2) }
 
@@ -20,12 +21,16 @@ async function fileToBase64(file: File): Promise<string> {
 function isAnketaFile(f: File) {
   return (
     f.type === 'text/plain' ||
+    f.type === 'application/pdf' ||
     f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    f.type === 'application/msword' ||
     f.type === 'application/vnd.ms-excel' ||
     f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     f.type === 'text/csv' ||
     f.name.endsWith('.txt') ||
+    f.name.endsWith('.pdf') ||
     f.name.endsWith('.docx') ||
+    f.name.endsWith('.doc') ||
     f.name.endsWith('.xlsx') ||
     f.name.endsWith('.xls') ||
     f.name.endsWith('.csv')
@@ -53,6 +58,7 @@ export default function QuickUploadPage() {
   const [doneUrl, setDoneUrl] = useState('')
   const [aiSorting, setAiSorting] = useState(false)
   const [aiParsing, setAiParsing] = useState(false)
+  const [parseError, setParseError] = useState<ParseError>(null)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -71,12 +77,17 @@ export default function QuickUploadPage() {
         try {
           setAnketaText(f.name)
           setAiParsing(true)
+          setParseError(null)
           setStage('preview')
           const parsed = await parseAnketaWithAI(f)
           setParsedForm(parsed)
           if (parsed.name) setManualName(parsed.name)
           setAiParsing(false)
-        } catch { setAiParsing(false) }
+        } catch (e: any) {
+          console.error('[quick-upload] Anketa parse failed:', e)
+          setAiParsing(false)
+          setParseError({ message: e.message || 'Failed to parse document' })
+        }
       }
     }))
 
@@ -222,12 +233,12 @@ export default function QuickUploadPage() {
             }}
             onClick={() => stage === 'drop' && fileInputRef.current?.click()}
           >
-            <input ref={fileInputRef} type="file" multiple accept="image/*,.txt,.docx,.xlsx,.xls,.csv" onChange={handleFileInput} style={{ display: 'none' }} />
+            <input ref={fileInputRef} type="file" multiple accept="image/*,.txt,.pdf,.docx,.doc,.xlsx,.xls,.csv" onChange={handleFileInput} style={{ display: 'none' }} />
             <div style={{ fontSize: 40, marginBottom: 8 }}>{photos.length > 0 ? '🖼️' : '📁'}</div>
             <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 15 }}>
               {photos.length > 0
-                ? `${photos.length} photos${anketaText ? ' + anketa ✅' : ' (no anketa)'}`
-                : 'Drop photos + anketa (.txt, .docx, .xlsx) here'}
+                ? `${photos.length} photos${anketaText ? ' + anketa' : ' (no anketa)'}`
+                : 'Drop photos + anketa (.txt, .docx, .pdf, .xlsx) here'}
             </p>
             <p style={{ margin: 0, color: '#888', fontSize: 12 }}>
               {stage === 'drop' ? 'Click or drag & drop' : ''}
@@ -274,7 +285,13 @@ export default function QuickUploadPage() {
           {/* Anketa parsed preview */}
           {aiParsing && (
             <div style={{ background: '#1a1a2e', border: '1px solid #6366f1', borderRadius: 10, padding: 14, marginBottom: 20 }}>
-              <p style={{ margin: 0, fontSize: 13, color: '#a5b4fc' }}>✨ AI reading anketa...</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#a5b4fc' }}>AI reading anketa...</p>
+            </div>
+          )}
+          {parseError && (
+            <div style={{ background: '#2e1a1a', border: '1px solid #dc2626', borderRadius: 10, padding: 14, marginBottom: 20 }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#f87171' }}>Anketa parse failed: {parseError.message}</p>
+              <p style={{ margin: '6px 0 0', fontSize: 11, color: '#888' }}>You can still create the profile manually — fill in the name and upload photos.</p>
             </div>
           )}
           {!aiParsing && Object.values(parsedForm).some(v => v && typeof v === 'string' && v.length > 0) && (
@@ -356,7 +373,7 @@ export default function QuickUploadPage() {
               View Profile →
             </a>
             <button
-              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setParsedForm({}); setManualName(''); setProgress([]) }}
+              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null) }}
               style={{ border: '1px solid #444', background: '#1e1e2e', color: '#ccc', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
             >
               Add Another
