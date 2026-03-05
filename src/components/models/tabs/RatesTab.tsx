@@ -1,20 +1,18 @@
-// RATES TAB - Full implementation
+// RATES TAB - Dynamic from database, zero hardcoded durations
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { sortRates } from '@/lib/sortRates';
+import { durationLabel } from '@/lib/durationLabel';
 
-// Duration options
-const DURATIONS = [
-  { key: '30min',       label: '30 min' },
-  { key: '45min',       label: '45 min' },
-  { key: '1hour',       label: '1 hour' },
-  { key: '90min',       label: '90 min' },
-  { key: '2hours',      label: '2 hours' },
-  { key: 'extra_hour',  label: 'Extra hour' },
-  { key: 'overnight',   label: 'Overnight' },
+// Available durations for the "add" dropdown — covers all known DB values
+const ALL_KNOWN_DURATIONS = [
+  '30min', '45min', '1hour', '90min', '2hours', '3hours',
+  '4hours', '5hours', '6hours', '8hours',
+  'extra_hour', 'overnight', 'overnight_9h',
 ];
 
 type RateKey = `${string}_${'incall' | 'outcall'}`;
@@ -40,10 +38,42 @@ function buildInitialRates(existingRates: any[]): RatesState {
   return state;
 }
 
+function getExistingDurations(existingRates: any[]): string[] {
+  return [...new Set((existingRates || []).map((r: any) => r.duration_type || r.durationType))];
+}
+
 export default function RatesTab({ model, onSave, saving }: any) {
+  const initialDurations = useMemo(() => getExistingDurations(model?.rates || []), [model]);
+  const [durations, setDurations] = useState<string[]>(initialDurations);
   const [rates, setRates] = useState<RatesState>(() =>
     buildInitialRates(model?.rates || [])
   );
+
+  // Sorted duration rows for display
+  const sortedDurations = useMemo(
+    () => sortRates(durations.map(d => ({ duration_type: d }))).map(d => d.duration_type),
+    [durations]
+  );
+
+  // Durations not yet added — available for the "add" dropdown
+  const availableToAdd = ALL_KNOWN_DURATIONS.filter(d => !durations.includes(d));
+
+  function addDuration(durationType: string) {
+    if (!durations.includes(durationType)) {
+      setDurations(prev => [...prev, durationType]);
+    }
+  }
+
+  function removeDuration(durationType: string) {
+    setDurations(prev => prev.filter(d => d !== durationType));
+    // Clear rate data for removed duration
+    setRates(prev => {
+      const next = { ...prev };
+      delete next[`${durationType}_incall` as RateKey];
+      delete next[`${durationType}_outcall` as RateKey];
+      return next;
+    });
+  }
 
   function setRate(durationType: string, callType: 'incall' | 'outcall', field: 'price' | 'taxiFee', value: string) {
     const key: RateKey = `${durationType}_${callType}` as RateKey;
@@ -64,7 +94,7 @@ export default function RatesTab({ model, onSave, saving }: any) {
   function handleSave() {
     const ratesArray: any[] = [];
 
-    DURATIONS.forEach(({ key: durationType }) => {
+    sortedDurations.forEach(durationType => {
       ['incall', 'outcall'].forEach(callType => {
         const rateKey: RateKey = `${durationType}_${callType}` as RateKey;
         const row = rates[rateKey];
@@ -88,9 +118,9 @@ export default function RatesTab({ model, onSave, saving }: any) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>💰 Pricing Rates</span>
+            <span>Pricing Rates</span>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : '💾 Save Rates'}
+              {saving ? 'Saving...' : 'Save Rates'}
             </Button>
           </CardTitle>
         </CardHeader>
@@ -103,10 +133,12 @@ export default function RatesTab({ model, onSave, saving }: any) {
                   <th className="text-center py-2 px-3 font-medium">Incall (£)</th>
                   <th className="text-center py-2 px-3 font-medium">Outcall (£)</th>
                   <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxi fee (£)</th>
+                  <th className="w-8"></th>
                 </tr>
               </thead>
               <tbody>
-                {DURATIONS.map(({ key: durationType, label }) => {
+                {sortedDurations.map(durationType => {
+                  const label = durationLabel(durationType);
                   const incallPrice = getRate(durationType, 'incall', 'price');
                   const outcallPrice = getRate(durationType, 'outcall', 'price');
                   const taxiFee = getRate(durationType, 'outcall', 'taxiFee');
@@ -115,7 +147,6 @@ export default function RatesTab({ model, onSave, saving }: any) {
                     <tr key={durationType} className="border-b last:border-0 hover:bg-muted/30">
                       <td className="py-2 pr-4 font-medium">{label}</td>
 
-                      {/* Incall */}
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-1">
                           <span className="text-muted-foreground">£</span>
@@ -131,7 +162,6 @@ export default function RatesTab({ model, onSave, saving }: any) {
                         </div>
                       </td>
 
-                      {/* Outcall */}
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-1">
                           <span className="text-muted-foreground">£</span>
@@ -147,7 +177,6 @@ export default function RatesTab({ model, onSave, saving }: any) {
                         </div>
                       </td>
 
-                      {/* Taxi fee (only for outcall rows) */}
                       <td className="py-2 px-3">
                         {outcallPrice ? (
                           <div className="flex items-center gap-1">
@@ -166,24 +195,64 @@ export default function RatesTab({ model, onSave, saving }: any) {
                           <span className="text-muted-foreground text-xs pl-2">—</span>
                         )}
                       </td>
+
+                      <td className="py-2 px-1">
+                        <button
+                          type="button"
+                          onClick={() => removeDuration(durationType)}
+                          className="text-muted-foreground hover:text-red-400 transition-colors text-xs"
+                          title={`Remove ${label}`}
+                        >
+                          ✕
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
+
+                {sortedDurations.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-4 text-center text-muted-foreground text-xs">
+                      No durations added yet. Use the dropdown below to add one.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
 
+          {/* Add duration row */}
+          {availableToAdd.length > 0 && (
+            <div className="mt-4 flex items-center gap-2">
+              <select
+                id="add-duration-select"
+                className="h-8 px-2 text-sm border rounded bg-background"
+                defaultValue=""
+                onChange={e => {
+                  if (e.target.value) {
+                    addDuration(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+              >
+                <option value="" disabled>+ Add duration...</option>
+                {availableToAdd.map(d => (
+                  <option key={d} value={d}>{durationLabel(d)}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <p className="text-xs text-muted-foreground mt-4">
-            Leave empty to hide that duration. Taxi fee applies to outcall rates only.
+            Add durations as needed. Leave price empty to hide that duration. Taxi fee applies to outcall rates only.
           </p>
         </CardContent>
       </Card>
 
-      {/* Save button at bottom */}
       <Card>
         <CardContent className="p-4 flex justify-end">
           <Button onClick={handleSave} disabled={saving} size="lg">
-            {saving ? 'Saving...' : '💾 Save Rates'}
+            {saving ? 'Saving...' : 'Save Rates'}
           </Button>
         </CardContent>
       </Card>

@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { sortRates } from '@/lib/sortRates'
+import { durationLabel } from '@/lib/durationLabel'
 
 interface Rate {
   duration_type: string
@@ -11,15 +13,6 @@ interface Rate {
 interface BookingFormProps {
   model: { id: string; name: string; rates?: Rate[] }
 }
-
-const DURATION_PRESETS = [
-  { value: '1hour', label: '1 hour' },
-  { value: '2hours', label: '2 hours' },
-  { value: '3hours', label: '3 hours' },
-  { value: '4hours', label: '4 hours' },
-  { value: '6hours', label: '6 hours' },
-  { value: 'overnight', label: 'Overnight' },
-]
 
 const baseInput: React.CSSProperties = {
   width: '100%',
@@ -158,6 +151,13 @@ function DurationSelector({
   const containerRef = useRef<HTMLDivElement>(null)
   const customInputRef = useRef<HTMLInputElement>(null)
 
+  // Derive presets dynamically from the model's rates
+  const presets = useMemo(() => {
+    const uniqueTypes = [...new Set(rates.map(r => r.duration_type))]
+    const sorted = sortRates(uniqueTypes.map(d => ({ duration_type: d }))).map(d => d.duration_type)
+    return sorted.map(d => ({ value: d, label: durationLabel(d) }))
+  }, [rates])
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
@@ -208,7 +208,7 @@ function DurationSelector({
 
   const displayLabel = (() => {
     if (!value) return ''
-    const preset = DURATION_PRESETS.find(p => p.value === value)
+    const preset = presets.find(p => p.value === value)
     return preset ? preset.label : value
   })()
 
@@ -227,7 +227,7 @@ function DurationSelector({
       }
       return
     }
-    const total = DURATION_PRESETS.length + 1
+    const total = presets.length + 1
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setFocusedIndex(i => (i + 1) % total)
@@ -236,9 +236,9 @@ function DurationSelector({
       setFocusedIndex(i => (i - 1 + total) % total)
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      if (focusedIndex >= 0 && focusedIndex < DURATION_PRESETS.length) {
-        selectPreset(DURATION_PRESETS[focusedIndex].value)
-      } else if (focusedIndex === DURATION_PRESETS.length) {
+      if (focusedIndex >= 0 && focusedIndex < presets.length) {
+        selectPreset(presets[focusedIndex].value)
+      } else if (focusedIndex === presets.length) {
         customInputRef.current?.focus()
       }
     }
@@ -246,7 +246,7 @@ function DurationSelector({
 
   const panelContent = (
     <>
-      {DURATION_PRESETS.map((opt, i) => {
+      {presets.map((opt, i) => {
         const price = findPrice(opt.value)
         const selected = value === opt.value
         const focused = focusedIndex === i
@@ -315,7 +315,7 @@ function DurationSelector({
           placeholder="e.g. 5 hours, 90 min, Weekend"
           value={customValue}
           onChange={e => setCustomValue(e.target.value)}
-          onFocus={() => setFocusedIndex(DURATION_PRESETS.length)}
+          onFocus={() => setFocusedIndex(presets.length)}
           onKeyDown={e => {
             if (e.key === 'Enter' && customValue.trim()) {
               e.stopPropagation()
@@ -325,7 +325,7 @@ function DurationSelector({
             }
             if (e.key === 'ArrowUp') {
               e.preventDefault()
-              setFocusedIndex(DURATION_PRESETS.length - 1)
+              setFocusedIndex(presets.length - 1)
               containerRef.current?.focus()
             }
           }}
@@ -333,7 +333,7 @@ function DurationSelector({
             width: '100%',
             background: 'transparent',
             border: 'none',
-            borderBottom: focusedIndex === DURATION_PRESETS.length
+            borderBottom: focusedIndex === presets.length
               ? '1px solid rgba(184,150,90,0.4)'
               : '1px solid rgba(255,255,255,0.08)',
             padding: '8px 0',
@@ -501,11 +501,7 @@ export function BookingForm({ model }: BookingFormProps) {
     return rates.find(r => r.call_type === serviceType && r.duration_type === duration)?.price
   })()
 
-  const selectedLabel = (() => {
-    if (!duration) return ''
-    const preset = DURATION_PRESETS.find(p => p.value === duration)
-    return preset ? preset.label : duration
-  })()
+  const selectedLabel = durationLabel(duration) || duration
 
   const canSubmit = !loading && form.name.trim() && form.phone.trim()
 

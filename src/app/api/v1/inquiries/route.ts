@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { durationLabel } from '@/lib/durationLabel';
 
 const prisma = new PrismaClient();
 export const runtime = 'nodejs';
@@ -67,12 +68,6 @@ export async function POST(request: NextRequest) {
       const chatId = process.env.TELEGRAM_CHAT_ID_TOMMY
       if (botToken && chatId) {
         const modelInfo = await prisma.model.findUnique({ where: { id: modelId }, select: { name: true } })
-        const durationLabel: Record<string, string> = {
-          '30min':'30 min','45min':'45 min','1hour':'1 hour',
-          '90min':'90 min','2hours':'2 hours','3hours':'3 hours',
-          '4hours':'4 hours','6hours':'6 hours',
-          'extra_hour':'Extra hour','overnight':'Overnight',
-        }
         const lines = [
           '\uD83D\uDCF2 *New Booking Request*',
           '',
@@ -82,7 +77,7 @@ export async function POST(request: NextRequest) {
           '',
           `\uD83D\uDC8E *Companion:* ${modelInfo?.name || modelId}`,
           serviceType ? `\uD83C\uDFF7 *Type:* ${serviceType}` : null,
-          duration ? `\u23F1 *Duration:* ${durationLabel[duration] || duration}` : null,
+          duration ? `\u23F1 *Duration:* ${durationLabel(duration)}` : null,
           requestedDate ? `\uD83D\uDCC5 *Date:* ${requestedDate}${requestedTime ? ' at ' + requestedTime : ''}` : null,
           notes ? `\uD83D\uDCDD *Notes:* ${notes}` : null,
           '',

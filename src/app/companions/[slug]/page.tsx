@@ -7,6 +7,8 @@ import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BookingForm } from '@/components/booking/BookingForm'
+import { sortRates } from '@/lib/sortRates'
+import { durationLabel } from '@/lib/durationLabel'
 import { DragGallery, ExpToggle, RevealInit, ServiceTagsCollapse } from '@/components/profile/ProfileInteractive'
 import { StickyBookBar } from '@/components/profile/StickyBookBar'
 import { prisma } from '@/lib/db/client'
@@ -22,8 +24,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: `https://virel-v3.vercel.app/companions/${params.slug}` },
   }
 }
-
-const RATE_ORDER = ['30min','45min','1hour','90min','2hours','extra_hour','overnight']
 
 const SERVICE_REMAP: Record<string, string> = {
   // Explicit acts → discreet names
@@ -105,22 +105,15 @@ export default async function ModelProfilePage({ params }: Props) {
   const lowestPrice = rates.length > 0 ? Math.min(...rates.map((r: any) => Number(r.price))) : null
 
   // Organize rates by call_type for table display (3.2)
-  const incallRates = rates
-    .filter((r: any) => r.call_type === 'incall')
-    .sort((a: any, b: any) => RATE_ORDER.indexOf(a.duration_type) - RATE_ORDER.indexOf(b.duration_type))
-  const outcallRates = rates
-    .filter((r: any) => r.call_type === 'outcall')
-    .sort((a: any, b: any) => RATE_ORDER.indexOf(a.duration_type) - RATE_ORDER.indexOf(b.duration_type))
-  // Merge into unified table rows
-  const DURATION_LABELS: Record<string, string> = {
-    '30min': '30 minutes', '45min': '45 minutes', '1hour': '1 hour',
-    '90min': '1.5 hours', '2hours': '2 hours', 'extra_hour': 'Extra hour', 'overnight': 'Overnight',
-  }
-  const allDurations = [...new Set(rates.map((r: any) => r.duration_type))]
-    .sort((a, b) => RATE_ORDER.indexOf(a) - RATE_ORDER.indexOf(b))
+  const incallRates = rates.filter((r: any) => r.call_type === 'incall')
+  const outcallRates = rates.filter((r: any) => r.call_type === 'outcall')
+  // Merge into unified table rows — durations derived from DB, sorted via shared utility
+  const allDurations = sortRates(
+    [...new Set(rates.map((r: any) => r.duration_type))].map(d => ({ duration_type: d }))
+  ).map(d => d.duration_type)
   const ratesTable = allDurations.map(dur => ({
     duration: dur,
-    label: DURATION_LABELS[dur] || dur,
+    label: durationLabel(dur),
     incall: incallRates.find((r: any) => r.duration_type === dur)?.price,
     outcall: outcallRates.find((r: any) => r.duration_type === dur)?.price,
   }))
