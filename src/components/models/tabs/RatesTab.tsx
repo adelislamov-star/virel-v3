@@ -9,10 +9,11 @@ import { sortRates } from '@/lib/sortRates';
 import { durationLabel } from '@/lib/durationLabel';
 
 // Available durations for the "add" dropdown — covers all known DB values
+// Note: 'overnight_9h' removed — use 'overnight' only (both map to same label)
 const ALL_KNOWN_DURATIONS = [
   '30min', '45min', '1hour', '90min', '2hours', '3hours',
   '4hours', '5hours', '6hours', '8hours',
-  'extra_hour', 'overnight', 'overnight_9h',
+  'extra_hour', 'overnight',
 ];
 
 type RateKey = `${string}_${'incall' | 'outcall'}`;

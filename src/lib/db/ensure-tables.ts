@@ -59,6 +59,24 @@ export async function ensureExtensionTables(): Promise<void> {
       )
     `)
 
+    // One-time cleanup: merge overnight_9h → overnight (both map to same label "Overnight")
+    // For each model, if both exist for the same call_type, keep whichever has the higher price
+    // under duration_type='overnight', then delete overnight_9h rows.
+    await prisma.$executeRawUnsafe(`
+      UPDATE model_rates AS keep
+      SET price = GREATEST(keep.price, dup.price)
+      FROM model_rates AS dup
+      WHERE keep.model_id = dup.model_id
+        AND keep.call_type = dup.call_type
+        AND keep.duration_type = 'overnight'
+        AND dup.duration_type = 'overnight_9h'
+        AND COALESCE(keep.location_id, '') = COALESCE(dup.location_id, '')
+        AND dup.price > keep.price
+    `)
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM model_rates WHERE duration_type = 'overnight_9h'
+    `)
+
     tablesChecked = true
   } catch (e) {
     console.error('[ensure-tables] Failed to create extension tables:', e)
