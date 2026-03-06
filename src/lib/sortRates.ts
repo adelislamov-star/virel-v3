@@ -40,14 +40,19 @@ export function deduplicateByLabel<T extends { duration_type: string }>(
   return Array.from(seen.values());
 }
 
+// Map of string duration codes → sort-order minutes.
+// MUST be checked BEFORE parseInt because parseInt('1hour') returns 1, not NaN.
+const DURATION_MAP: Record<string, number> = {
+  '30min': 30, '45min': 45, '1hour': 60, '90min': 90,
+  '2hours': 120, '3hours': 180, '4hours': 240,
+  '5hours': 300, '6hours': 360, '8hours': 480,
+};
+
 function durationMinutes(d: string): number {
   if (SPECIAL_ORDER[d] !== undefined) return SPECIAL_ORDER[d];
-  const n = parseInt(d, 10);
-  if (!isNaN(n)) return n;
-  const map: Record<string, number> = {
-    '30min': 30, '45min': 45, '1hour': 60, '90min': 90,
-    '2hours': 120, '3hours': 180, '4hours': 240,
-    '5hours': 300, '6hours': 360, '8hours': 480,
-  };
-  return map[d] ?? 9999;
+  // Check named durations FIRST — parseInt('1hour') returns 1, not NaN!
+  if (DURATION_MAP[d] !== undefined) return DURATION_MAP[d];
+  // Only parse as pure numeric string (e.g. '30', '60', '120')
+  if (/^\d+$/.test(d)) return Number(d);
+  return 9999;
 }

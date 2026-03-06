@@ -80,12 +80,20 @@ export default async function ModelProfilePage({ params }: Props) {
 
   let rates: any[] = []
   try {
-    rates = await prisma.$queryRaw`
+    const rawRates = await prisma.$queryRaw`
       SELECT duration_type, call_type, price, taxi_fee, currency
       FROM model_rates
       WHERE model_id = ${model.id} AND is_active = true
-      ORDER BY price ASC
     `
+    // Normalize to plain serializable objects — Prisma $queryRaw can return
+    // Decimal objects for numeric columns which fail RSC→Client serialization
+    rates = (rawRates as any[]).map(r => ({
+      duration_type: String(r.duration_type),
+      call_type: String(r.call_type),
+      price: Number(r.price),
+      taxi_fee: r.taxi_fee != null ? Number(r.taxi_fee) : null,
+      currency: String(r.currency || 'GBP'),
+    }))
   } catch (e) {}
 
   let services: any[] = []
