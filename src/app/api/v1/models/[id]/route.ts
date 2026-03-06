@@ -144,17 +144,19 @@ export async function PATCH(
         `DELETE FROM model_services WHERE "modelId" = $1`,
         params.id
       );
-      // Re-insert enabled services
+      // Re-insert enabled services with extraPrice
       for (const s of body.services) {
         if (!s.serviceId) continue;
         await prisma.$executeRawUnsafe(
-          `INSERT INTO model_services ("modelId", "serviceId", "isEnabled")
-           VALUES ($1, $2, $3)
+          `INSERT INTO model_services ("modelId", "serviceId", "isEnabled", "extraPrice")
+           VALUES ($1, $2, $3, $4)
            ON CONFLICT ("modelId", "serviceId") DO UPDATE SET
-             "isEnabled" = EXCLUDED."isEnabled"`,
+             "isEnabled" = EXCLUDED."isEnabled",
+             "extraPrice" = EXCLUDED."extraPrice"`,
           params.id,
           s.serviceId,
-          s.isEnabled ?? true
+          s.isEnabled ?? true,
+          s.extraPrice ?? null
         );
       }
     }

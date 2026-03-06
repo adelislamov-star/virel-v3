@@ -59,6 +59,22 @@ export async function ensureExtensionTables(): Promise<void> {
       )
     `)
 
+    // Ensure extraPrice column exists on model_services
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE model_services ADD COLUMN IF NOT EXISTS "extraPrice" DOUBLE PRECISION
+    `).catch(() => {})
+
+    // Ensure category, description, defaultExtraPrice columns exist on services
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE services ADD COLUMN IF NOT EXISTS "category" TEXT NOT NULL DEFAULT 'Other'
+    `).catch(() => {})
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE services ADD COLUMN IF NOT EXISTS "description" TEXT
+    `).catch(() => {})
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE services ADD COLUMN IF NOT EXISTS "defaultExtraPrice" DOUBLE PRECISION
+    `).catch(() => {})
+
     // One-time cleanup: merge overnight_9h → overnight (both map to same label "Overnight")
     // For each model, if both exist for the same call_type, keep whichever has the higher price
     // under duration_type='overnight', then delete overnight_9h rows.

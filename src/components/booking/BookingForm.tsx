@@ -152,9 +152,12 @@ function DurationSelector({
   const customInputRef = useRef<HTMLInputElement>(null)
 
   // Derive presets dynamically from the model's rates — sorted, deduplicated by label
+  // Exclude "extra_hour" / "extra" — these appear in the Rates table but not in the booking dropdown
+  const BOOKING_EXCLUDED = ['extra_hour', 'extra']
   const presets = useMemo(() => {
     const uniqueTypes = [...new Set(rates.map(r => r.duration_type))]
-    const sorted = sortRates(uniqueTypes.map(d => ({ duration_type: d })))
+    const filtered = uniqueTypes.filter(d => !BOOKING_EXCLUDED.includes(d))
+    const sorted = sortRates(filtered.map(d => ({ duration_type: d })))
     const deduped = deduplicateByLabel(sorted)
     return deduped.map(d => ({ value: d.duration_type, label: durationLabel(d.duration_type) }))
   }, [rates])

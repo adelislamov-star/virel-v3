@@ -220,10 +220,11 @@ model ModelService {
   modelId     String
   serviceId   String
   isEnabled   Boolean  @default(true)
-  
+  extraPrice  Float?
+
   model       Model    @relation(fields: [modelId], references: [id])
   service     Service  @relation(fields: [serviceId], references: [id])
-  
+
   @@id([modelId, serviceId])
   @@map("model_services")
 }
@@ -255,19 +256,22 @@ model ModelAttribute {
 // ============================================
 
 model Service {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  status      String   @default("active")
-  isPopular   Boolean  @default(false)
-  
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  category         String   @default("Other")
+  description      String?
+  defaultExtraPrice Float?
+  status           String   @default("active")
+  isPopular        Boolean  @default(false)
+
   // Relations
   models      ModelService[]
   bookings    BookingService[]
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@map("services")
 }
 

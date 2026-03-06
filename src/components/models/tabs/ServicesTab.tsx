@@ -202,15 +202,15 @@ export default function ServicesTab({ model, onSave, saving }: any) {
                       )}
                     </div>
 
-                    {/* Extra price for services that support it */}
-                    {service.hasExtraPrice && isEnabled && (
+                    {/* Extra price — shown for all enabled services */}
+                    {isEnabled && (
                       <div onClick={e => e.stopPropagation()}>
                         <Input
                           type="number"
-                          placeholder="£?"
+                          placeholder="+£"
                           value={state?.extraPrice || ''}
                           onChange={e => setExtraPrice(service.id, e.target.value)}
-                          className="w-16 h-7 text-xs px-1"
+                          className="w-20 h-7 text-xs px-1"
                         />
                       </div>
                     )}

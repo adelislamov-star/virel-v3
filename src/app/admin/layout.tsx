@@ -7,7 +7,7 @@ import {
   Target, CalendarDays, MessageSquare, Users, Star,
   AlertTriangle, Shield, FileText, AppWindow, Clock,
   DollarSign, Crown, BarChart3, LineChart, TrendingUp,
-  Timer, Database, Settings
+  Timer, Database, Settings, Layers
 } from 'lucide-react';
 
 const sections = [
@@ -26,6 +26,7 @@ const sections = [
       { href: '/admin/reviews', label: 'Reviews', icon: Star },
       { href: '/admin/incidents', label: 'Incidents', icon: AlertTriangle },
       { href: '/admin/fraud', label: 'Fraud Monitor', icon: Shield },
+      { href: '/admin/services', label: 'Service Catalogue', icon: Layers },
       { href: '/admin/applications', label: 'Applications', icon: AppWindow },
       { href: '/admin/availability-v2', label: 'Availability PRO', icon: Clock },
     ]

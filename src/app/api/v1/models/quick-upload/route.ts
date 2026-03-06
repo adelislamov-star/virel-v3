@@ -164,6 +164,7 @@ Rates in GBP numbers only, no symbols. If only one rate given for a duration wit
 Use null for anything not found in the document.
 For services, use standard names: GFE, OWO, OWC, DFK, FK, 69, CIM, CIF, COB, Swallow, Snowballing, DT, Fingering, A-Level, DP, PSE, Party Girl, Face Sitting, Dirty Talk, Lady Services, WS Giving, WS Receiving, Rimming Giving, Rimming Receiving, Smoking Fetish, Roleplay, Filming Mask, Filming No Mask, Foot Fetish, Open Minded, Light Dom, Spanking Giving, Spanking Receiving, Duo, Bi Duo, Couples, MMF, Group, Massage, Prostate Massage, Professional Massage, B2B, Erotic Massage, Lomi Lomi, Nuru, Sensual Massage, Tantric, Striptease, Lapdancing, Belly Dance, Uniforms, Toys, Strap On, Poppers, Handcuffs, Domination, Fisting, Tie & Tease, Dinner Date.
 Only include services mentioned in the document. "enabled" = true if answer is Yes, false if No.
+For each service, check if there is an additional/extra price mentioned next to it (e.g. "A-level +£200", "GFE - extra £150", "Anal £200 extra"). Return extra_price as the numeric value in GBP, or null if no extra price is mentioned.
 Return ONLY valid JSON.`
 
 async function parseDocumentWithAI(documentText: string): Promise<AIParsedProfile | null> {
@@ -457,7 +458,12 @@ export async function POST(request: NextRequest) {
         }
         try {
           await prisma.modelService.create({
-            data: { modelId: model.id, serviceId, isEnabled: true },
+            data: {
+              modelId: model.id,
+              serviceId,
+              isEnabled: true,
+              extraPrice: svc.extra_price ?? null,
+            },
           })
           linkedServices++
         } catch (e: any) {

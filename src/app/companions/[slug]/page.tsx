@@ -99,7 +99,7 @@ export default async function ModelProfilePage({ params }: Props) {
   let services: any[] = []
   try {
     services = await prisma.$queryRaw`
-      SELECT s.title, s.slug
+      SELECT s.title, s.slug, ms."extraPrice"
       FROM model_services ms
       JOIN services s ON s.id = ms."serviceId"
       WHERE ms."modelId" = ${model.id} AND ms."isEnabled" = true
@@ -190,6 +190,7 @@ export default async function ModelProfilePage({ params }: Props) {
   const cleanedServices = services.map((s: any) => ({
     ...s,
     displayTitle: SERVICE_REMAP[s.title] || s.title,
+    extraPrice: s.extraPrice ? Number(s.extraPrice) : null,
   }))
 
   const connSvcs = cleanedServices.filter((s: any) => CONNECTION_TAGS.includes(s.displayTitle))
@@ -313,8 +314,9 @@ export default async function ModelProfilePage({ params }: Props) {
         .exp-category { background:var(--dark); padding:36px 32px; }
         .exp-cat-title { font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); }
         .exp-list { list-style:none; padding:0; margin:0; }
-        .exp-list li { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; color:var(--text); padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04); line-height:1.3; }
+        .exp-list li { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; color:var(--text); padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04); line-height:1.3; display:flex; justify-content:space-between; align-items:baseline; }
         .exp-list li:last-child { border-bottom:none; }
+        .exp-extra-price { font-size:13px; color:#b8965a; opacity:0.7; font-weight:300; white-space:nowrap; margin-left:12px; }
         .exp-more-btn { margin-top:20px; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); cursor:pointer; background:none; border:none; font-family:'DM Sans',sans-serif; padding:0; display:inline-flex; align-items:center; gap:8px; transition:gap .3s; }
         .exp-more-btn:hover { gap:14px; }
 
@@ -523,7 +525,7 @@ export default async function ModelProfilePage({ params }: Props) {
         {/* ── SERVICE TAGS (3.3) ── */}
         {cleanedServices.length > 0 && (
           <section className="service-section reveal">
-            <ServiceTagsCollapse tags={cleanedServices.map((s: any) => ({ slug: s.slug, displayTitle: s.displayTitle }))} />
+            <ServiceTagsCollapse tags={cleanedServices.map((s: any) => ({ slug: s.slug, displayTitle: s.displayTitle, extraPrice: s.extraPrice }))} />
           </section>
         )}
 
@@ -535,24 +537,24 @@ export default async function ModelProfilePage({ params }: Props) {
               <div className="exp-category">
                 <p className="exp-cat-title">Connection</p>
                 <ul className="exp-list">
-                  {connSvcs.map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)}
+                  {connSvcs.map((s: any) => <li key={s.slug}><span>{s.displayTitle}</span>{s.extraPrice > 0 && <span className="exp-extra-price">+£{s.extraPrice}</span>}</li>)}
                 </ul>
               </div>
               <div className="exp-category">
                 <p className="exp-cat-title">Touch & Wellness</p>
                 <ul className="exp-list">
-                  {touchSvcs.map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)}
+                  {touchSvcs.map((s: any) => <li key={s.slug}><span>{s.displayTitle}</span>{s.extraPrice > 0 && <span className="exp-extra-price">+£{s.extraPrice}</span>}</li>)}
                 </ul>
               </div>
               <div className="exp-category">
                 <p className="exp-cat-title">Specialities</p>
                 <ul className="exp-list">
-                  {specialSvcs.map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)}
+                  {specialSvcs.map((s: any) => <li key={s.slug}><span>{s.displayTitle}</span>{s.extraPrice > 0 && <span className="exp-extra-price">+£{s.extraPrice}</span>}</li>)}
                 </ul>
                 {extraSvcs.length > 0 && (
                   <ExpToggle>
                     <ul className="exp-list" style={{ marginTop:0 }}>
-                      {extraSvcs.map((s: any) => <li key={s.slug}>{s.displayTitle}</li>)}
+                      {extraSvcs.map((s: any) => <li key={s.slug}><span>{s.displayTitle}</span>{s.extraPrice > 0 && <span className="exp-extra-price">+£{s.extraPrice}</span>}</li>)}
                     </ul>
                   </ExpToggle>
                 )}
