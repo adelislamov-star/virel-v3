@@ -297,7 +297,7 @@ function DurationSelector({
                 fontWeight: 300,
                 letterSpacing: '.02em',
               }}>
-                £{price.toLocaleString('en-GB')}
+                {price > 0 ? `£${price.toLocaleString('en-GB')}` : 'On request'}
               </span>
             )}
           </div>
@@ -725,7 +725,7 @@ export function BookingForm({ model }: BookingFormProps) {
             <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 300, fontStyle: 'italic', color: '#f5f0e8' }}>
               {serviceType === 'incall' ? 'Incall' : 'Outcall'} &middot; {selectedLabel}
             </span>
-            {selectedPrice !== undefined ? (
+            {selectedPrice !== undefined && selectedPrice > 0 ? (
               <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#b8965a', whiteSpace: 'nowrap', marginLeft: 24 }}>
                 £{Number(selectedPrice).toLocaleString('en-GB')}
                 {serviceType === 'outcall' && <span style={{ fontSize: 13, opacity: .6, marginLeft: 6 }}>+ taxi</span>}

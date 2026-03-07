@@ -110,7 +110,8 @@ export default async function ModelProfilePage({ params }: Props) {
   const primaryPhoto = model.media.find((m: any) => m.isPrimary)?.url || model.media[0]?.url
   const gallery = model.media.filter((m: any) => m.isPublic)
   const stats = model.stats
-  const lowestPrice = rates.length > 0 ? Math.min(...rates.map((r: any) => Number(r.price))) : null
+  const positivePrices = rates.map((r: any) => Number(r.price)).filter(p => p > 0)
+  const lowestPrice = positivePrices.length > 0 ? Math.min(...positivePrices) : null
 
   // Organize rates by call_type for table display (3.2)
   const incallRates = rates.filter((r: any) => r.call_type === 'incall')
@@ -178,7 +179,7 @@ export default async function ModelProfilePage({ params }: Props) {
       const simRates: any[] = await prisma.$queryRaw`
         SELECT model_id, MIN(price) as min_price
         FROM model_rates
-        WHERE model_id = ANY(${simIds}::text[]) AND is_active = true
+        WHERE model_id = ANY(${simIds}::text[]) AND is_active = true AND price > 0
         GROUP BY model_id
       `
       for (const r of simRates) {
@@ -512,8 +513,8 @@ export default async function ModelProfilePage({ params }: Props) {
                   {ratesTable.map(row => (
                     <tr key={row.duration}>
                       <td>{row.label}</td>
-                      <td>{row.incall ? `£${Number(row.incall).toLocaleString('en-GB')}` : '—'}</td>
-                      <td>{row.outcall ? `£${Number(row.outcall).toLocaleString('en-GB')}` : 'On request'}</td>
+                      <td>{row.incall != null && Number(row.incall) > 0 ? `£${Number(row.incall).toLocaleString('en-GB')}` : 'On request'}</td>
+                      <td>{row.outcall != null && Number(row.outcall) > 0 ? `£${Number(row.outcall).toLocaleString('en-GB')}` : 'On request'}</td>
                     </tr>
                   ))}
                 </tbody>
