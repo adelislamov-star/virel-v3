@@ -12,6 +12,7 @@ import { durationLabel } from '@/lib/durationLabel'
 import { DragGallery, ExpToggle, RevealInit, ServiceTagsCollapse } from '@/components/profile/ProfileInteractive'
 import { StickyBookBar } from '@/components/profile/StickyBookBar'
 import { prisma } from '@/lib/db/client'
+import { ensureExtensionTables } from '@/lib/db/ensure-tables'
 
 interface Props { params: { slug: string } }
 
@@ -67,6 +68,8 @@ const TOUCH_TAGS = ['Body to Body Massage','Erotic Massage','Massage','Lapdancin
 const SPECIAL_TAGS = ['Uninhibited experience','Tie and Tease','Light Domination','Smoking Fetish','Toys']
 
 export default async function ModelProfilePage({ params }: Props) {
+  await ensureExtensionTables()
+
   const model = await prisma.model.findUnique({
     where: { slug: params.slug, status: 'active', visibility: 'public' },
     include: {
