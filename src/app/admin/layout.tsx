@@ -7,7 +7,9 @@ import {
   Target, CalendarDays, MessageSquare, Users, Star,
   AlertTriangle, Shield, FileText, AppWindow, Clock,
   DollarSign, Crown, BarChart3, LineChart, TrendingUp,
-  Timer, Database, Settings, Layers
+  Timer, Database, Settings, CreditCard, RefreshCw,
+  Bell, Briefcase, MapPin, UserCheck, Search,
+  Activity, PieChart
 } from 'lucide-react';
 
 const sections = [
@@ -15,20 +17,21 @@ const sections = [
     label: 'Core',
     items: [
       { href: '/admin/action-center', label: 'Action Center', icon: Target },
+      { href: '/admin/leads', label: 'Leads', icon: MessageSquare },
+      { href: '/admin/clients', label: 'Clients', icon: Users },
       { href: '/admin/bookings', label: 'Bookings', icon: CalendarDays },
-      { href: '/admin/inquiries', label: 'Inquiries', icon: MessageSquare },
-      { href: '/admin/models', label: 'Models', icon: Users },
+      { href: '/admin/models', label: 'Models', icon: UserCheck },
     ]
   },
   {
     label: 'Operations',
     items: [
+      { href: '/admin/availability', label: 'Availability', icon: Clock },
       { href: '/admin/reviews', label: 'Reviews', icon: Star },
       { href: '/admin/incidents', label: 'Incidents', icon: AlertTriangle },
       { href: '/admin/fraud', label: 'Fraud Monitor', icon: Shield },
-      { href: '/admin/services', label: 'Service Catalogue', icon: Layers },
+      { href: '/admin/lost-revenue', label: 'Lost Revenue', icon: TrendingUp },
       { href: '/admin/applications', label: 'Applications', icon: AppWindow },
-      { href: '/admin/availability-v2', label: 'Availability PRO', icon: Clock },
     ]
   },
   {
@@ -36,23 +39,31 @@ const sections = [
     items: [
       { href: '/admin/pricing', label: 'Pricing', icon: DollarSign },
       { href: '/admin/membership', label: 'Membership', icon: Crown },
+      { href: '/admin/payments', label: 'Payments', icon: CreditCard },
       { href: '/admin/reports', label: 'Reports', icon: FileText },
       { href: '/admin/seo', label: 'SEO Health', icon: BarChart3 },
+      { href: '/admin/retention', label: 'Retention', icon: RefreshCw },
     ]
   },
   {
     label: 'Analytics',
     items: [
       { href: '/admin/dashboard', label: 'Dashboard', icon: LineChart },
-      { href: '/admin/analytics/owner', label: 'Owner Analytics', icon: TrendingUp },
+      { href: '/admin/analytics/owner', label: 'Owner Analytics', icon: PieChart },
       { href: '/admin/analytics/unit-economics', label: 'Unit Economics', icon: BarChart3 },
+      { href: '/admin/analytics/model-performance', label: 'Model Performance', icon: Activity },
+      { href: '/admin/demand', label: 'Demand', icon: MapPin },
+      { href: '/admin/staff-performance', label: 'Staff Performance', icon: UserCheck },
     ]
   },
   {
     label: 'System',
     items: [
       { href: '/admin/sla', label: 'SLA Monitor', icon: Timer },
-      { href: '/admin/data-governance', label: 'Data Quality', icon: Database },
+      { href: '/admin/data-quality', label: 'Data Quality', icon: Database },
+      { href: '/admin/audit-log', label: 'Audit Log', icon: Search },
+      { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+      { href: '/admin/jobs', label: 'Jobs', icon: Briefcase },
       { href: '/admin/settings', label: 'Settings', icon: Settings },
     ]
   }

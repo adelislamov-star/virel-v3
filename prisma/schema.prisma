@@ -41,6 +41,8 @@ model User {
   assignedTasks   Task[]     @relation("AssignedTasks")
   assignedInquiries Inquiry[] @relation("AssignedInquiries")
   assignedBookings Booking[]  @relation("AssignedBookings")
+  performanceSnapshots StaffPerformanceSnapshot[]
+  scoreSnapshots       StaffScoreSnapshot[]
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -160,10 +162,21 @@ model Model {
   reviews         Review[]
   incidents       Incident[]  @relation("ModelIncidents")
   fraudSignals    FraudSignal[]
+  modelAvailabilities  ModelAvailability[]
+  availabilityConflicts AvailabilityConflict[]
+  similaritiesAsA    ModelSimilarity[]   @relation("ModelSimilarityA")
+  similaritiesAsB    ModelSimilarity[]   @relation("ModelSimilarityB")
+  requestedOffers    AlternativeOffer[]  @relation("RequestedModel")
+  offeredOffers      AlternativeOffer[]  @relation("OfferedModel")
+  complaintPatterns  ReviewComplaintPattern[]
+
+  // Soft delete
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       String?   @map("deleted_by")
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   @@index([slug])
   @@index([status])
   @@index([visibility])
@@ -373,12 +386,31 @@ model Client {
   preferredChannel String? // web, telegram, whatsapp, phone
   tags            String[] // ["vip", "regular"]
 
+  // Name
+  firstName        String?  @map("first_name")
+  lastName         String?  @map("last_name")
+
+  // Locale
+  language         String?
+  city             String?
+  country          String?
+
   // Risk & Finance
   riskStatus       String   @default("normal") // normal, monitoring, restricted, blocked
-  totalSpent       Float    @default(0)
+  totalSpent       Decimal  @default(0)  @db.Decimal(12,2)
   bookingCount     Int      @default(0)
   chargebackCount  Int      @default(0)
+  refundCount      Int      @default(0)  @map("refund_count")
+  cancellationRate Decimal  @default(0)  @db.Decimal(5,2) @map("cancellation_rate")
   notes            String?  @db.Text
+
+  // VIP & Merge
+  vipStatus          String?   @map("vip_status")
+  mergedIntoClientId String?   @map("merged_into_client_id")
+
+  // Soft delete
+  deletedAt        DateTime? @map("deleted_at")
+  deletedBy        String?   @map("deleted_by")
 
   // Relations
   inquiries       Inquiry[]
@@ -387,6 +419,13 @@ model Client {
   fraudSignals     FraudSignal[]
   incidents        Incident[]    @relation("ClientIncidents")
   membership       ClientMembership?
+  identities       ClientIdentity[]
+  riskHistory      ClientRiskHistory[]
+  events           ClientEvent[]
+  mergeCandidatesAsPrimary   ClientMergeCandidate[] @relation("MergePrimary")
+  mergeCandidatesAsDuplicate ClientMergeCandidate[] @relation("MergeDuplicate")
+  retentionProfile  ClientRetentionProfile?
+  retentionActions  RetentionAction[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -394,6 +433,8 @@ model Client {
   @@index([email])
   @@index([phone])
   @@index([riskStatus])
+  @@index([mergedIntoClientId])
+  @@index([vipStatus])
   @@map("clients")
 }
 
@@ -471,10 +512,11 @@ model Booking {
   endAt             DateTime
   
   status            String   @default("draft") // draft, pending, deposit_required, confirmed, in_progress, completed, cancelled, no_show, expired, disputed
-  
-  priceTotal        Float
+  bookingType       String   @default("outcall") @map("booking_type")
+
+  priceTotal        Decimal  @db.Decimal(12,2)
   currency          String   @default("GBP")
-  depositRequired   Float?
+  depositRequired   Decimal? @db.Decimal(12,2)
   depositStatus     String   @default("none") // none, pending, paid, failed
   paymentStatus     String   @default("unpaid") // unpaid, partial, paid, refunded
   
@@ -492,9 +534,17 @@ model Booking {
   fraudSignals      FraudSignal[]
   lostRevenue       LostRevenueEntry[]
 
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedBy         String?   @map("deleted_by")
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  @@index([clientId])
+  @@index([modelId])
+  @@index([status])
+  @@index([startAt])
   @@index([modelId, startAt])
   @@index([clientId, createdAt])
   @@index([status, startAt])
@@ -663,11 +713,11 @@ model Payment {
   type              String   // deposit, full, refund
   status            String   @default("pending") // pending, succeeded, failed, cancelled, refunded, disputed
 
-  amount            Float
+  amount            Decimal  @db.Decimal(12,2)
   currency          String   @default("GBP")
 
   failureReason     String?
-  refundedAmount    Float?
+  refundedAmount    Decimal? @db.Decimal(12,2)
   refundedAt        DateTime?
   
   raw               Json?    // Full provider response
@@ -909,6 +959,16 @@ model Review {
   replyByModel      String?  @db.Text
   replyByManager    String?  @db.Text
 
+  // Public visibility & moderation
+  publicVisibilityStatus String  @default("hidden") @map("public_visibility_status")
+  language               String?
+  moderatedBy            String?  @map("moderated_by")
+  moderatedAt            DateTime? @map("moderated_at")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedBy         String?   @map("deleted_by")
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -936,11 +996,30 @@ model FraudSignal {
   riskScoreImpact Int
   metadata        Json?
 
+  // Extended fields
+  sourceModule             String?   @map("source_module") // payments, inquiries, bookings, membership, retention, manual
+  ipAddress                String?   @map("ip_address")
+  deviceFingerprint        String?   @map("device_fingerprint")
+  geoCountry               String?   @map("geo_country")
+  geoCity                  String?   @map("geo_city")
+  cardFingerprint          String?   @map("card_fingerprint")
+  velocity1h               Int?      @map("velocity_1h")
+  velocity24h              Int?      @map("velocity_24h")
+  cancellationRateSnapshot Decimal?  @db.Decimal(5,2)  @map("cancellation_rate_snapshot")
+  refundRateSnapshot       Decimal?  @db.Decimal(5,2)  @map("refund_rate_snapshot")
+  riskScoreBefore          Int?      @map("risk_score_before")
+  riskScoreAfter           Int?      @map("risk_score_after")
+  status                   String    @default("new") // new, reviewing, confirmed, dismissed
+  reviewedBy               String?   @map("reviewed_by")
+  reviewedAt               DateTime? @map("reviewed_at")
+
   createdAt       DateTime @default(now())
 
   @@index([clientId])
   @@index([signalType])
   @@index([createdAt])
+  @@index([status])
+  @@index([sourceModule])
   @@map("fraud_signals")
 }
 
@@ -962,10 +1041,23 @@ model Incident {
 
   status              String    @default("reported") // reported, investigating, resolved, closed
   severity            String    @default("medium")   // low, medium, high, critical
+  incidentType        String    @default("general")  @map("incident_type")
 
   description         String    @db.Text
   resolutionDetails   String?   @db.Text
-  compensationAmount  Float?
+  compensationAmount  Decimal?  @db.Decimal(12,2)
+
+  // Extended fields
+  sourceChannel       String?   @map("source_channel")
+  resolutionType      String?   @map("resolution_type")
+  compensationStatus  String    @default("none") @map("compensation_status")
+  linkedReviewId      String?   @map("linked_review_id")
+  linkedPaymentId     String?   @map("linked_payment_id")
+  closedAt            DateTime? @map("closed_at")
+
+  // Soft delete
+  deletedAt           DateTime? @map("deleted_at")
+  deletedBy           String?   @map("deleted_by")
 
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -982,22 +1074,43 @@ model Incident {
 // ============================================
 
 model LostRevenueEntry {
-  id              String    @id @default(cuid())
-  type            String    // missed_booking, unpaid_cancellation, receptionist_error, no_show_loss, system_error
-  amount          Float
-  bookingId       String?
-  booking         Booking?  @relation(fields: [bookingId], references: [id])
-  leadId          String?
-  rootCause       String
-  responsibleRole String    // client, model, receptionist, system
-  status          String    @default("open") // open, resolved
-  resolvedAt      DateTime?
-  resolvedBy      String?
+  id                   String    @id @default(cuid())
+  // type values: unanswered_lead, model_unavailable, client_declined_price, payment_failed,
+  //   booking_cancelled_after_hold, no_alternative_offered, receptionist_delay, double_booking_loss,
+  //   dispute_refund, no_show, wrong_quote, service_mismatch
+  type                 String
+  amount               Decimal   @db.Decimal(12,2)
+  amountType           String    @default("estimated")  @map("amount_type")
+  currency             String    @default("GBP")
+  bookingId            String?   @map("booking_id")
+  booking              Booking?  @relation(fields: [bookingId], references: [id])
+  leadId               String?   @map("lead_id")
+  clientId             String?   @map("client_id")
+  modelId              String?   @map("model_id")
+  receptionistId       String?   @map("receptionist_id")
+  responsibleUserId    String?   @map("responsible_user_id")
+  rootCause            String    @map("root_cause")
+  responsibleRole      String    @map("responsible_role") // client, model, receptionist, system
+  status               String    @default("open") // open, resolved, waived
+  detectionSource      String    @default("manual")  @map("detection_source")
+  detectedBy           String?   @map("detected_by")
+  detectedByType       String?   @map("detected_by_type")
+  detectedAt           DateTime  @default(now())  @map("detected_at")
+  operationsFeedItemId String?   @map("operations_feed_item_id")
+  notes                String?   @db.Text
+  resolvedAt           DateTime? @map("resolved_at")
+  resolvedBy           String?   @map("resolved_by")
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt            DateTime  @default(now())  @map("created_at")
+  updatedAt            DateTime  @updatedAt       @map("updated_at")
 
+  @@index([type])
   @@index([type, status])
+  @@index([bookingId])
+  @@index([clientId])
+  @@index([responsibleRole])
+  @@index([status])
+  @@index([detectedAt])
   @@index([createdAt])
   @@map("lost_revenue_registry")
 }
@@ -1054,13 +1167,21 @@ model PricingRule {
   conditionConfig Json
 
   actionType      String   // multiply, add, set_minimum
-  actionValue     Float
+  actionValue     Decimal  @db.Decimal(12,4)
 
   appliesTo       String   @default("all") // all, location, model, service
   scopeEntityId   String?
 
   timesApplied    Int      @default(0)
-  revenueImpact   Float    @default(0)
+  revenueImpact   Decimal  @default(0) @db.Decimal(12,2)
+
+  // Versioning
+  version           Int      @default(1)
+  previousVersionId String?  @map("previous_version_id")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedBy         String?   @map("deleted_by")
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1077,12 +1198,20 @@ model MembershipPlan {
   id                     String   @id @default(cuid())
   name                   String
   tier                   Int
-  priceMonthly           Float
+  priceMonthly           Decimal  @db.Decimal(12,2)
   currency               String   @default("GBP")
   bookingDiscountPercent Int      @default(0)
   prioritySupportLevel   Int      @default(0)
   perks                  Json?
   status                 String   @default("active") // active, archived
+
+  // Versioning
+  version                Int      @default(1)
+  previousVersionId      String?  @map("previous_version_id")
+
+  // Soft delete
+  deletedAt              DateTime? @map("deleted_at")
+  deletedBy              String?   @map("deleted_by")
 
   memberships            ClientMembership[]
 
@@ -1104,8 +1233,10 @@ model ClientMembership {
   expiresAt     DateTime?
   autoRenew     Boolean   @default(true)
   nextBillingAt DateTime?
+  abuseFlag     Boolean   @default(false) @map("abuse_flag")
 
   invoices      SubscriptionInvoice[]
+  benefitUsages MembershipBenefitUsage[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -1120,7 +1251,7 @@ model SubscriptionInvoice {
   clientMembershipId  String
   membership          ClientMembership @relation(fields: [clientMembershipId], references: [id])
 
-  amount              Float
+  amount              Decimal  @db.Decimal(12,2)
   currency            String   @default("GBP")
   status              String   @default("draft") // draft, paid, failed, void
   periodStart         DateTime
@@ -1205,4 +1336,642 @@ model AIParseExample {
   @@index([inputType, createdAt])
   @@index([inputHash])
   @@map("ai_parse_examples")
+}
+
+// ============================================
+// CLIENT IDENTITY & MERGE
+// ============================================
+
+model ClientIdentity {
+  id              String    @id @default(cuid())
+  clientId        String    @map("client_id")
+  client          Client    @relation(fields: [clientId], references: [id])
+  identityType    String    @map("identity_type")
+  rawValue        String    @map("raw_value")
+  normalizedValue String    @map("normalized_value")
+  isPrimary       Boolean   @default(false)  @map("is_primary")
+  isVerified      Boolean   @default(false)  @map("is_verified")
+  confidenceScore Float     @default(1.0)    @map("confidence_score")
+  source          String    @default("manual")
+  verifiedAt      DateTime? @map("verified_at")
+  lastSeenAt      DateTime? @map("last_seen_at")
+  isActive        Boolean   @default(true)   @map("is_active")
+  createdAt       DateTime  @default(now())  @map("created_at")
+  updatedAt       DateTime  @updatedAt       @map("updated_at")
+
+  @@index([clientId])
+  @@index([normalizedValue])
+  @@index([identityType, normalizedValue])
+  @@index([isActive])
+  @@map("client_identities")
+}
+
+model ClientMergeCandidate {
+  id                String    @id @default(cuid())
+  primaryClientId   String    @map("primary_client_id")
+  duplicateClientId String    @map("duplicate_client_id")
+  score             Float
+  reasonsJson       Json      @map("reasons_json")
+  status            String    @default("open")
+  createdAt         DateTime  @default(now())  @map("created_at")
+  resolvedAt        DateTime? @map("resolved_at")
+  resolvedBy        String?   @map("resolved_by")
+
+  primaryClient     Client    @relation("MergePrimary", fields: [primaryClientId], references: [id])
+  duplicateClient   Client    @relation("MergeDuplicate", fields: [duplicateClientId], references: [id])
+
+  @@index([primaryClientId])
+  @@index([duplicateClientId])
+  @@index([status])
+  @@map("client_merge_candidates")
+}
+
+model ClientMergeLog {
+  id                String   @id @default(cuid())
+  primaryClientId   String   @map("primary_client_id")
+  duplicateClientId String   @map("duplicate_client_id")
+  mergedBy          String   @map("merged_by")
+  reasonCode        String   @map("reason_code")
+  mergeSummaryJson  Json     @map("merge_summary_json")
+  createdAt         DateTime @default(now())  @map("created_at")
+
+  @@map("client_merge_logs")
+}
+
+model ClientRiskHistory {
+  id             String   @id @default(cuid())
+  clientId       String   @map("client_id")
+  client         Client   @relation(fields: [clientId], references: [id])
+  previousStatus String   @map("previous_status")
+  newStatus      String   @map("new_status")
+  reason         String
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now())  @map("created_at")
+
+  @@index([clientId])
+  @@map("client_risk_history")
+}
+
+model ClientEvent {
+  id           String    @id @default(cuid())
+  clientId     String    @map("client_id")
+  client       Client    @relation(fields: [clientId], references: [id])
+  eventType    String    @map("event_type")
+  entityType   String?   @map("entity_type")
+  entityId     String?   @map("entity_id")
+  title        String
+  description  String?   @db.Text
+  metadataJson Json?     @map("metadata_json")
+  severity     String    @default("info")
+  actorType    String    @default("system")  @map("actor_type")
+  createdBy    String?   @map("created_by")
+  source       String    @default("system")
+  visibility   String    @default("internal")
+  createdAt    DateTime  @default(now())  @map("created_at")
+
+  @@index([clientId])
+  @@index([eventType])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("client_events")
+}
+
+// ============================================
+// AVAILABILITY ENGINE
+// ============================================
+
+model ModelAvailability {
+  id              String    @id @default(cuid())
+  modelId         String    @map("model_id")
+  model           Model     @relation(fields: [modelId], references: [id])
+  startAt         DateTime  @map("start_at")
+  endAt           DateTime  @map("end_at")
+  timezone        String    @default("Europe/London")
+  status          String    // available, booked, blocked, travel, cooldown, unavailable
+  source          String    // manual, booking, incident, system
+  sourceRefType   String?   @map("source_ref_type")   // booking, incident, manual_block, policy, system
+  sourceRefId     String?   @map("source_ref_id")
+  bookingId       String?   @map("booking_id")
+  locationId      String?   @map("location_id")
+  city            String?
+  area            String?
+  addressText     String?   @map("address_text")
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt      @map("updated_at")
+
+  @@index([modelId, startAt, endAt])
+  @@index([bookingId])
+  @@index([status])
+  @@map("model_availabilities")
+}
+
+model AvailabilityPolicy {
+  id                              String   @id @default(cuid())
+  defaultBufferMinutes            Int      @default(30)  @map("default_buffer_minutes")
+  sameLocationBufferMinutes       Int      @default(15)  @map("same_location_buffer_minutes")
+  differentLocationBufferMinutes  Int      @default(60)  @map("different_location_buffer_minutes")
+  travelBufferMinutes             Int      @default(90)  @map("travel_buffer_minutes")
+  cooldownMinutes                 Int      @default(20)  @map("cooldown_minutes")
+  conflictStrategy                String   @default("reject") @map("conflict_strategy") // reject, warn, escalate
+  createdAt                       DateTime @default(now()) @map("created_at")
+  updatedAt                       DateTime @updatedAt      @map("updated_at")
+
+  @@map("availability_policies")
+}
+
+model AvailabilityConflict {
+  id                String    @id @default(cuid())
+  modelId           String    @map("model_id")
+  model             Model     @relation(fields: [modelId], references: [id])
+  bookingId         String?   @map("booking_id")
+  conflictingSlotId String    @map("conflicting_slot_id")
+  conflictType      String    @map("conflict_type") // overlap, travel_gap_too_short, cooldown_violation, manual_block_conflict
+  status            String    @default("open") // open, resolved, ignored
+  resolvedBy        String?   @map("resolved_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  resolvedAt        DateTime? @map("resolved_at")
+
+  @@index([modelId])
+  @@index([bookingId])
+  @@index([status])
+  @@map("availability_conflicts")
+}
+
+// ============================================
+// OPERATIONS FEED
+// ============================================
+
+model OperationsFeedItem {
+  id             String    @id @default(cuid())
+  // type values: sla_breach, fraud_alert, incident_opened, review_flagged, booking_dispute,
+  //   payment_failed, lost_revenue, model_profile_issue, availability_conflict,
+  //   membership_past_due, retention_task, queue_failed_job
+  type           String
+  // sourceModule values: sla, fraud, reviews, bookings, payments, retention, jobs, membership, data_quality, lost_revenue
+  sourceModule   String    @map("source_module")
+  // priority values: critical, high, medium, low
+  priority       String    @default("medium")
+  entityType     String    @map("entity_type")
+  entityId       String    @map("entity_id")
+  dedupeKey      String?   @map("dedupe_key")
+  title          String
+  description    String?   @db.Text
+  assignedUserId String?   @map("assigned_user_id")
+  // status values: new, acknowledged, in_progress, resolved, dismissed
+  status         String    @default("new")
+  dueAt          DateTime? @map("due_at")
+  snoozedUntil   DateTime? @map("snoozed_until")
+  resolutionNote String?   @db.Text  @map("resolution_note")
+  metadataJson   Json?     @map("metadata_json")
+  createdAt      DateTime  @default(now())  @map("created_at")
+  resolvedAt     DateTime? @map("resolved_at")
+
+  @@index([priority])
+  @@index([status])
+  @@index([assignedUserId])
+  @@index([sourceModule])
+  @@index([entityType, entityId])
+  @@index([dedupeKey])
+  @@map("operations_feed_items")
+}
+
+// ============================================
+// JOB QUEUE
+// ============================================
+
+model JobQueue {
+  id              String    @id @default(cuid())
+  // type values: send_email, send_telegram, send_sms, generate_report, fraud_scan,
+  //   media_processing, seo_generation, pricing_recalculation, retention_scan,
+  //   membership_billing, notification_dispatch
+  type            String
+  payloadJson     Json      @map("payload_json")
+  dedupeKey       String?   @map("dedupe_key")
+  // status values: queued, running, succeeded, failed, dead_letter, cancelled
+  status          String    @default("queued")
+  // priority values: critical, high, normal, low
+  priority        String    @default("normal")
+  attempts        Int       @default(0)
+  maxAttempts     Int       @default(3)  @map("max_attempts")
+  workerName      String?   @map("worker_name")
+  parentJobId     String?   @map("parent_job_id")
+  lockToken       String?   @map("lock_token")
+  lockedAt        DateTime? @map("locked_at")
+  lastHeartbeatAt DateTime? @map("last_heartbeat_at")
+  scheduledAt     DateTime  @default(now())  @map("scheduled_at")
+  startedAt       DateTime? @map("started_at")
+  finishedAt      DateTime? @map("finished_at")
+  failedAt        DateTime? @map("failed_at")
+  errorText       String?   @db.Text  @map("error_text")
+  createdAt       DateTime  @default(now())  @map("created_at")
+  updatedAt       DateTime  @updatedAt       @map("updated_at")
+
+  logs            JobLog[]
+
+  @@index([status, priority])
+  @@index([type])
+  @@index([scheduledAt])
+  @@index([dedupeKey])
+  @@index([parentJobId])
+  @@map("job_queue")
+}
+
+model JobLog {
+  id        String   @id @default(cuid())
+  jobId     String   @map("job_id")
+  job       JobQueue @relation(fields: [jobId], references: [id])
+  step      String
+  status    String
+  message   String   @db.Text
+  createdAt DateTime @default(now())  @map("created_at")
+
+  @@index([jobId])
+  @@map("job_logs")
+}
+
+// ============================================
+// NOTIFICATIONS ENGINE
+// ============================================
+
+model NotificationTemplate {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  name              String
+  channel           String
+  eventType         String    @map("event_type")
+  subjectTemplate   String?   @db.Text  @map("subject_template")
+  bodyTemplate      String    @db.Text  @map("body_template")
+  isActive          Boolean   @default(true)  @map("is_active")
+  version           Int       @default(1)
+  previousVersionId String?   @map("previous_version_id")
+  deletedAt         DateTime? @map("deleted_at")
+  deletedBy         String?   @map("deleted_by")
+  createdAt         DateTime  @default(now())  @map("created_at")
+  updatedAt         DateTime  @updatedAt       @map("updated_at")
+
+  notifications     Notification[]
+
+  @@index([code])
+  @@index([channel])
+  @@index([eventType])
+  @@map("notification_templates")
+}
+
+model Notification {
+  id               String    @id @default(cuid())
+  templateId       String?   @map("template_id")
+  template         NotificationTemplate? @relation(fields: [templateId], references: [id])
+  eventType        String    @map("event_type")
+  recipientType    String    @map("recipient_type")
+  recipientId      String    @map("recipient_id")
+  recipientAddress String?   @map("recipient_address")
+  channel          String
+  provider         String?
+  status           String    @default("queued")
+  idempotencyKey   String    @unique  @map("idempotency_key")
+  payloadJson      Json      @map("payload_json")
+  renderedSubject  String?   @db.Text  @map("rendered_subject")
+  renderedBody     String    @db.Text  @map("rendered_body")
+  scheduledAt      DateTime? @map("scheduled_at")
+  sentAt           DateTime? @map("sent_at")
+  failedAt         DateTime? @map("failed_at")
+  retryCount       Int       @default(0)  @map("retry_count")
+  createdAt        DateTime  @default(now())  @map("created_at")
+  updatedAt        DateTime  @updatedAt       @map("updated_at")
+
+  logs             NotificationLog[]
+
+  @@index([recipientType, recipientId])
+  @@index([eventType])
+  @@index([status])
+  @@map("notifications")
+}
+
+model NotificationLog {
+  id                String   @id @default(cuid())
+  notificationId    String   @map("notification_id")
+  notification      Notification @relation(fields: [notificationId], references: [id])
+  attemptNumber     Int      @map("attempt_number")
+  provider          String
+  providerMessageId String?  @map("provider_message_id")
+  status            String
+  responseJson      Json?    @map("response_json")
+  errorText         String?  @db.Text  @map("error_text")
+  createdAt         DateTime @default(now())  @map("created_at")
+
+  @@index([notificationId])
+  @@map("notification_logs")
+}
+
+model NotificationPreference {
+  id         String   @id @default(cuid())
+  clientId   String   @map("client_id")
+  channel    String
+  eventType  String   @map("event_type")
+  isEnabled  Boolean  @default(true)  @map("is_enabled")
+  updatedAt  DateTime @updatedAt  @map("updated_at")
+
+  @@index([clientId])
+  @@index([channel, eventType])
+  @@map("notification_preferences")
+}
+
+// ============================================
+// RETENTION ENGINE
+// ============================================
+
+model ClientRetentionProfile {
+  id                    String    @id @default(cuid())
+  clientId              String    @unique  @map("client_id")
+  lastBookingAt         DateTime? @map("last_booking_at")
+  daysSinceLastBooking  Int       @default(0)  @map("days_since_last_booking")
+  totalBookings         Int       @default(0)  @map("total_bookings")
+  totalSpent            Decimal   @default(0)  @db.Decimal(12,2)  @map("total_spent")
+  avgBookingValue       Decimal   @default(0)  @db.Decimal(12,2)  @map("avg_booking_value")
+  // segment: new, active, cooling, at_risk, lost, vip, whale
+  segment               String    @default("new")
+  segmentReason         String?   @map("segment_reason")
+  churnRiskScore        Int       @default(0)  @map("churn_risk_score")
+  churnRiskFactorsJson  Json?     @map("churn_risk_factors_json")
+  // nextBestActionType: follow_up, win_back_offer, vip_checkin, membership_offer, manual_call
+  nextBestActionType    String?   @map("next_best_action_type")
+  updatedAt             DateTime  @updatedAt  @map("updated_at")
+
+  client                Client    @relation(fields: [clientId], references: [id])
+  retentionActions      RetentionAction[]
+
+  @@index([segment])
+  @@index([churnRiskScore])
+  @@map("client_retention_profiles")
+}
+
+model RetentionAction {
+  id                  String    @id @default(cuid())
+  clientId            String    @map("client_id")
+  retentionProfileId  String?   @map("retention_profile_id")
+  ownerUserId         String?   @map("owner_user_id")
+  // actionType: follow_up, win_back_offer, vip_checkin, membership_offer, birthday_message, inactivity_alert, manual_call_task
+  actionType          String    @map("action_type")
+  // status: planned, sent, completed, failed, cancelled
+  status              String    @default("planned")
+  // channel: email, telegram, sms, internal, phone_call
+  channel             String
+  scheduledAt         DateTime  @map("scheduled_at")
+  completedAt         DateTime? @map("completed_at")
+  expiresAt           DateTime? @map("expires_at")
+  convertedBookingId  String?   @map("converted_booking_id")
+  result              String?
+  metadataJson        Json?     @map("metadata_json")
+  createdAt           DateTime  @default(now())  @map("created_at")
+
+  client              Client    @relation(fields: [clientId], references: [id])
+  retentionProfile    ClientRetentionProfile? @relation(fields: [retentionProfileId], references: [id])
+
+  @@index([clientId])
+  @@index([ownerUserId])
+  @@index([actionType])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("retention_actions")
+}
+
+model RetentionCampaign {
+  id                String    @id @default(cuid())
+  name              String
+  // triggerType: inactivity, post_booking, vip_followup, churn_risk, membership_expiry
+  triggerType       String    @map("trigger_type")
+  segmentFilter     Json      @map("segment_filter")
+  // channel: email, telegram, sms, internal, phone_call
+  channel           String
+  templateId        String?   @map("template_id")
+  isActive          Boolean   @default(true)  @map("is_active")
+  version           Int       @default(1)
+  previousVersionId String?   @map("previous_version_id")
+  createdAt         DateTime  @default(now())  @map("created_at")
+  updatedAt         DateTime  @updatedAt       @map("updated_at")
+
+  @@map("retention_campaigns")
+}
+
+// ============================================
+// ALTERNATIVE OFFERS ENGINE
+// ============================================
+
+model ModelSimilarity {
+  id                String   @id @default(cuid())
+  modelAId          String   @map("model_a_id")
+  modelBId          String   @map("model_b_id")
+  similarityScore   Float    @map("similarity_score")
+  similarityVersion Int      @default(1)  @map("similarity_version")
+  factorsJson       Json     @map("factors_json")
+  updatedAt         DateTime @updatedAt  @map("updated_at")
+
+  modelA            Model    @relation("ModelSimilarityA", fields: [modelAId], references: [id])
+  modelB            Model    @relation("ModelSimilarityB", fields: [modelBId], references: [id])
+
+  @@unique([modelAId, modelBId])
+  @@index([modelAId])
+  @@index([modelBId])
+  @@map("model_similarities")
+}
+
+model AlternativeOffer {
+  id                 String    @id @default(cuid())
+  offerSetId         String?   @map("offer_set_id")
+  inquiryId          String?   @map("inquiry_id")
+  bookingId          String?   @map("booking_id")
+  requestedModelId   String    @map("requested_model_id")
+  offeredModelId     String    @map("offered_model_id")
+  // generationReason: requested_model_unavailable, price_mismatch, location_mismatch, schedule_conflict, vip_restriction
+  generationReason   String    @map("generation_reason")
+  rank               Int
+  // status: generated, shown, accepted, rejected, expired
+  status             String    @default("generated")
+  // presentedByType: system, receptionist, manager
+  presentedByType    String?   @map("presented_by_type")
+  presentedById      String?   @map("presented_by_id")
+  shownAt            DateTime? @map("shown_at")
+  acceptedAt         DateTime? @map("accepted_at")
+  rejectedAt         DateTime? @map("rejected_at")
+  createdAt          DateTime  @default(now())  @map("created_at")
+
+  requestedModel     Model     @relation("RequestedModel", fields: [requestedModelId], references: [id])
+  offeredModel       Model     @relation("OfferedModel", fields: [offeredModelId], references: [id])
+  conversion         OfferConversion?
+
+  @@index([inquiryId])
+  @@index([bookingId])
+  @@index([requestedModelId])
+  @@index([offeredModelId])
+  @@index([status])
+  @@map("alternative_offers")
+}
+
+model OfferConversion {
+  id                  String    @id @default(cuid())
+  alternativeOfferId  String    @unique  @map("alternative_offer_id")
+  convertedBookingId  String?   @map("converted_booking_id")
+  revenueAmount       Decimal?  @db.Decimal(12,2)  @map("revenue_amount")
+  createdAt           DateTime  @default(now())  @map("created_at")
+
+  alternativeOffer    AlternativeOffer @relation(fields: [alternativeOfferId], references: [id])
+
+  @@map("offer_conversions")
+}
+
+// ============================================
+// STAFF PERFORMANCE ANALYTICS
+// ============================================
+
+model StaffPerformanceSnapshot {
+  id                          String    @id @default(cuid())
+  userId                      String    @map("user_id")
+  periodStart                 DateTime  @map("period_start")
+  periodEnd                   DateTime  @map("period_end")
+  bookingsCompleted           Int       @default(0) @map("bookings_completed")
+  bookingsCancelled           Int       @default(0) @map("bookings_cancelled")
+  inquiriesHandled            Int       @default(0) @map("inquiries_handled")
+  inquiriesConverted          Int       @default(0) @map("inquiries_converted")
+  conversionRate              Float     @default(0) @map("conversion_rate")
+  revenueGenerated            Decimal   @default(0) @db.Decimal(12,2) @map("revenue_generated")
+  lostRevenueAmount           Decimal   @default(0) @db.Decimal(12,2) @map("lost_revenue_amount")
+  cancellationRate            Float     @default(0) @map("cancellation_rate")
+  complaintsCount             Int       @default(0) @map("complaints_count")
+  retentionActionsCompleted   Int       @default(0) @map("retention_actions_completed")
+  createdAt                   DateTime  @default(now()) @map("created_at")
+
+  user                        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, periodStart, periodEnd])
+  @@index([userId])
+  @@index([periodStart])
+  @@map("staff_performance_snapshots")
+}
+
+model StaffScoreSnapshot {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  periodStart     DateTime  @map("period_start")
+  periodEnd       DateTime  @map("period_end")
+  totalScore      Float     @default(0) @map("total_score")
+  breakdown       Json      @default("{}") // { metricKey: { raw, weight, weighted } }
+  manualAdjust    Float     @default(0) @map("manual_adjust")
+  adjustReason    String?   @map("adjust_reason")
+  adjustedBy      String?   @map("adjusted_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, periodStart, periodEnd])
+  @@index([userId])
+  @@index([totalScore])
+  @@map("staff_score_snapshots")
+}
+
+model StaffScoreRule {
+  id              String    @id @default(cuid())
+  metricKey       String    @unique @map("metric_key")
+  label           String
+  weight          Float     @default(0)
+  description     String?
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("staff_score_rules")
+}
+
+// ============================================
+// MEMBERSHIP BENEFIT USAGE
+// ============================================
+
+model MembershipBenefitUsage {
+  id                  String    @id @default(cuid())
+  clientMembershipId  String    @map("client_membership_id")
+  bookingId           String?   @map("booking_id")
+  retentionActionId   String?   @map("retention_action_id")
+  benefitType         String    @map("benefit_type") // discount, priority_support, vip_access, early_access, fee_waiver, free_upgrade
+  valueAmount         Decimal   @db.Decimal(12,2)  @map("value_amount")
+  currency            String    @default("GBP")
+  status              String    @default("reserved") // reserved, used, reversed, expired
+  metadataJson        Json?     @map("metadata_json")
+  createdBy           String    @map("created_by")
+  expiresAt           DateTime? @map("expires_at")
+  createdAt           DateTime  @default(now())  @map("created_at")
+
+  membership          ClientMembership @relation(fields: [clientMembershipId], references: [id])
+
+  @@index([clientMembershipId])
+  @@index([bookingId])
+  @@index([benefitType])
+  @@index([status])
+  @@map("membership_benefit_usages")
+}
+
+// ============================================
+// PRICING DECISION LOG
+// ============================================
+
+model PricingDecisionLog {
+  id                   String   @id @default(cuid())
+  bookingId            String?  @map("booking_id")
+  modelId              String?  @map("model_id")
+  currency             String   @default("GBP")
+  basePrice            Decimal  @db.Decimal(12,2)  @map("base_price")
+  finalPrice           Decimal  @db.Decimal(12,2)  @map("final_price")
+  decisionSource       String   @map("decision_source") // rule_engine, manual_override, fallback
+  appliedRulesJson     Json     @map("applied_rules_json")
+  pricingRuleVersion   Int?     @map("pricing_rule_version")
+  marginImpact         Decimal? @db.Decimal(12,2)  @map("margin_impact")
+  createdAt            DateTime @default(now())  @map("created_at")
+
+  @@index([bookingId])
+  @@index([modelId])
+  @@index([createdAt])
+  @@map("pricing_decision_logs")
+}
+
+// ============================================
+// REVIEW COMPLAINT PATTERNS
+// ============================================
+
+model ReviewComplaintPattern {
+  id          String   @id @default(cuid())
+  modelId     String   @map("model_id")
+  keyword     String
+  count       Int      @default(1)
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+  createdAt   DateTime @default(now())  @map("created_at")
+
+  model       Model    @relation(fields: [modelId], references: [id])
+
+  @@index([modelId])
+  @@index([periodStart, periodEnd])
+  @@map("review_complaint_patterns")
+}
+
+// ============================================
+// DEMAND STATS
+// ============================================
+
+model DemandStats {
+  id                   String   @id @default(cuid())
+  locationId           String?  @map("location_id")
+  city                 String?
+  area                 String?
+  timeSlot             DateTime @map("time_slot")
+  requests             Int      @default(0)
+  bookings             Int      @default(0)
+  conversionRate       Decimal  @default(0)  @db.Decimal(5,2)  @map("conversion_rate")
+  avgPrice             Decimal  @default(0)  @db.Decimal(12,2)  @map("avg_price")
+  availableModelsCount Int      @default(0)  @map("available_models_count")
+  demandScore          Int      @default(0)  @map("demand_score")
+  createdAt            DateTime @default(now())  @map("created_at")
+
+  @@index([locationId])
+  @@index([timeSlot])
+  @@index([city])
+  @@map("demand_stats")
 }

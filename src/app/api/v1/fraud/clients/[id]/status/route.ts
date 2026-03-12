@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
+import { changeClientRiskStatus } from '@/services/fraudService';
 
 export async function GET(
   request: NextRequest,
@@ -52,7 +53,8 @@ export async function GET(
 
 const RiskStatusSchema = z.object({
   riskStatus: z.enum(['normal', 'monitoring', 'restricted', 'blocked']),
-  reason: z.string().optional()
+  reasonCode: z.string().optional(),
+  reason: z.string().optional(),
 });
 
 export async function PATCH(
@@ -64,40 +66,30 @@ export async function PATCH(
     const body = await request.json();
     const data = RiskStatusSchema.parse(body);
 
-    const client = await prisma.client.findUnique({ where: { id } });
-    if (!client) {
+    const result = await changeClientRiskStatus(
+      id,
+      data.riskStatus,
+      'system',
+      data.reasonCode || data.reason || 'manual_update',
+    );
+
+    return NextResponse.json({ success: true, data: result });
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
       return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'Client not found' } },
-        { status: 404 }
+        { success: false, error: { code: 'VALIDATION_ERROR', message: error.errors } },
+        { status: 400 },
       );
     }
-
-    const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.client.update({
-        where: { id },
-        data: { riskStatus: data.riskStatus }
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorType: 'user',
-          action: 'STATUS_CHANGE',
-          entityType: 'client',
-          entityId: id,
-          before: { riskStatus: client.riskStatus },
-          after: { riskStatus: data.riskStatus, reason: data.reason }
-        }
-      });
-
-      return result;
-    });
-
-    return NextResponse.json({ data: { client: updated } });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (error.message?.includes('not found')) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: error.message } },
+        { status: 404 },
+      );
+    }
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message } },
-      { status: 500 }
+      { success: false, error: { code: 'INTERNAL_ERROR', message: error.message } },
+      { status: 500 },
     );
   }
 }

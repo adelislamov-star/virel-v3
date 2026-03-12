@@ -1,4 +1,4 @@
-// BOOKING DETAIL PAGE WITH PAYMENTS
+// BOOKING DETAIL PAGE WITH PAYMENTS + ALTERNATIVE OFFERS
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,10 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DepositPaymentForm from '@/components/payments/DepositPaymentForm';
 
+type AltOffer = { id: string; offeredModel: { id: string; name: string }; rank: number; status: string; similarityScore?: number };
+
 export default function BookingDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [altOffers, setAltOffers] = useState<AltOffer[]>([]);
+  const [altLoading, setAltLoading] = useState(false);
   
   useEffect(() => {
     loadBooking();
@@ -52,6 +56,39 @@ export default function BookingDetailPage({ params }: { params: { id: string } }
     }
   }
   
+  async function handleFindAlternatives() {
+    if (!booking?.model?.id) return;
+    setAltLoading(true);
+    try {
+      const res = await fetch('/api/v1/alternative-offers/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestedModelId: booking.model.id, reason: 'requested_model_unavailable', bookingId: params.id }),
+      });
+      const data = await res.json();
+      if (data.success) setAltOffers(data.data.offers);
+    } catch {}
+    finally { setAltLoading(false); }
+  }
+
+  async function handleAcceptOffer(offerId: string) {
+    await fetch(`/api/v1/alternative-offers/${offerId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'accepted', bookingId: params.id }),
+    });
+    setAltOffers(prev => prev.map(o => o.id === offerId ? { ...o, status: 'accepted' } : o));
+  }
+
+  async function handleRejectOffer(offerId: string) {
+    await fetch(`/api/v1/alternative-offers/${offerId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'rejected' }),
+    });
+    setAltOffers(prev => prev.map(o => o.id === offerId ? { ...o, status: 'rejected' } : o));
+  }
+
   if (loading) return <div className="p-6">Loading...</div>;
   if (!booking) return <div className="p-6">Booking not found</div>;
   
@@ -237,6 +274,46 @@ export default function BookingDetailPage({ params }: { params: { id: string } }
           )}
         </div>
       </div>
+
+      {/* Alternative Offers Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Alternative Offers</CardTitle>
+            <Button onClick={handleFindAlternatives} disabled={altLoading} variant="outline" size="sm">
+              {altLoading ? 'Searching...' : 'Find Alternatives'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {altOffers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Click &quot;Find Alternatives&quot; to generate similar model suggestions.</p>
+          ) : (
+            <div className="space-y-2">
+              {altOffers.map(offer => (
+                <div key={offer.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">#{offer.rank}</span>
+                    <span className="font-medium">{offer.offeredModel.name}</span>
+                    {offer.similarityScore !== undefined && (
+                      <span className="text-xs text-muted-foreground">Score: {(offer.similarityScore * 100).toFixed(0)}%</span>
+                    )}
+                    <Badge variant={offer.status === 'accepted' ? 'default' : offer.status === 'rejected' ? 'destructive' : 'secondary'}>
+                      {offer.status}
+                    </Badge>
+                  </div>
+                  {offer.status === 'generated' && (
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleAcceptOffer(offer.id)}>Accept</Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleRejectOffer(offer.id)}>Reject</Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

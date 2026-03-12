@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import BookingStateMachine, { BookingStatus } from '@/lib/state-machines/booking';
+import { createBookingSlot, removeBookingSlot } from '@/services/availabilityService';
 
 const prisma = new PrismaClient();
 
@@ -90,9 +91,20 @@ export async function POST(
           data: { status: 'done' }
         });
       }
-      
+
       return updated;
     });
+
+    // Availability engine integration (outside transaction — uses own writes)
+    try {
+      if (newStatus === 'confirmed') {
+        await createBookingSlot(params.id);
+      } else if (newStatus === 'cancelled' || newStatus === 'no_show') {
+        await removeBookingSlot(params.id);
+      }
+    } catch (availErr: any) {
+      console.error('[AvailabilityEngine] post-transition error:', availErr.message);
+    }
     
     return NextResponse.json({
       success: true,
