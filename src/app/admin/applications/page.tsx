@@ -83,7 +83,7 @@ export default async function ApplicationsPage() {
                     {[app.age && `${app.age}y`, app.nationality].filter(Boolean).join(' \u00b7 ') || '\u2014'}
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-400">
-                    {app.rate1hIn ? `\u00a3${app.rate1hIn}/1h` : '\u2014'}
+                    {app.rate1hIn ? `£${app.rate1hIn}/1h` : '\u2014'}
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-400">
                     {app.services?.length ? `${app.services.length} services` : '\u2014'}

@@ -159,3 +159,30 @@ export async function snoozeItem(itemId: string, until: Date, actorId: string) {
     data: { snoozedUntil: until },
   });
 }
+
+// ─── autoCloseOldItems (cron entry point) ────────────────
+// Auto-closes open items older than the given threshold
+export async function autoCloseOldItems(olderThanHours = 72) {
+  const threshold = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
+
+  const staleItems = await prisma.operationsFeedItem.findMany({
+    where: {
+      status: { in: ['open', 'acknowledged'] },
+      createdAt: { lt: threshold },
+    },
+    select: { id: true },
+  });
+
+  if (staleItems.length > 0) {
+    await prisma.operationsFeedItem.updateMany({
+      where: { id: { in: staleItems.map((i) => i.id) } },
+      data: {
+        status: 'dismissed',
+        resolvedAt: new Date(),
+        resolutionNote: `Auto-closed by cron after ${olderThanHours}h`,
+      },
+    });
+  }
+
+  return { closedCount: staleItems.length };
+}

@@ -1,11 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import bcrypt from 'bcryptjs';
+import { loginRatelimit } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting (skipped if Upstash not configured)
+    if (loginRatelimit) {
+      const ip = request.headers.get('x-forwarded-for') ??
+                 request.headers.get('x-real-ip') ??
+                 '127.0.0.1';
+      const { success, limit, remaining, reset } = await loginRatelimit.limit(ip);
+      if (!success) {
+        return NextResponse.json(
+          { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many login attempts. Try again in 15 minutes.' } },
+          {
+            status: 429,
+            headers: {
+              'X-RateLimit-Limit': String(limit),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(reset),
+              'Retry-After': '900',
+            },
+          },
+        );
+      }
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {

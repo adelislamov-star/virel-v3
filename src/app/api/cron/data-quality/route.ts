@@ -1,8 +1,8 @@
 // CRON: DATA QUALITY — Runs daily at 00:00 UTC via Vercel Cron
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequest } from '@/lib/cronAuth';
-import { runDataQualityChecks } from '@/lib/data-governance/checker';
 import { prisma } from '@/lib/db/client';
+import { runDataQualityChecks } from '@/lib/data-governance/checker';
 
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
@@ -14,16 +14,29 @@ export async function GET(req: NextRequest) {
 
     const duration = Date.now() - start;
     await prisma.cronLog.create({
-      data: { cronPath: '/api/cron/data-quality', status: 'success', durationMs: duration, resultJson: { newChecks: result.newChecks, existing: result.existing } },
+      data: {
+        cronPath: '/api/cron/data-quality',
+        status: 'success',
+        durationMs: duration,
+        resultJson: result ?? {},
+      },
     }).catch(() => {});
 
-    return NextResponse.json({ ok: true, newChecks: result.newChecks, existing: result.existing, ranAt: new Date().toISOString() });
+    return NextResponse.json({ data: { ok: true, result } });
   } catch (error: any) {
     const duration = Date.now() - start;
     await prisma.cronLog.create({
-      data: { cronPath: '/api/cron/data-quality', status: 'error', durationMs: duration, errorText: error.message },
+      data: {
+        cronPath: '/api/cron/data-quality',
+        status: 'error',
+        durationMs: duration,
+        errorText: error.message,
+      },
     }).catch(() => {});
 
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: { code: 'CRON_ERROR', message: error.message } },
+      { status: 500 },
+    );
   }
 }

@@ -107,8 +107,8 @@ export default function PricingPage() {
   function formatAction(rule: PricingRule) {
     switch (rule.actionType) {
       case 'multiply': return `x${rule.actionValue}`;
-      case 'add': return `+\u00a3${rule.actionValue}`;
-      case 'set_minimum': return `min \u00a3${rule.actionValue}`;
+      case 'add': return `+£${rule.actionValue}`;
+      case 'set_minimum': return `min £${rule.actionValue}`;
       default: return rule.actionValue;
     }
   }
@@ -155,7 +155,7 @@ export default function PricingPage() {
         </div>
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Total Revenue Uplift</p>
-          <p className="text-2xl font-semibold text-emerald-400 mt-2">\u00a3{totalUplift.toFixed(0)}</p>
+          <p className="text-2xl font-semibold text-emerald-400 mt-2">£{totalUplift.toFixed(0)}</p>
         </div>
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Total Times Applied</p>
@@ -202,7 +202,7 @@ export default function PricingPage() {
                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">{formatAction(rule)}</span>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">{rule.appliesTo}</span>
                 </div>
-                <p className="text-xs text-zinc-500">Priority: {rule.priority} | Applied {rule.timesApplied}x | Impact: \u00a3{rule.revenueImpact.toFixed(2)}</p>
+                <p className="text-xs text-zinc-500">Priority: {rule.priority} | Applied {rule.timesApplied}x | Impact: £{rule.revenueImpact.toFixed(2)}</p>
               </div>
               <div className="flex gap-2 ml-4 shrink-0">
                 <button onClick={() => toggleRule(rule.id, rule.status)} className="px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-600 text-zinc-300 text-xs font-medium transition-colors duration-150">{rule.status === 'active' ? 'Disable' : 'Enable'}</button>
@@ -226,16 +226,16 @@ export default function PricingPage() {
           </div>
           <div><label className={labelClass}>Date & Time</label><input type="datetime-local" className={inputClass} value={calc.startAt} onChange={e => setCalc({...calc, startAt: e.target.value})} /></div>
           <div><label className={labelClass}>Duration (hrs)</label><input type="number" className={inputClass} value={calc.durationHours} onChange={e => setCalc({...calc, durationHours: e.target.value})} /></div>
-          <div><label className={labelClass}>Base Price (\u00a3)</label><input type="number" className={inputClass} value={calc.basePrice} onChange={e => setCalc({...calc, basePrice: e.target.value})} /></div>
+          <div><label className={labelClass}>Base Price (£)</label><input type="number" className={inputClass} value={calc.basePrice} onChange={e => setCalc({...calc, basePrice: e.target.value})} /></div>
           <div className="flex items-end"><button onClick={calculatePrice} disabled={calcLoading} className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150 disabled:opacity-50">{calcLoading ? 'Calculating...' : 'Calculate'}</button></div>
         </div>
 
         {calcResult && (
           <div className="rounded-lg border border-zinc-800/50 p-4 bg-zinc-800/20">
             <div className="flex gap-8 mb-4">
-              <div><p className="text-xs text-zinc-500">Base Price</p><p className="text-xl font-semibold text-zinc-100">\u00a3{calcResult.basePrice}</p></div>
-              <div><p className="text-xs text-zinc-500">Final Price</p><p className="text-xl font-semibold text-emerald-400">\u00a3{calcResult.finalPrice}</p></div>
-              <div><p className="text-xs text-zinc-500">Difference</p><p className="text-xl font-semibold text-zinc-100">{calcResult.finalPrice > calcResult.basePrice ? '+' : ''}\u00a3{(calcResult.finalPrice - calcResult.basePrice).toFixed(2)}</p></div>
+              <div><p className="text-xs text-zinc-500">Base Price</p><p className="text-xl font-semibold text-zinc-100">£{calcResult.basePrice}</p></div>
+              <div><p className="text-xs text-zinc-500">Final Price</p><p className="text-xl font-semibold text-emerald-400">£{calcResult.finalPrice}</p></div>
+              <div><p className="text-xs text-zinc-500">Difference</p><p className="text-xl font-semibold text-zinc-100">{calcResult.finalPrice > calcResult.basePrice ? '+' : ''}£{(calcResult.finalPrice - calcResult.basePrice).toFixed(2)}</p></div>
             </div>
             {calcResult.adjustments.length > 0 ? (
               <div className="space-y-1">
@@ -243,7 +243,7 @@ export default function PricingPage() {
                 {calcResult.adjustments.map((adj, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-zinc-300">{adj.ruleName} ({adj.type} {adj.value})</span>
-                    <span className={adj.effect >= 0 ? 'text-emerald-400' : 'text-red-400'}>{adj.effect >= 0 ? '+' : ''}\u00a3{adj.effect.toFixed(2)}</span>
+                    <span className={adj.effect >= 0 ? 'text-emerald-400' : 'text-red-400'}>{adj.effect >= 0 ? '+' : ''}£{adj.effect.toFixed(2)}</span>
                   </div>
                 ))}
               </div>

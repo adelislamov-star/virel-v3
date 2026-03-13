@@ -119,7 +119,7 @@ export default function MembershipPage() {
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
             <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">MRR</p>
-            <p className="text-2xl font-semibold text-emerald-400 mt-2">\u00a3{stats.mrr.toFixed(0)}</p>
+            <p className="text-2xl font-semibold text-emerald-400 mt-2">£{stats.mrr.toFixed(0)}</p>
           </div>
           <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
             <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Active Subscribers</p>
@@ -131,7 +131,7 @@ export default function MembershipPage() {
           </div>
           <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
             <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ARPU</p>
-            <p className="text-2xl font-semibold text-zinc-100 mt-2">\u00a3{stats.arpu.toFixed(0)}</p>
+            <p className="text-2xl font-semibold text-zinc-100 mt-2">£{stats.arpu.toFixed(0)}</p>
           </div>
         </div>
       )}
@@ -147,7 +147,7 @@ export default function MembershipPage() {
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div><label className={labelClass}>Name</label><input className={inputClass} value={planForm.name} onChange={e => setPlanForm({...planForm, name: e.target.value})} /></div>
               <div><label className={labelClass}>Tier</label><input type="number" className={inputClass} value={planForm.tier} onChange={e => setPlanForm({...planForm, tier: e.target.value})} /></div>
-              <div><label className={labelClass}>Price / Month (\u00a3)</label><input type="number" className={inputClass} value={planForm.priceMonthly} onChange={e => setPlanForm({...planForm, priceMonthly: e.target.value})} /></div>
+              <div><label className={labelClass}>Price / Month (£)</label><input type="number" className={inputClass} value={planForm.priceMonthly} onChange={e => setPlanForm({...planForm, priceMonthly: e.target.value})} /></div>
               <div><label className={labelClass}>Booking Discount %</label><input type="number" className={inputClass} value={planForm.bookingDiscountPercent} onChange={e => setPlanForm({...planForm, bookingDiscountPercent: e.target.value})} /></div>
               <div><label className={labelClass}>Support Level</label><input type="number" className={inputClass} value={planForm.prioritySupportLevel} onChange={e => setPlanForm({...planForm, prioritySupportLevel: e.target.value})} /></div>
               <div><label className={labelClass}>Perks (JSON)</label><input className={inputClass + ' font-mono'} value={planForm.perks} onChange={e => setPlanForm({...planForm, perks: e.target.value})} placeholder='["perk1","perk2"]' /></div>
@@ -165,7 +165,7 @@ export default function MembershipPage() {
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">Tier {plan.tier}</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${statusStyles[plan.status] || statusStyles.draft}`}>{plan.status}</span>
                   </div>
-                  <p className="text-xs text-zinc-500">\u00a3{plan.priceMonthly}/mo | {plan.bookingDiscountPercent}% discount | Level {plan.prioritySupportLevel} support | {plan._count.memberships} subscribers</p>
+                  <p className="text-xs text-zinc-500">£{plan.priceMonthly}/mo | {plan.bookingDiscountPercent}% discount | Level {plan.prioritySupportLevel} support | {plan._count.memberships} subscribers</p>
                 </div>
                 <button onClick={() => archivePlan(plan.id)} className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium border border-red-500/20 transition-colors duration-150">Archive</button>
               </div>
@@ -188,7 +188,7 @@ export default function MembershipPage() {
                   <span className="text-zinc-500">{inv.membership?.plan?.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-zinc-300">\u00a3{inv.amount.toFixed(2)}</span>
+                  <span className="text-zinc-300">£{inv.amount.toFixed(2)}</span>
                   <span className="text-zinc-500 text-xs">{new Date(inv.periodStart).toLocaleDateString()} - {new Date(inv.periodEnd).toLocaleDateString()}</span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${statusStyles[inv.status] || statusStyles.draft}`}>{inv.status}</span>
                   {inv.paidAt && <span className="text-zinc-600 text-xs">Paid {new Date(inv.paidAt).toLocaleDateString()}</span>}

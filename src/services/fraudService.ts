@@ -194,3 +194,67 @@ export async function reviewSignal(
 
   return updated;
 }
+
+// ── Run Fraud Scan (cron entry point) ────────────────────
+// Scans recent bookings for fraud patterns and creates signals
+export async function runFraudScan(lookbackHours = 24) {
+  const since = new Date(Date.now() - lookbackHours * 60 * 60 * 1000);
+
+  // Find clients with suspicious patterns in the lookback window
+  const cancelledBookings = await prisma.booking.findMany({
+    where: {
+      status: { in: ['cancelled', 'no_show'] },
+      updatedAt: { gte: since },
+    },
+    select: { clientId: true },
+  });
+
+  // Count cancellations per client
+  const clientCounts: Record<string, number> = {};
+  for (const b of cancelledBookings) {
+    if (b.clientId) {
+      clientCounts[b.clientId] = (clientCounts[b.clientId] || 0) + 1;
+    }
+  }
+
+  let signalsCreated = 0;
+  for (const [clientId, count] of Object.entries(clientCounts)) {
+    if (count < 3) continue; // threshold: 3+ cancellations in window
+
+    // Avoid duplicate signals for same client in same window
+    const existing = await prisma.fraudSignal.findFirst({
+      where: {
+        clientId,
+        signalType: 'high_cancellation_velocity',
+        createdAt: { gte: since },
+      },
+    });
+    if (existing) continue;
+
+    await createSignal(
+      {
+        clientId,
+        signalType: 'high_cancellation_velocity',
+        riskScoreImpact: Math.min(count * 10, 50),
+        sourceModule: 'cron:fraud_scan',
+        velocity24h: count,
+        metadata: { lookbackHours, cancellationCount: count },
+      },
+      'system',
+    );
+    signalsCreated++;
+  }
+
+  // Recalculate risk for all clients with pending signals
+  const pendingSignals = await prisma.fraudSignal.findMany({
+    where: { status: 'pending', createdAt: { gte: since } },
+    select: { clientId: true },
+    distinct: ['clientId'],
+  });
+
+  for (const { clientId } of pendingSignals) {
+    await recalculateClientRisk(clientId);
+  }
+
+  return { signalsCreated, clientsRecalculated: pendingSignals.length };
+}

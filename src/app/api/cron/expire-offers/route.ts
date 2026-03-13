@@ -1,9 +1,8 @@
 // CRON: Expire stale alternative offers — every hour
-// Runs directly (not enqueued) — lightweight operation
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequest } from '@/lib/cronAuth';
-import { expireStaleOffers } from '@/services/alternativeOfferService';
 import { prisma } from '@/lib/db/client';
+import { expireStaleOffers } from '@/services/alternativeOfferService';
 
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
@@ -11,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const start = Date.now();
   try {
-    const expired = await expireStaleOffers();
+    const result = await expireStaleOffers();
 
     const duration = Date.now() - start;
     await prisma.cronLog.create({
@@ -19,15 +18,20 @@ export async function GET(req: NextRequest) {
         cronPath: '/api/cron/expire-offers',
         status: 'success',
         durationMs: duration,
-        resultJson: { expired },
+        resultJson: result ?? {},
       },
     }).catch(() => {});
 
-    return NextResponse.json({ data: { expired } });
+    return NextResponse.json({ data: { ok: true, result } });
   } catch (error: any) {
     const duration = Date.now() - start;
     await prisma.cronLog.create({
-      data: { cronPath: '/api/cron/expire-offers', status: 'error', durationMs: duration, errorText: error.message },
+      data: {
+        cronPath: '/api/cron/expire-offers',
+        status: 'error',
+        durationMs: duration,
+        errorText: error.message,
+      },
     }).catch(() => {});
 
     return NextResponse.json(

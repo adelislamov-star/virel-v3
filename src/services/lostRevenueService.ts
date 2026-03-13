@@ -257,3 +257,41 @@ export async function getSummary() {
     byRole,
   };
 }
+
+// ─── runAutoDetection (cron entry point) ─────────────────
+// Scans recent cancelled/no-show bookings and failed payments
+export async function runAutoDetection(lookbackHours = 1) {
+  const since = new Date(Date.now() - lookbackHours * 60 * 60 * 1000);
+
+  // Detect from recent cancelled/no-show bookings
+  const bookings = await prisma.booking.findMany({
+    where: {
+      status: { in: ['cancelled', 'no_show'] },
+      updatedAt: { gte: since },
+    },
+    select: { id: true },
+  });
+
+  let bookingEntries = 0;
+  for (const b of bookings) {
+    const result = await detectFromBooking(b.id);
+    if (result) bookingEntries++;
+  }
+
+  // Detect from recent failed payments
+  const payments = await prisma.payment.findMany({
+    where: {
+      status: 'failed',
+      updatedAt: { gte: since },
+    },
+    select: { id: true },
+  });
+
+  let paymentEntries = 0;
+  for (const p of payments) {
+    const result = await detectFromPayment(p.id);
+    if (result) paymentEntries++;
+  }
+
+  return { bookingEntries, paymentEntries, totalDetected: bookingEntries + paymentEntries };
+}

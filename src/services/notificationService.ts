@@ -179,3 +179,33 @@ export async function checkPreference(
   if (!pref) return true;
   return pref.isEnabled;
 }
+
+// ─── dispatchPendingNotifications (cron entry point) ─────
+// Finds all queued notifications and dispatches them in batch
+export async function dispatchPendingNotifications(batchSize = 50) {
+  const pending = await prisma.notification.findMany({
+    where: {
+      status: 'queued',
+      OR: [
+        { scheduledAt: null },
+        { scheduledAt: { lte: new Date() } },
+      ],
+    },
+    orderBy: { createdAt: 'asc' },
+    take: batchSize,
+    select: { id: true },
+  });
+
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const n of pending) {
+    const result = await dispatchNotification(n.id);
+    if ('sent' in result && result.sent) sent++;
+    else if ('skipped' in result) skipped++;
+    else failed++;
+  }
+
+  return { processed: pending.length, sent, skipped, failed };
+}

@@ -1,8 +1,8 @@
 // CRON: Retention scan — daily at 2am
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequest } from '@/lib/cronAuth';
-import { enqueue } from '@/services/jobService';
 import { prisma } from '@/lib/db/client';
+import { runDailyRetentionScan } from '@/services/retentionService';
 
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
@@ -10,21 +10,28 @@ export async function GET(req: NextRequest) {
 
   const start = Date.now();
   try {
-    await enqueue('retention_scan', { trigger: 'daily_cron' }, {
-      priority: 'normal',
-      dedupeKey: 'cron:retention_scan',
-    });
+    const result = await runDailyRetentionScan();
 
     const duration = Date.now() - start;
     await prisma.cronLog.create({
-      data: { cronPath: '/api/cron/retention-scan', status: 'success', durationMs: duration, resultJson: { queued: true } },
+      data: {
+        cronPath: '/api/cron/retention-scan',
+        status: 'success',
+        durationMs: duration,
+        resultJson: result ?? {},
+      },
     }).catch(() => {});
 
-    return NextResponse.json({ data: { queued: true } });
+    return NextResponse.json({ data: { ok: true, result } });
   } catch (error: any) {
     const duration = Date.now() - start;
     await prisma.cronLog.create({
-      data: { cronPath: '/api/cron/retention-scan', status: 'error', durationMs: duration, errorText: error.message },
+      data: {
+        cronPath: '/api/cron/retention-scan',
+        status: 'error',
+        durationMs: duration,
+        errorText: error.message,
+      },
     }).catch(() => {});
 
     return NextResponse.json(

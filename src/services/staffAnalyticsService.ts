@@ -245,3 +245,37 @@ export async function adjustScore(
 
   return updated;
 }
+
+// ── Build Daily Snapshots (cron entry point) ─────────────────
+// Builds score snapshots for all active staff for yesterday
+export async function buildDailySnapshots(periodType = 'yesterday') {
+  const now = new Date();
+  let periodStart: Date;
+  let periodEnd: Date;
+
+  if (periodType === 'yesterday') {
+    periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else {
+    // Default: yesterday
+    periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+
+  // Get all active staff users
+  const staffUsers = await prisma.user.findMany({
+    where: { isActive: true, role: { in: ['receptionist', 'manager', 'admin'] } },
+    select: { id: true },
+  });
+
+  let built = 0;
+  let skipped = 0;
+
+  for (const user of staffUsers) {
+    const snapshot = await buildScoreSnapshot(user.id, periodStart, periodEnd);
+    if (snapshot) built++;
+    else skipped++;
+  }
+
+  return { staffCount: staffUsers.length, built, skipped, periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString() };
+}

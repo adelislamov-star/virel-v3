@@ -165,7 +165,7 @@ export default function LostRevenuePage() {
   }
 
   function fmtMoney(amount: number, currency: string) {
-    return `${currency === 'GBP' ? '\u00a3' : currency} ${amount.toFixed(2)}`;
+    return `${currency === 'GBP' ? '£' : currency} ${amount.toFixed(2)}`;
   }
 
   // ─── Render ──────────────────────────────────────────────
