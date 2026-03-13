@@ -44,7 +44,8 @@ model User {
   assignedBookings Booking[]  @relation("AssignedBookings")
   performanceSnapshots StaffPerformanceSnapshot[]
   scoreSnapshots       StaffScoreSnapshot[]
-  
+  createdPayments      Payment[]  @relation("CreatedPayments")
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -170,6 +171,7 @@ model Model {
   requestedOffers    AlternativeOffer[]  @relation("RequestedModel")
   offeredOffers      AlternativeOffer[]  @relation("OfferedModel")
   complaintPatterns  ReviewComplaintPattern[]
+  payments           Payment[]
 
   // Soft delete
   deletedAt       DateTime? @map("deleted_at")
@@ -427,6 +429,7 @@ model Client {
   mergeCandidatesAsDuplicate ClientMergeCandidate[] @relation("MergeDuplicate")
   retentionProfile  ClientRetentionProfile?
   retentionActions  RetentionAction[]
+  payments         Payment[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -706,28 +709,50 @@ model SLAPolicy {
 
 model Payment {
   id                String   @id @default(cuid())
-  bookingId         String
-  booking           Booking  @relation(fields: [bookingId], references: [id])
-  
-  provider          String   // stripe, revolut, custom
-  providerPaymentId String?
-  type              String   // deposit, full, refund
-  status            String   @default("pending") // pending, succeeded, failed, cancelled, refunded, disputed
 
+  // Links (all optional for manual payments)
+  clientId          String?
+  modelId           String?
+  bookingId         String?
+  createdById       String?
+
+  // Provider (legacy / Stripe)
+  provider          String?  // stripe, revolut, custom
+  providerPaymentId String?
+  stripePaymentId   String?
+  type              String?  // deposit, full, refund
+
+  // Core fields
   amount            Decimal  @db.Decimal(12,2)
   currency          String   @default("GBP")
+  method            String?  // cash, bank_transfer, card, crypto
+  status            String   @default("pending") // pending, received, refunded (manual) / succeeded, failed, cancelled, disputed (provider)
 
+  // Details
+  reference         String?
+  notes             String?  @db.Text
+
+  // Provider details
   failureReason     String?
   refundedAmount    Decimal? @db.Decimal(12,2)
   refundedAt        DateTime?
-  
   raw               Json?    // Full provider response
-  
+
+  receivedAt        DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  
+
+  // Relations
+  client            Client?  @relation(fields: [clientId], references: [id])
+  model             Model?   @relation(fields: [modelId], references: [id])
+  booking           Booking? @relation(fields: [bookingId], references: [id])
+  createdBy         User?    @relation("CreatedPayments", fields: [createdById], references: [id])
+
   @@unique([provider, providerPaymentId])
   @@index([bookingId])
+  @@index([clientId])
+  @@index([modelId])
+  @@index([status])
   @@map("payments")
 }
 
