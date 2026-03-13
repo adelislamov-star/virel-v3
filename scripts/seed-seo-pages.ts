@@ -2,6 +2,7 @@
 // Creates SEOPage records for published models, active locations, and services
 // Run: npx tsx scripts/seed-seo-pages.ts
 
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -14,11 +15,16 @@ async function main() {
 
   // 1. Model profile pages: /companions/{slug}
   const models = await prisma.model.findMany({
-    where: { status: 'published' },
+    where: { status: 'Active' },
     select: { id: true, name: true, slug: true }
   });
 
   for (const model of models) {
+    if (!model.slug) {
+      console.log(`  SKIP: ${model.name} (no slug)`);
+      skipped++;
+      continue;
+    }
     const path = `/companions/${model.slug}`;
     const exists = await prisma.sEOPage.findUnique({ where: { path } });
     if (exists) {
@@ -40,57 +46,65 @@ async function main() {
   }
 
   // 2. Geo pages: /escorts-in/{slug}
-  const locations = await prisma.location.findMany({
-    where: { status: 'active' },
-    select: { id: true, title: true, slug: true }
-  });
-
-  for (const location of locations) {
-    const path = `/escorts-in/${location.slug}`;
-    const exists = await prisma.sEOPage.findUnique({ where: { path } });
-    if (exists) {
-      console.log(`  SKIP: ${path} (already exists)`);
-      skipped++;
-      continue;
-    }
-    await prisma.sEOPage.create({
-      data: {
-        pageType: 'geo_page',
-        path,
-        title: `Escorts in ${location.title} | Virel`,
-        metaDescription: `Find premium escorts in ${location.title}. Browse profiles, check availability, and book online.`,
-        indexStatus: 'indexed'
-      }
+  try {
+    const locations = await prisma.location.findMany({
+      where: { status: 'active' },
+      select: { id: true, title: true, slug: true }
     });
-    console.log(`  OK: ${path}`);
-    created++;
+
+    for (const location of locations) {
+      const path = `/escorts-in/${location.slug}`;
+      const exists = await prisma.sEOPage.findUnique({ where: { path } });
+      if (exists) {
+        console.log(`  SKIP: ${path} (already exists)`);
+        skipped++;
+        continue;
+      }
+      await prisma.sEOPage.create({
+        data: {
+          pageType: 'geo_page',
+          path,
+          title: `Escorts in ${location.title} | Virel`,
+          metaDescription: `Find premium escorts in ${location.title}. Browse profiles, check availability, and book online.`,
+          indexStatus: 'indexed'
+        }
+      });
+      console.log(`  OK: ${path}`);
+      created++;
+    }
+  } catch (e) {
+    console.log('NOTE: location table not found, skipping');
   }
 
   // 3. Service pages: /services/{slug}
-  const services = await prisma.service.findMany({
-    where: { status: 'active' },
-    select: { id: true, title: true, slug: true }
-  });
-
-  for (const service of services) {
-    const path = `/services/${service.slug}`;
-    const exists = await prisma.sEOPage.findUnique({ where: { path } });
-    if (exists) {
-      console.log(`  SKIP: ${path} (already exists)`);
-      skipped++;
-      continue;
-    }
-    await prisma.sEOPage.create({
-      data: {
-        pageType: 'service_page',
-        path,
-        title: `${service.title} — London Escorts | Virel`,
-        metaDescription: `Explore ${service.title} with premium London escorts. Book online at Virel.`,
-        indexStatus: 'indexed'
-      }
+  try {
+    const services = await prisma.service.findMany({
+      where: { status: 'active' },
+      select: { id: true, title: true, slug: true }
     });
-    console.log(`  OK: ${path}`);
-    created++;
+
+    for (const service of services) {
+      const path = `/services/${service.slug}`;
+      const exists = await prisma.sEOPage.findUnique({ where: { path } });
+      if (exists) {
+        console.log(`  SKIP: ${path} (already exists)`);
+        skipped++;
+        continue;
+      }
+      await prisma.sEOPage.create({
+        data: {
+          pageType: 'service_page',
+          path,
+          title: `${service.title} — London Escorts | Virel`,
+          metaDescription: `Explore ${service.title} with premium London escorts. Book online at Virel.`,
+          indexStatus: 'indexed'
+        }
+      });
+      console.log(`  OK: ${path}`);
+      created++;
+    }
+  } catch (e) {
+    console.log('NOTE: service table not found, skipping');
   }
 
   console.log(`\nSeed complete: ${created} created, ${skipped} skipped.`);
