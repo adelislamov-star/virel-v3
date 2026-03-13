@@ -33,7 +33,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const result = { resetCount: stalledJobs.length };
+    // Clean up audit logs older than 90 days
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const auditCleanup = await prisma.auditLog.deleteMany({
+      where: { createdAt: { lt: ninetyDaysAgo } },
+    });
+
+    const result = { resetCount: stalledJobs.length, auditPurged: auditCleanup.count };
     const duration = Date.now() - start;
     await prisma.cronLog.create({
       data: {

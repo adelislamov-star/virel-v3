@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import bcrypt from 'bcryptjs';
 import { loginRatelimit } from '@/lib/ratelimit';
+import { logAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -58,6 +59,15 @@ export async function POST(request: NextRequest) {
       user: { id: user.id, email: user.email, name: user.name, role: user.roles?.[0]?.role?.code }
     });
     
+    logAudit({
+      actorUserId: user.id,
+      action: 'auth.login',
+      entityType: 'auth',
+      entityId: user.id,
+      after: { email: user.email, role: user.roles?.[0]?.role?.code },
+      req: request,
+    });
+
     response.cookies.set('virel-token', user.id, {
       httpOnly: true,
       secure: true,

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
 import { ensureExtensionTables } from '@/lib/db/ensure-tables';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(
   request: NextRequest,
@@ -262,6 +263,14 @@ export async function PATCH(
       console.error('[model-update] Learning comparison failed (non-fatal):', e);
     }
 
+    logAudit({
+      action: 'model.updated',
+      entityType: 'model',
+      entityId: params.id,
+      after: { sections: Object.keys(body) },
+      req: request,
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Model updated'
@@ -314,6 +323,13 @@ export async function DELETE(
         try { await deleteMedia(m.storageKey); } catch {}
       }
     }
+
+    logAudit({
+      action: 'model.deleted',
+      entityType: 'model',
+      entityId: id,
+      req: _request,
+    });
 
     return NextResponse.json({ success: true, message: 'Model deleted' });
 

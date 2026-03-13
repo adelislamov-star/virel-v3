@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { requirePermission } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -114,6 +115,15 @@ export async function POST(request: NextRequest) {
         booking: { select: { id: true, shortId: true } },
         createdBy: { select: { id: true, name: true } },
       },
+    });
+
+    logAudit({
+      actorUserId: actorResult.userId,
+      action: 'payment.created',
+      entityType: 'payment',
+      entityId: payment.id,
+      after: { amount, method, status: status || 'pending', clientId, modelId },
+      req: request,
     });
 
     return NextResponse.json({ success: true, data: payment }, { status: 201 });

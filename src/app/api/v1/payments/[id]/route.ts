@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { requirePermission } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -80,6 +81,16 @@ export async function PUT(
       },
     });
 
+    logAudit({
+      actorUserId: actorResult.userId,
+      action: 'payment.updated',
+      entityType: 'payment',
+      entityId: params.id,
+      before: { status: existing.status, amount: existing.amount },
+      after: updateData,
+      req: request,
+    });
+
     return NextResponse.json({ success: true, data: payment });
   } catch (error: any) {
     return NextResponse.json(
@@ -107,6 +118,15 @@ export async function DELETE(
     }
 
     await prisma.payment.delete({ where: { id: params.id } });
+
+    logAudit({
+      actorUserId: actorResult.userId,
+      action: 'payment.deleted',
+      entityType: 'payment',
+      entityId: params.id,
+      before: { amount: existing.amount, status: existing.status, method: existing.method },
+      req: request,
+    });
 
     return NextResponse.json({ success: true, data: { deleted: true } });
   } catch (error: any) {

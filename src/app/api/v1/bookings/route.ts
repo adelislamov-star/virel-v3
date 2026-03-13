@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const prisma = new PrismaClient();
 
@@ -140,6 +141,14 @@ export async function POST(request: NextRequest) {
       });
     }
     
+    logAudit({
+      action: 'booking.created',
+      entityType: 'booking',
+      entityId: booking.id,
+      after: { clientId, modelId: data.modelId, status: booking.status, priceTotal: data.priceTotal },
+      req: request,
+    });
+
     return NextResponse.json({
       success: true,
       data: { booking },
