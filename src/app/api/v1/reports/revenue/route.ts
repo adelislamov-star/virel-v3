@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       prisma.booking.count({ where: bookingWhere })
     ]);
 
-    const totalRevenue = revenueAgg._sum.amount || 0;
+    const totalRevenue = revenueAgg._sum.amount?.toNumber() ?? 0;
     const commission = totalRevenue * 0.3; // 30% commission
     const totalPayout = totalRevenue - commission;
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         totalCommission: commission,
         totalPayout,
         bookingCount,
-        avgBookingValue: bookingAgg._avg.priceTotal || 0
+        avgBookingValue: bookingAgg._avg.priceTotal?.toNumber() ?? 0
       }
     });
   } catch (error: unknown) {

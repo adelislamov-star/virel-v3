@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
         data: {
           status: 'queued',
           lockedAt: null,
-          lockedBy: null,
+          lockToken: null,
+          workerName: null,
         },
       });
     }

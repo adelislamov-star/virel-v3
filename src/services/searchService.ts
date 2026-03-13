@@ -34,8 +34,8 @@ export async function globalSearch(query: string, _actorId: string): Promise<Sea
     results.push({
       entityType: 'client',
       entityId: c.id,
-      displayText: c.fullName,
-      secondaryText: c.email || '',
+      displayText: c.fullName ?? '',
+      secondaryText: c.email ?? '',
       route: `/admin/clients/${c.id}`,
     });
   }
@@ -75,7 +75,7 @@ export async function globalSearch(query: string, _actorId: string): Promise<Sea
       entityType: 'model',
       entityId: m.id,
       displayText: m.name,
-      secondaryText: m.publicCode,
+      secondaryText: m.publicCode ?? '',
       route: `/admin/models/${m.id}`,
     });
   }

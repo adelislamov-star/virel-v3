@@ -73,15 +73,16 @@ export async function calculateDynamicPrice(ctx: PricingContext): Promise<Pricin
 
     // Apply action
     const priceBefore = price;
+    const actionValue = (rule.actionValue as any).toNumber ? (rule.actionValue as any).toNumber() : Number(rule.actionValue);
     switch (rule.actionType) {
       case 'multiply':
-        price *= rule.actionValue;
+        price *= actionValue;
         break;
       case 'add':
-        price += rule.actionValue;
+        price += actionValue;
         break;
       case 'set_minimum':
-        if (price < rule.actionValue) price = rule.actionValue;
+        if (price < actionValue) price = actionValue;
         break;
     }
 
@@ -89,7 +90,7 @@ export async function calculateDynamicPrice(ctx: PricingContext): Promise<Pricin
     adjustments.push({
       ruleName: rule.name,
       type: rule.actionType,
-      value: rule.actionValue,
+      value: actionValue,
       effect
     });
 

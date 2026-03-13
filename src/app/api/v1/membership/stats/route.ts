@@ -14,7 +14,7 @@ export async function GET() {
     });
 
     // MRR = sum of plan.priceMonthly for active memberships
-    const mrr = activeMemberships.reduce((sum, m) => sum + m.plan.priceMonthly, 0);
+    const mrr = activeMemberships.reduce((sum, m) => sum + m.plan.priceMonthly.toNumber(), 0);
     const activeCount = activeMemberships.length;
     const arpu = activeCount > 0 ? mrr / activeCount : 0;
 

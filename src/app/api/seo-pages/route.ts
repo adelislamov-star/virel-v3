@@ -2,18 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/client'
 
-// Validation schema
+// Validation schema — mapped to SEOPage model fields
 const seoPageSchema = z.object({
-  type: z.enum(['GEO', 'SERVICE', 'ATTRIBUTE']),
-  slug: z.string().min(3).max(100),
-  url: z.string().startsWith('/'),
+  pageType: z.string(), // model_profile, geo_page, blog_post, service_page
+  path: z.string().startsWith('/'),
   title: z.string().min(10).max(60),
-  metaDesc: z.string().min(50).max(160),
-  h1: z.string().min(5).max(70),
-  content: z.string().min(800), // Min 800 words for SEO
-  faqJson: z.any().optional(),
-  isIndexable: z.boolean().default(true),
-  canonicalOverride: z.string().optional(),
+  metaDescription: z.string().min(50).max(160),
+  indexStatus: z.enum(['indexed', 'not_indexed', 'blocked']).default('indexed'),
+  canonicalUrl: z.string().optional(),
+  schemaMarkup: z.any().optional(),
 })
 
 // GET - List all SEO pages
@@ -24,10 +21,10 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
     const isPublished = searchParams.get('published')
     
-    const pages = await prisma.sEOWhitelist.findMany({
+    const pages = await prisma.sEOPage.findMany({
       where: {
-        ...(type && { type: type as any }),
-        ...(isPublished && { isPublished: isPublished === 'true' }),
+        ...(type && { pageType: type }),
+        ...(isPublished && { indexStatus: isPublished === 'true' ? 'indexed' : 'not_indexed' }),
       },
       orderBy: {
         createdAt: 'desc',
@@ -53,20 +50,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = seoPageSchema.parse(body)
     
-    // Check if slug already exists
-    const existing = await prisma.sEOWhitelist.findUnique({
-      where: { slug: validatedData.slug },
+    // Check if path already exists
+    const existing = await prisma.sEOPage.findUnique({
+      where: { path: validatedData.path },
     })
     
     if (existing) {
       return NextResponse.json(
-        { error: 'Slug already exists' },
+        { error: 'Path already exists' },
         { status: 400 }
       )
     }
     
     // Create page
-    const page = await prisma.sEOWhitelist.create({
+    const page = await prisma.sEOPage.create({
       data: validatedData,
     })
     
@@ -74,9 +71,9 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         action: 'seo_page_created',
-        entityType: 'SEOWhitelist',
+        entityType: 'SEOPage',
         entityId: page.id,
-        changes: { created: validatedData },
+        after: { created: validatedData },
       },
     })
     
@@ -113,7 +110,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Get existing page
-    const existing = await prisma.sEOWhitelist.findUnique({
+    const existing = await prisma.sEOPage.findUnique({
       where: { id },
     })
     
@@ -125,7 +122,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Update page
-    const updated = await prisma.sEOWhitelist.update({
+    const updated = await prisma.sEOPage.update({
       where: { id },
       data: updateData,
     })
@@ -134,12 +131,10 @@ export async function PUT(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         action: 'seo_page_updated',
-        entityType: 'SEOWhitelist',
+        entityType: 'SEOPage',
         entityId: id,
-        changes: {
-          before: existing,
-          after: updated,
-        },
+        before: existing,
+        after: updated,
       },
     })
     
@@ -169,12 +164,11 @@ export async function PATCH(request: NextRequest) {
     }
     
     const isPublished = action === 'publish'
-    
-    const updated = await prisma.sEOWhitelist.update({
+
+    const updated = await prisma.sEOPage.update({
       where: { id },
       data: {
-        isPublished,
-        publishedAt: isPublished ? new Date() : null,
+        indexStatus: isPublished ? 'indexed' : 'not_indexed',
       },
     })
     
@@ -182,7 +176,7 @@ export async function PATCH(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         action: isPublished ? 'seo_page_published' : 'seo_page_unpublished',
-        entityType: 'SEOWhitelist',
+        entityType: 'SEOPage',
         entityId: id,
       },
     })
@@ -211,7 +205,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
-    await prisma.sEOWhitelist.delete({
+    await prisma.sEOPage.delete({
       where: { id },
     })
     
@@ -219,7 +213,7 @@ export async function DELETE(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         action: 'seo_page_deleted',
-        entityType: 'SEOWhitelist',
+        entityType: 'SEOPage',
         entityId: id,
       },
     })

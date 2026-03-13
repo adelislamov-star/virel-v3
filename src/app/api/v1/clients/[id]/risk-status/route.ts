@@ -44,7 +44,7 @@ export async function PATCH(
         clientId: params.id,
         previousStatus,
         newStatus: data.riskStatus,
-        changedBy: actorId,
+        createdBy: actorId,
         reason: data.reasonCode,
       },
     });

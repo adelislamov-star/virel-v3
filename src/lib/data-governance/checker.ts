@@ -7,7 +7,7 @@ export async function runDataQualityChecks(): Promise<{ newChecks: number; exist
 
   const models = await prisma.model.findMany({
     where: { status: 'published' },
-    include: { photos: true }
+    include: { media: true }
   });
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -49,7 +49,7 @@ export async function runDataQualityChecks(): Promise<{ newChecks: number; exist
     }
 
     // 3. Missing Photos — fewer than 3 public photos
-    const publicPhotos = model.photos.filter((p: any) => p.isPublic !== false);
+    const publicPhotos = model.media.filter((p: any) => p.isPublic !== false);
     if (publicPhotos.length < 3) {
       const created = await upsertCheck(
         'missing_photos',
@@ -70,8 +70,8 @@ export async function runDataQualityChecks(): Promise<{ newChecks: number; exist
     const futureSlots = await prisma.availabilitySlot.count({
       where: {
         modelId: model.id,
-        startTime: { gte: new Date() },
-        endTime: { lte: sevenDaysFromNow }
+        startAt: { gte: new Date() },
+        endAt: { lte: sevenDaysFromNow }
       }
     });
 

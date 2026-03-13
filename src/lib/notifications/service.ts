@@ -53,7 +53,7 @@ export class NotificationService {
               template: data.template,
               channel,
               recipient: data.recipient.email || data.recipient.phone || data.recipient.telegramChatId,
-              result
+              result: result as any
             }
           }
         });
@@ -83,9 +83,9 @@ export class NotificationService {
     const data: NotificationData = {
       template: 'booking_confirmed',
       recipient: {
-        email: booking.client.email || undefined,
-        phone: booking.client.phone || undefined,
-        name: booking.client.fullName
+        email: booking.client.email ?? undefined,
+        phone: booking.client.phone ?? undefined,
+        name: booking.client.fullName ?? undefined
       },
       variables: {
         clientName: booking.client.fullName,
@@ -122,7 +122,7 @@ export class NotificationService {
       if (operator.telegramChatId) {
         await this.send({
           ...data,
-          recipient: { telegramChatId: operator.telegramChatId }
+          recipient: { telegramChatId: operator.telegramChatId ?? undefined }
         }, ['telegram']);
       }
     }
@@ -146,13 +146,13 @@ export class NotificationService {
       }
     });
     
-    if (!payment || !payment.booking.client) return;
+    if (!payment || !payment.booking || !payment.booking.client) return;
     
     const data: NotificationData = {
       template: 'payment_received',
       recipient: {
-        email: payment.booking.client.email || undefined,
-        name: payment.booking.client.fullName
+        email: payment.booking.client.email ?? undefined,
+        name: payment.booking.client.fullName ?? undefined
       },
       variables: {
         clientName: payment.booking.client.fullName,

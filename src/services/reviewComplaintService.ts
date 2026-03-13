@@ -32,20 +32,20 @@ export async function rebuildComplaintPatterns(modelId: string) {
       rating: { lte: 3 },
       createdAt: { gte: periodStart, lte: periodEnd },
     },
-    select: { comment: true },
+    select: { text: true },
   });
 
   // Extract keywords
   const freqMap = new Map<string, number>();
 
   for (const review of reviews) {
-    if (!review.comment) continue;
+    if (!review.text) continue;
 
-    const words = review.comment
+    const words = review.text
       .toLowerCase()
       .replace(/[^a-z\s]/g, '')
       .split(/\s+/)
-      .filter(w => w.length > 2 && !STOPWORDS.has(w));
+      .filter((w: string) => w.length > 2 && !STOPWORDS.has(w));
 
     const unique = new Set(words); // count per review, not per occurrence
     for (const word of unique) {
@@ -68,7 +68,7 @@ export async function rebuildComplaintPatterns(modelId: string) {
   const patterns = [];
   for (const [keyword, count] of significantKeywords) {
     const pattern = await prisma.reviewComplaintPattern.create({
-      data: { modelId, keyword, count, periodStart, periodEnd },
+      data: { modelId, keyword: keyword as string, count: count as number, periodStart, periodEnd },
     });
     patterns.push(pattern);
   }

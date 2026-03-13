@@ -89,7 +89,7 @@ export async function requirePermission(
 
   const actor = result;
   const hasPermission = actor.roles.some((role) =>
-    RBAC.hasPermission(role, permission),
+    RBAC.hasPermission([role], permission),
   );
   if (!hasPermission) {
     return NextResponse.json(

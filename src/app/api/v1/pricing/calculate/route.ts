@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
           modelId,
           basePrice: parseFloat(basePrice),
           finalPrice: result.finalPrice ?? parseFloat(basePrice),
-          decisionSource: result.appliedRules?.length > 0 ? 'rule_engine' : 'fallback',
-          appliedRulesJson: result.appliedRules || [],
+          decisionSource: result.adjustments?.length > 0 ? 'rule_engine' : 'fallback',
+          appliedRulesJson: result.adjustments || [],
           marginImpact: (result.finalPrice ?? parseFloat(basePrice)) - parseFloat(basePrice),
         },
       });

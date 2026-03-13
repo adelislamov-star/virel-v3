@@ -21,18 +21,19 @@ export async function POST(
       }, { status: 404 });
     }
     
-    if (!booking.depositRequired || booking.depositRequired <= 0) {
+    const depositRequiredNum = booking.depositRequired ? booking.depositRequired.toNumber() : 0;
+    if (!depositRequiredNum || depositRequiredNum <= 0) {
       return NextResponse.json({
         success: false,
         error: { code: 'NO_DEPOSIT_REQUIRED', message: 'No deposit required' }
       }, { status: 400 });
     }
-    
+
     const paymentIntent = await createDepositIntent(
       booking.id,
-      booking.depositRequired
+      depositRequiredNum
     );
-    
+
     const payment = await prisma.payment.create({
       data: {
         bookingId: booking.id,
@@ -40,12 +41,12 @@ export async function POST(
         providerPaymentId: paymentIntent.id,
         type: 'deposit',
         status: 'pending',
-        amount: booking.depositRequired,
+        amount: depositRequiredNum,
         currency: booking.currency,
         raw: paymentIntent as any
       }
     });
-    
+
     await prisma.domainEvent.create({
       data: {
         eventType: 'payment.created',
@@ -54,13 +55,13 @@ export async function POST(
         payload: { payment, booking }
       }
     });
-    
+
     return NextResponse.json({
       success: true,
       data: {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        amount: booking.depositRequired,
+        amount: depositRequiredNum,
         currency: booking.currency
       }
     });

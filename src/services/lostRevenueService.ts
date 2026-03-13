@@ -239,14 +239,14 @@ export async function getSummary() {
     // By type
     if (!byType[e.type]) byType[e.type] = { count: 0, total: 0 };
     byType[e.type].count++;
-    byType[e.type].total += e.amount;
+    byType[e.type].total += e.amount.toNumber();
 
     // By responsible role
     if (!byRole[e.responsibleRole]) byRole[e.responsibleRole] = { count: 0, total: 0 };
     byRole[e.responsibleRole].count++;
-    byRole[e.responsibleRole].total += e.amount;
+    byRole[e.responsibleRole].total += e.amount.toNumber();
 
-    grandTotal += e.amount;
+    grandTotal += e.amount.toNumber();
   }
 
   return {

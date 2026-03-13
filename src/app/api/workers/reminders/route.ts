@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         action: 'worker.reminders',
         entityType: 'system',
         entityId: 'cron',
-        newValues: results as any,
+        after: results as any,
       },
     });
 

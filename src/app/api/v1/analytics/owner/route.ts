@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       where: { status: 'succeeded', createdAt: { gte: periodStart } },
       select: { amount: true }
     });
-    const totalRevenue = payments.reduce((s, p) => s + p.amount, 0);
+    const totalRevenue = payments.reduce((s, p) => s + p.amount.toNumber(), 0);
 
     const payouts = await prisma.payment.findMany({
       where: { status: 'succeeded', createdAt: { gte: periodStart } },
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       _avg: { rating: true },
       where: { status: 'approved' }
     });
-    const avgModelRating = ratingAgg._avg.rating || 0;
+    const avgModelRating = ratingAgg._avg.rating ?? 0;
 
     // Risk distribution
     const greenModels = await prisma.model.count({ where: { status: 'published', modelRiskIndex: 'green' } });
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
       where: { status: 'active' },
       include: { plan: true }
     });
-    const mrr = activeMemberships.reduce((s, m) => s + m.plan.priceMonthly, 0);
+    const mrr = activeMemberships.reduce((s, m) => s + m.plan.priceMonthly.toNumber(), 0);
     const activeSubCount = activeMemberships.length;
     const arpu = activeSubCount > 0 ? mrr / activeSubCount : 0;
 
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
       _avg: { dataCompletenessScore: true },
       where: { status: 'published' }
     });
-    const avgCompletenessScore = completenessAgg._avg.dataCompletenessScore || 0;
+    const avgCompletenessScore = completenessAgg._avg.dataCompletenessScore ?? 0;
 
     return NextResponse.json({
       data: {

@@ -49,11 +49,12 @@ export async function createSignal(
 
   await prisma.auditLog.create({
     data: {
+      actorType: 'user',
+      actorUserId: actorId,
       entityType: 'fraud_signal',
       entityId: signal.id,
       action: 'fraud.signal.created',
-      performedBy: actorId,
-      newValue: { signalType: params.signalType, riskScoreImpact: params.riskScoreImpact, clientId: params.clientId },
+      after: { signalType: params.signalType, riskScoreImpact: params.riskScoreImpact, clientId: params.clientId },
     },
   });
 
@@ -132,19 +133,20 @@ export async function changeClientRiskStatus(
         clientId,
         previousStatus,
         newStatus: nextStatus,
-        changedBy: actorId,
-        reasonCode,
+        createdBy: actorId,
+        reason: reasonCode,
       },
     });
 
     await tx.auditLog.create({
       data: {
+        actorType: 'user',
+        actorUserId: actorId,
         entityType: 'client',
         entityId: clientId,
         action: 'fraud.risk_status.changed',
-        performedBy: actorId,
-        oldValue: { riskStatus: previousStatus },
-        newValue: { riskStatus: nextStatus, reasonCode },
+        before: { riskStatus: previousStatus },
+        after: { riskStatus: nextStatus, reasonCode },
       },
     });
   });
@@ -178,12 +180,13 @@ export async function reviewSignal(
 
   await prisma.auditLog.create({
     data: {
+      actorType: 'user',
+      actorUserId: actorId,
       entityType: 'fraud_signal',
       entityId: signalId,
       action: 'fraud.signal.reviewed',
-      performedBy: actorId,
-      oldValue: { status: signal.status },
-      newValue: { status, reviewedBy: actorId },
+      before: { status: signal.status },
+      after: { status, reviewedBy: actorId },
     },
   });
 

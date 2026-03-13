@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       take: 100
     });
 
-    const totalLost = entries.reduce((s, e) => s + e.amount, 0);
+    const totalLost = entries.reduce((s, e) => s + e.amount.toNumber(), 0);
 
     // Group by type
     const typeMap: Record<string, { count: number; amount: number }> = {};
@@ -28,13 +28,13 @@ export async function GET(request: NextRequest) {
       // By type
       if (!typeMap[entry.type]) typeMap[entry.type] = { count: 0, amount: 0 };
       typeMap[entry.type].count++;
-      typeMap[entry.type].amount += entry.amount;
+      typeMap[entry.type].amount += entry.amount.toNumber();
 
       // By responsible role
       const role = entry.responsibleRole || 'unknown';
       if (!roleMap[role]) roleMap[role] = { count: 0, amount: 0 };
       roleMap[role].count++;
-      roleMap[role].amount += entry.amount;
+      roleMap[role].amount += entry.amount.toNumber();
     }
 
     const byType = Object.entries(typeMap).map(([type, data]) => ({ type, ...data }));
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         entries: entries.map(e => ({
           id: e.id,
           type: e.type,
-          amount: e.amount,
+          amount: e.amount.toNumber(),
           rootCause: e.rootCause,
           responsibleRole: e.responsibleRole,
           status: e.status,

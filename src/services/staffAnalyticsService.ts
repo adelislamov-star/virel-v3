@@ -18,7 +18,7 @@ export async function buildPerformanceSnapshot(
   // Count bookings completed
   const bookingsCompleted = await prisma.booking.count({
     where: {
-      assignedToId: userId,
+      assignedTo: userId,
       status: 'completed',
       updatedAt: { gte: periodStart, lte: periodEnd },
     },
@@ -27,7 +27,7 @@ export async function buildPerformanceSnapshot(
   // Count bookings cancelled
   const bookingsCancelled = await prisma.booking.count({
     where: {
-      assignedToId: userId,
+      assignedTo: userId,
       status: 'cancelled',
       updatedAt: { gte: periodStart, lte: periodEnd },
     },
@@ -36,7 +36,7 @@ export async function buildPerformanceSnapshot(
   // Count inquiries handled (assigned to user in period)
   const inquiriesHandled = await prisma.inquiry.count({
     where: {
-      assignedToId: userId,
+      assignedTo: userId,
       createdAt: { gte: periodStart, lte: periodEnd },
     },
   });
@@ -44,7 +44,7 @@ export async function buildPerformanceSnapshot(
   // Count inquiries converted
   const inquiriesConverted = await prisma.inquiry.count({
     where: {
-      assignedToId: userId,
+      assignedTo: userId,
       status: 'converted',
       updatedAt: { gte: periodStart, lte: periodEnd },
     },
@@ -58,24 +58,24 @@ export async function buildPerformanceSnapshot(
   // Revenue generated (sum of completed bookings)
   const revenueAgg = await prisma.booking.aggregate({
     where: {
-      assignedToId: userId,
+      assignedTo: userId,
       status: 'completed',
       updatedAt: { gte: periodStart, lte: periodEnd },
     },
     _sum: { priceTotal: true },
   });
-  const revenueGenerated = revenueAgg._sum.priceTotal || 0;
+  const revenueGenerated = revenueAgg._sum.priceTotal?.toNumber() ?? 0;
 
   // Lost revenue (cancelled bookings)
   const lostAgg = await prisma.booking.aggregate({
     where: {
-      assignedToId: userId,
+      assignedTo: userId,
       status: 'cancelled',
       updatedAt: { gte: periodStart, lte: periodEnd },
     },
     _sum: { priceTotal: true },
   });
-  const lostRevenueAmount = lostAgg._sum.priceTotal || 0;
+  const lostRevenueAmount = lostAgg._sum.priceTotal?.toNumber() ?? 0;
 
   // Cancellation rate
   const totalBookings = bookingsCompleted + bookingsCancelled;
@@ -87,7 +87,7 @@ export async function buildPerformanceSnapshot(
   const complaintsCount = await prisma.auditLog.count({
     where: {
       entityType: 'complaint',
-      performedBy: userId,
+      actorUserId: userId,
       createdAt: { gte: periodStart, lte: periodEnd },
     },
   });
@@ -235,11 +235,12 @@ export async function adjustScore(
   // Audit log
   await prisma.auditLog.create({
     data: {
+      actorType: 'user',
+      actorUserId: adjustedBy,
       entityType: 'staff_score',
       entityId: snapshotId,
       action: 'staff_score.adjusted',
-      performedBy: adjustedBy,
-      newValue: { adjustment, reason, newTotal: updated.totalScore },
+      after: { adjustment, reason, newTotal: updated.totalScore },
     },
   });
 
@@ -264,7 +265,7 @@ export async function buildDailySnapshots(periodType = 'yesterday') {
 
   // Get all active staff users
   const staffUsers = await prisma.user.findMany({
-    where: { isActive: true, role: { in: ['receptionist', 'manager', 'admin'] } },
+    where: { status: 'active' },
     select: { id: true },
   });
 

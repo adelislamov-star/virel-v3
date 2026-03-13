@@ -41,13 +41,13 @@ export async function GET(request: NextRequest) {
 
     // Revenue calculations
     const completedBookings = bookings.filter(b => b.status === 'completed');
-    const totalRevenue = completedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    const totalRevenue = completedBookings.reduce((sum, b) => sum + (b.priceTotal ? b.priceTotal.toNumber() : 0), 0);
 
     const thisMonthBookings = completedBookings.filter(b => b.createdAt >= thisMonthStart);
-    const thisMonthRevenue = thisMonthBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    const thisMonthRevenue = thisMonthBookings.reduce((sum, b) => sum + (b.priceTotal ? b.priceTotal.toNumber() : 0), 0);
 
     const lastMonthBookings = completedBookings.filter(b => b.createdAt >= lastMonthStart! && b.createdAt <= lastMonthEnd!);
-    const lastMonthRevenue = lastMonthBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    const lastMonthRevenue = lastMonthBookings.reduce((sum, b) => sum + (b.priceTotal ? b.priceTotal.toNumber() : 0), 0);
 
     const growth = lastMonthRevenue > 0
       ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
           modelRevenue[b.modelId] = { name: b.model.name, bookings: 0, revenue: 0 };
         }
         modelRevenue[b.modelId].bookings++;
-        modelRevenue[b.modelId].revenue += b.totalAmount || 0;
+        modelRevenue[b.modelId].revenue += b.priceTotal ? b.priceTotal.toNumber() : 0;
       }
     });
 

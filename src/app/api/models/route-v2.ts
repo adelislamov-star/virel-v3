@@ -35,16 +35,16 @@ function generateSlug(name: string, existingSlugs: string[]): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-  
+
   let slug = baseSlug
   let counter = 1
-  
+
   // Ensure uniqueness
   while (existingSlugs.includes(slug)) {
     slug = `${baseSlug}-${counter}`
     counter++
   }
-  
+
   return slug
 }
 
@@ -52,36 +52,26 @@ function generateSlug(name: string, existingSlugs: string[]): string {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     const status = searchParams.get('status')
-    const featured = searchParams.get('featured')
     const location = searchParams.get('location')
-    const ageMin = searchParams.get('age_min')
-    const ageMax = searchParams.get('age_max')
     const hairColor = searchParams.get('hair')
     const nationality = searchParams.get('nationality')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
-    
+
     const where: any = {}
-    
+
     if (status) where.status = status
-    if (featured) where.featured = featured === 'true'
     if (location) where.location = { has: location }
     if (hairColor) where.hairColor = hairColor
     if (nationality) where.nationality = nationality
-    if (ageMin || ageMax) {
-      where.age = {}
-      if (ageMin) where.age.gte = parseInt(ageMin)
-      if (ageMax) where.age.lte = parseInt(ageMax)
-    }
-    
+
     const [models, total] = await Promise.all([
       prisma.model.findMany({
         where,
         orderBy: [
-          { featured: 'desc' },
-          { priority: 'desc' },
+          { ratingInternal: 'desc' },
           { createdAt: 'desc' },
         ],
         take: limit,
@@ -89,14 +79,14 @@ export async function GET(request: NextRequest) {
       }),
       prisma.model.count({ where }),
     ])
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       models,
       total,
       limit,
       offset,
     })
-    
+
   } catch (error) {
     console.error('Models fetch error:', error)
     return NextResponse.json(
@@ -111,59 +101,56 @@ export async function POST(request: NextRequest) {
   try {
     // TODO: Add authentication check
     // if (!isAdmin(request)) return unauthorized
-    
+
     const body = await request.json()
     const validatedData = modelSchema.parse(body)
-    
+
     // Get existing slugs
     const existingModels = await prisma.model.findMany({
       select: { slug: true },
     })
     const existingSlugs = existingModels.map(m => m.slug)
-    
+
     // Generate unique slug
     const slug = generateSlug(validatedData.name, existingSlugs)
-    
-    // Auto-generate meta if not provided
-    const metaTitle = validatedData.metaTitle || 
-      `${validatedData.name} – ${validatedData.location[0]} Companion | Virel London`
-    
+
+    // Auto-generate meta description if not provided
     const metaDescription = validatedData.metaDescription ||
       `Meet ${validatedData.name}, ${validatedData.age} year old ${validatedData.nationality} companion in ${validatedData.location.join(', ')}. Verified, sophisticated, discreet.`
-    
-    // Create model
+
+    // Create model — only pass fields that exist on Model schema
     const model = await prisma.model.create({
       data: {
-        ...validatedData,
+        name: validatedData.name,
+        publicCode: slug.toUpperCase(),
         slug,
-        metaTitle,
-        metaDescription,
-        status: 'DRAFT',
+        notesInternal: validatedData.description ?? null,
+        status: 'draft',
       },
     })
-    
+
     // Log audit
     await prisma.auditLog.create({
       data: {
         action: 'model_created',
         entityType: 'Model',
         entityId: model.id,
-        changes: { created: model },
+        after: { created: model },
       },
     })
-    
+
     return NextResponse.json({ model }, { status: 201 })
-    
+
   } catch (error) {
     console.error('Model creation error:', error)
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
     }
-    
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -176,73 +163,71 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const { id, slug: newSlug, ...updateData } = body
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'ID is required' },
         { status: 400 }
       )
     }
-    
+
     // Get existing model
     const existing = await prisma.model.findUnique({
       where: { id },
     })
-    
+
     if (!existing) {
       return NextResponse.json(
         { error: 'Model not found' },
         { status: 404 }
       )
     }
-    
-    // Handle slug change (create redirect)
+
+    // Handle slug change
     if (newSlug && newSlug !== existing.slug) {
       // Check if new slug is available
       const slugTaken = await prisma.model.findUnique({
         where: { slug: newSlug },
       })
-      
+
       if (slugTaken) {
         return NextResponse.json(
           { error: 'Slug already taken' },
           { status: 400 }
         )
       }
-      
-      // Create 301 redirect
-      await prisma.redirect.create({
-        data: {
-          fromPath: `/companions/${existing.slug}`,
-          toPath: `/companions/${newSlug}`,
-          statusCode: 301,
-        },
-      })
-      
+
+      // TODO: prisma.redirect is not available — handle redirects externally
+      // await prisma.redirect.create({
+      //   data: {
+      //     fromPath: `/companions/${existing.slug}`,
+      //     toPath: `/companions/${newSlug}`,
+      //     statusCode: 301,
+      //   },
+      // })
+
       updateData.slug = newSlug
     }
-    
+
     // Update model
     const updated = await prisma.model.update({
       where: { id },
       data: updateData,
     })
-    
+
     // Log audit
     await prisma.auditLog.create({
       data: {
         action: 'model_updated',
         entityType: 'Model',
         entityId: id,
-        changes: {
-          before: existing,
-          after: updated,
-        },
+        before: existing as any,
+        after: updated as any,
       },
     })
-    
+
     return NextResponse.json({ model: updated })
-    
+
   } catch (error) {
     console.error('Model update error:', error)
     return NextResponse.json(
@@ -258,38 +243,37 @@ export async function PATCH(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     const action = searchParams.get('action')
-    
+
     if (!id || !action) {
       return NextResponse.json(
         { error: 'ID and action are required' },
         { status: 400 }
       )
     }
-    
+
     const statusMap: any = {
       'publish': 'ACTIVE',
       'archive': 'ARCHIVED',
       'holiday': 'ON_HOLIDAY',
       'draft': 'DRAFT',
     }
-    
+
     const newStatus = statusMap[action]
-    
+
     if (!newStatus) {
       return NextResponse.json(
         { error: 'Invalid action' },
         { status: 400 }
       )
     }
-    
+
     const updated = await prisma.model.update({
       where: { id },
       data: {
         status: newStatus,
-        publishedAt: newStatus === 'ACTIVE' ? new Date() : null,
       },
     })
-    
+
     // Log audit
     await prisma.auditLog.create({
       data: {
@@ -298,9 +282,9 @@ export async function PATCH(request: NextRequest) {
         entityId: id,
       },
     })
-    
+
     return NextResponse.json({ model: updated })
-    
+
   } catch (error) {
     console.error('Model status update error:', error)
     return NextResponse.json(
@@ -315,14 +299,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'ID is required' },
         { status: 400 }
       )
     }
-    
+
     // Soft delete by archiving
     const updated = await prisma.model.update({
       where: { id },
@@ -330,7 +314,7 @@ export async function DELETE(request: NextRequest) {
         status: 'ARCHIVED',
       },
     })
-    
+
     // Log audit
     await prisma.auditLog.create({
       data: {
@@ -339,9 +323,9 @@ export async function DELETE(request: NextRequest) {
         entityId: id,
       },
     })
-    
+
     return NextResponse.json({ success: true, model: updated })
-    
+
   } catch (error) {
     console.error('Model deletion error:', error)
     return NextResponse.json(

@@ -58,17 +58,17 @@ async function handlePaymentSucceeded(paymentIntent: any) {
     });
     
     await tx.booking.update({
-      where: { id: payment.bookingId },
+      where: { id: payment.bookingId ?? undefined },
       data: {
         depositStatus: 'paid',
         paymentStatus: 'partial',
         status: 'confirmed'
       }
     });
-    
+
     await tx.bookingTimeline.create({
       data: {
-        bookingId: payment.bookingId,
+        bookingId: payment.bookingId ?? '',
         eventType: 'payment_succeeded',
         payload: { payment, paymentIntent }
       }
@@ -86,7 +86,9 @@ async function handlePaymentSucceeded(paymentIntent: any) {
   
   // Send notifications
   await NotificationService.notifyPaymentReceived(payment.id);
-  await NotificationService.notifyBookingConfirmed(payment.bookingId);
+  if (payment.bookingId) {
+    await NotificationService.notifyBookingConfirmed(payment.bookingId);
+  }
 }
 
 async function handlePaymentFailed(paymentIntent: any) {

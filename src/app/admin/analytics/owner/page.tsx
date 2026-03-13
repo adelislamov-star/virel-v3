@@ -1,15 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-
-// Lazy-load recharts to avoid SSR issues
-const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false });
+import { Bar, XAxis, YAxis, Tooltip, BarChart, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 // ── Types ──────────────────────────────────────────────
 type Snapshot = {

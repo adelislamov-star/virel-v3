@@ -30,11 +30,12 @@ export async function applyBenefit(
 
   await prisma.auditLog.create({
     data: {
+      actorType: 'user',
+      actorUserId: actorId,
       entityType: 'membership_benefit',
       entityId: usage.id,
       action: 'membership.benefit.applied',
-      performedBy: actorId,
-      newValue: { benefitType, valueAmount, bookingId, membershipId: clientMembershipId },
+      after: { benefitType, valueAmount, bookingId, membershipId: clientMembershipId },
     },
   });
 
@@ -56,12 +57,13 @@ export async function useBenefit(usageId: string, actorId: string) {
 
   await prisma.auditLog.create({
     data: {
+      actorType: 'user',
+      actorUserId: actorId,
       entityType: 'membership_benefit',
       entityId: usageId,
       action: 'membership.benefit.used',
-      performedBy: actorId,
-      oldValue: { status: 'reserved' },
-      newValue: { status: 'used' },
+      before: { status: 'reserved' },
+      after: { status: 'used' },
     },
   });
 
@@ -87,12 +89,13 @@ export async function reverseBenefit(
 
   await prisma.auditLog.create({
     data: {
+      actorType: 'user',
+      actorUserId: actorId,
       entityType: 'membership_benefit',
       entityId: usageId,
       action: 'membership.benefit.reversed',
-      performedBy: actorId,
-      oldValue: { status: usage.status },
-      newValue: { status: 'reversed', reasonCode },
+      before: { status: usage.status },
+      after: { status: 'reversed', reasonCode },
     },
   });
 

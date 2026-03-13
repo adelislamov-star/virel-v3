@@ -40,17 +40,18 @@ export async function POST(request: NextRequest) {
     // Create or find client
     let clientId = data.clientId;
     if (!clientId && (data.clientEmail || data.clientPhone)) {
-      const client = await prisma.client.upsert({
-        where: {
-          email: data.clientEmail || `temp_${Date.now()}`
-        },
-        create: {
-          fullName: data.clientName,
-          email: data.clientEmail,
-          phone: data.clientPhone
-        },
-        update: {}
-      });
+      let client = data.clientEmail
+        ? await prisma.client.findFirst({ where: { email: data.clientEmail } })
+        : null;
+      if (!client) {
+        client = await prisma.client.create({
+          data: {
+            fullName: data.clientName,
+            email: data.clientEmail,
+            phone: data.clientPhone
+          }
+        });
+      }
       clientId = client.id;
     }
     

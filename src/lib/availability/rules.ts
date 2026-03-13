@@ -173,7 +173,6 @@ export async function syncBookingsToAvailability(modelId?: string) {
           endAt: booking.endAt,
           status: 'unavailable',
           source: 'sync',
-          syncedBookingId: booking.id,
           confidence: 1.0
         }
       });

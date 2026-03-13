@@ -49,7 +49,7 @@ export async function GET() {
       })
     ]);
 
-    const totalRevenue = revenueAgg._sum.amount || 0;
+    const totalRevenue = revenueAgg._sum.amount ? revenueAgg._sum.amount.toNumber() : 0;
     const commission = totalRevenue * 0.3;
     const cancellationRate = totalBookings > 0
       ? Math.round((cancelledBookings / totalBookings) * 100)
@@ -74,7 +74,7 @@ export async function GET() {
         },
         models: {
           published: publishedModels,
-          avgCompleteness: Math.round(avgCompleteness._avg.dataCompletenessScore || 0),
+          avgCompleteness: Math.round(avgCompleteness._avg.dataCompletenessScore ?? 0),
           riskDistribution: { green: greenModels, yellow: yellowModels, red: redModels }
         },
         quickLinks: {

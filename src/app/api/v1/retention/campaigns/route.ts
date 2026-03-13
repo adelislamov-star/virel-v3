@@ -39,7 +39,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = CreateCampaignSchema.parse(body);
 
-    const campaign = await prisma.retentionCampaign.create({ data });
+    const campaign = await prisma.retentionCampaign.create({
+      data: { ...data, segmentFilter: data.segmentFilter ?? {} },
+    });
 
     await prisma.auditLog.create({
       data: {

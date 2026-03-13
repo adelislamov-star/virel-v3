@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
         csvContent = 'ShortID,Client,Model,Status,Total,Start,End,Created\n';
         for (const b of bookings) {
-          csvContent += `${b.shortId || b.id},${(b.client?.fullName || '').replace(/,/g, '')},${(b.model?.name || '').replace(/,/g, '')},${b.status},${b.totalAmount},${b.startAt?.toISOString() || ''},${b.endAt?.toISOString() || ''},${b.createdAt.toISOString()}\n`;
+          csvContent += `${b.shortId || b.id},${(b.client?.fullName || '').replace(/,/g, '')},${(b.model?.name || '').replace(/,/g, '')},${b.status},${b.priceTotal},${b.startAt?.toISOString() || ''},${b.endAt?.toISOString() || ''},${b.createdAt.toISOString()}\n`;
         }
         break;
       }

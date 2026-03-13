@@ -6,7 +6,7 @@ import { enqueue } from '@/services/jobService';
 
 export async function POST() {
   try {
-    const job = await enqueue('retention_scan', {}, { priority: 5 });
+    const job = await enqueue('retention_scan', {}, { priority: '5' });
 
     return NextResponse.json({
       success: true,

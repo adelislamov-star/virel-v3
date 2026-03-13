@@ -13,7 +13,7 @@ export async function rebuildDemandStats(periodStart: Date, periodEnd: Date) {
     select: {
       id: true,
       status: true,
-      requestedLocation: { select: { id: true, title: true, city: true, area: true } },
+      requestedLocationId: true,
       createdAt: true,
     },
   });
@@ -26,7 +26,6 @@ export async function rebuildDemandStats(periodStart: Date, periodEnd: Date) {
     select: {
       id: true,
       locationId: true,
-      location: { select: { id: true, city: true, area: true } },
       priceTotal: true,
       startAt: true,
     },
@@ -44,9 +43,9 @@ export async function rebuildDemandStats(periodStart: Date, periodEnd: Date) {
   }>();
 
   for (const inq of inquiries) {
-    const city = inq.requestedLocation?.city || 'Unknown';
-    const area = inq.requestedLocation?.area || null;
-    const locationId = inq.requestedLocation?.id || null;
+    const locationId = inq.requestedLocationId || null;
+    const city = locationId || 'Unknown';
+    const area: string | null = null;
     const daySlot = new Date(inq.createdAt);
     daySlot.setHours(0, 0, 0, 0);
     const key = `${city}|${daySlot.toISOString()}`;
@@ -58,8 +57,8 @@ export async function rebuildDemandStats(periodStart: Date, periodEnd: Date) {
   }
 
   for (const bk of bookings) {
-    const city = bk.location?.city || 'Unknown';
-    const area = bk.location?.area || null;
+    const city = bk.locationId || 'Unknown';
+    const area: string | null = null;
     const daySlot = new Date(bk.startAt);
     daySlot.setHours(0, 0, 0, 0);
     const key = `${city}|${daySlot.toISOString()}`;

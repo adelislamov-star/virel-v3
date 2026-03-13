@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
       data: {
         inquiryId: inquiry.id,
         modelId,
-        status: 'proposed',
+        score: 0,
+        reason: { source: 'web_booking' },
       },
     });
 
