@@ -1,24 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const isLoginPage = request.nextUrl.pathname === '/admin/login';
-  const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
-
-  if (!isAdminPage) return NextResponse.next();
+  const { pathname } = request.nextUrl;
+  const isLoginPage = pathname === '/admin/login';
+  const isAdminPage = pathname.startsWith('/admin');
+  const isApiAuth = pathname.startsWith('/api/auth/');
+  const isApiV1 = pathname.startsWith('/api/v1/');
 
   const token = request.cookies.get('virel-token')?.value;
 
-  if (!token && !isLoginPage) {
-    return NextResponse.redirect(new URL('/admin/login', request.url));
+  // Admin pages: redirect to login if no token
+  if (isAdminPage) {
+    if (!token && !isLoginPage) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+    if (token && isLoginPage) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    return NextResponse.next();
   }
 
-  if (token && isLoginPage) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+  // API v1 routes: reject if no token (auth routes are excluded)
+  if (isApiV1 && !isApiAuth && !token) {
+    return NextResponse.json(
+      { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+      { status: 401 },
+    );
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/v1/:path*'],
 };

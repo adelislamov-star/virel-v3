@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -31,9 +32,12 @@ const CreateCampaignSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = CreateCampaignSchema.parse(body);
-    const actorId = 'system'; // TODO: from auth
 
     const campaign = await prisma.retentionCampaign.create({ data });
 

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { retryJob } from '@/services/jobService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const RetrySchema = z.object({
   reasonCode: z.string().min(1, 'reasonCode is required'),
@@ -14,11 +15,12 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'INTEGRATIONS_ADMIN']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = RetrySchema.parse(body);
-
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
 
     const job = await retryJob(params.id, actorId);
 

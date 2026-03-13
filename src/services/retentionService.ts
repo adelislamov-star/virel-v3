@@ -1,6 +1,7 @@
 // RetentionService — retention profile management, actions, scans
 import { prisma } from '@/lib/db/client';
 import { enqueue } from '@/services/jobService';
+import { recordClientEvent } from '@/services/clientEventService';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // ── Segment calculation rules ───────────────────────────────
@@ -186,6 +187,12 @@ export async function createRetentionAction(
       after: { actionType: params.actionType, channel: params.channel, clientId: params.clientId },
     },
   });
+
+  await recordClientEvent(params.clientId, 'retention.action.created', {
+    actionId: action.id,
+    actionType: params.actionType,
+    channel: params.channel,
+  }, actorId);
 
   return action;
 }

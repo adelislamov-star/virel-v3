@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
+import { recordClientEvent } from '@/services/clientEventService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const MergeSchema = z.object({
   primaryClientId: z.string().min(1),
@@ -13,9 +15,12 @@ const MergeSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = MergeSchema.parse(body);
-    const actorId = 'system'; // TODO: from auth
 
     const [primary, duplicate] = await Promise.all([
       prisma.client.findUnique({ where: { id: data.primaryClientId } }),
@@ -87,6 +92,21 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    await Promise.all([
+      recordClientEvent(data.primaryClientId, 'client.merged', {
+        mergeLogId: mergeLog.id,
+        duplicateClientId: data.duplicateClientId,
+        reasonCode: data.reasonCode,
+        role: 'primary',
+      }, actorId),
+      recordClientEvent(data.duplicateClientId, 'client.merged', {
+        mergeLogId: mergeLog.id,
+        primaryClientId: data.primaryClientId,
+        reasonCode: data.reasonCode,
+        role: 'duplicate',
+      }, actorId),
+    ]);
 
     return NextResponse.json({ success: true, data: { mergeLog } }, { status: 201 });
   } catch (error: any) {

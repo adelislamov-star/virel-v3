@@ -1975,3 +1975,65 @@ model DemandStats {
   @@index([city])
   @@map("demand_stats")
 }
+
+// ============================================
+// OWNER ANALYTICS SNAPSHOTS
+// ============================================
+
+model OwnerAnalyticsSnapshot {
+  id                            String   @id @default(cuid())
+  periodStart                   DateTime @map("period_start")
+  periodEnd                     DateTime @map("period_end")
+  granularity                   String   @default("daily")
+
+  totalRevenue                  Decimal  @default(0) @db.Decimal(12,2) @map("total_revenue")
+  netMargin                     Decimal  @default(0) @db.Decimal(5,2)  @map("net_margin")
+  totalBookings                 Int      @default(0) @map("total_bookings")
+  completedBookings             Int      @default(0) @map("completed_bookings")
+  cancelledBookings             Int      @default(0) @map("cancelled_bookings")
+  conversionRate                Decimal  @default(0) @db.Decimal(5,2)  @map("conversion_rate")
+  arpu                          Decimal  @default(0) @db.Decimal(12,2)
+  mrr                           Decimal  @default(0) @db.Decimal(12,2)
+  churnRate                     Decimal  @default(0) @db.Decimal(5,2)  @map("churn_rate")
+  chargebackRate                Decimal  @default(0) @db.Decimal(5,2)  @map("chargeback_rate")
+
+  lostRevenueAmount             Decimal  @default(0) @db.Decimal(12,2) @map("lost_revenue_amount")
+  lostRevenueByRootCauseJson    Json?    @map("lost_revenue_by_root_cause_json")
+
+  altOfferAcceptanceRate        Decimal  @default(0) @db.Decimal(5,2)  @map("alt_offer_acceptance_rate")
+  retentionRecoveryRate         Decimal  @default(0) @db.Decimal(5,2)  @map("retention_recovery_rate")
+  clientDuplicateRate           Decimal  @default(0) @db.Decimal(5,2)  @map("client_duplicate_rate")
+
+  jobsFailedRate                Decimal  @default(0) @db.Decimal(5,2)  @map("jobs_failed_rate")
+  notificationDeliveryRate      Decimal  @default(0) @db.Decimal(5,2)  @map("notification_delivery_rate")
+
+  availabilityConflictCount     Int      @default(0) @map("availability_conflict_count")
+  membershipBenefitCost         Decimal  @default(0) @db.Decimal(12,2) @map("membership_benefit_cost")
+  riskEscalationsCount          Int      @default(0) @map("risk_escalations_count")
+  vipRevenueShare               Decimal  @default(0) @db.Decimal(5,2)  @map("vip_revenue_share")
+  winbackConversionRate         Decimal  @default(0) @db.Decimal(5,2)  @map("winback_conversion_rate")
+
+  staffConversionRankingJson    Json?    @map("staff_conversion_ranking_json")
+  staffLostRevenueRankingJson   Json?    @map("staff_lost_revenue_ranking_json")
+
+  createdAt                     DateTime @default(now()) @map("created_at")
+
+  @@index([periodStart, periodEnd])
+  @@index([granularity])
+  @@map("owner_analytics_snapshots")
+}
+
+// ── Cron Job Logging ──────────────────────────────────────────
+model CronLog {
+  id          String   @id @default(cuid())
+  cronPath    String   @map("cron_path")
+  status      String   // success, error
+  durationMs  Int?     @map("duration_ms")
+  resultJson  Json?    @map("result_json")
+  errorText   String?  @db.Text @map("error_text")
+  executedAt  DateTime @default(now()) @map("executed_at")
+
+  @@index([cronPath])
+  @@index([executedAt])
+  @@map("cron_logs")
+}

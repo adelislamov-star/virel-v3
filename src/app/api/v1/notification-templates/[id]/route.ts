@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -44,10 +45,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'CONTENT_MANAGER']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = UpdateSchema.parse(body);
-
-    const actorId = 'system'; // TODO: from auth
 
     const existing = await prisma.notificationTemplate.findUnique({
       where: { id: params.id },
@@ -100,7 +103,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const actorId = 'system'; // TODO: from auth
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'CONTENT_MANAGER']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
 
     const existing = await prisma.notificationTemplate.findUnique({
       where: { id: params.id },

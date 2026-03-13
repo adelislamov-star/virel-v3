@@ -10,6 +10,7 @@ import {
   dismissItem,
   snoozeItem,
 } from '@/services/operationsFeedService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const StatusSchema = z.object({
   status: z.enum(['acknowledged', 'in_progress', 'resolved', 'dismissed']),
@@ -22,11 +23,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = StatusSchema.parse(body);
-
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
 
     let item;
 

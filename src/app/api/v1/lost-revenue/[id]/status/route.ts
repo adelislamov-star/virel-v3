@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveEntry, waiveEntry } from '@/services/lostRevenueService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const StatusSchema = z.object({
   status: z.enum(['resolved', 'waived']),
@@ -16,11 +17,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'FINANCE']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = StatusSchema.parse(body);
-
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
 
     const entry =
       data.status === 'resolved'

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { cancelJob } from '@/services/jobService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const CancelSchema = z.object({
   reasonCode: z.string().min(1, 'reasonCode is required'),
@@ -14,11 +15,12 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'INTEGRATIONS_ADMIN']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = CancelSchema.parse(body);
-
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
 
     const job = await cancelJob(params.id, actorId);
 

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
 import { createEntry } from '@/services/lostRevenueService';
+import { requireRole, isActor } from '@/lib/auth';
 
 // ─── GET ─────────────────────────────────────────────────
 
@@ -70,11 +71,12 @@ const CreateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'FINANCE']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = CreateSchema.parse(body);
-
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
 
     const entry = await createEntry(data, actorId);
 

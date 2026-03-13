@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assignItem } from '@/services/operationsFeedService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const AssignSchema = z.object({
   userId: z.string().min(1),
@@ -15,11 +16,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = AssignSchema.parse(body);
-
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
 
     const item = await assignItem(params.id, data.userId, actorId);
 

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { completeRetentionAction } from '@/services/retentionService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const CompleteSchema = z.object({
   result: z.string().min(1, 'result is required'),
@@ -14,9 +15,12 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = CompleteSchema.parse(body);
-    const actorId = 'system'; // TODO: from auth
 
     const action = await completeRetentionAction(params.id, data.result, actorId);
 

@@ -2,6 +2,7 @@
 // Tracks revenue leakage from cancellations, no-shows, payment failures, etc.
 
 import { prisma } from '@/lib/db/client';
+import { recordClientEvent } from '@/services/clientEventService';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -62,6 +63,15 @@ export async function createEntry(params: CreateEntryParams, actorId: string) {
       },
     },
   });
+
+  if (params.clientId && (params.type === 'booking_cancelled_after_hold' || params.type === 'no_show')) {
+    await recordClientEvent(params.clientId, 'booking.cancelled', {
+      entryId: entry.id,
+      type: params.type,
+      amount: params.amount,
+      bookingId: params.bookingId,
+    }, actorId);
+  }
 
   return entry;
 }

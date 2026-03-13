@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
 import { createRetentionAction } from '@/services/retentionService';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,9 +54,12 @@ const CreateActionSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = CreateActionSchema.parse(body);
-    const actorId = 'system'; // TODO: from auth
 
     const action = await createRetentionAction(data, actorId);
 

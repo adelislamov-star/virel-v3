@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -32,10 +33,12 @@ const CreateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'CONTENT_MANAGER']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = CreateSchema.parse(body);
-
-    const actorId = 'system'; // TODO: from auth
 
     const template = await prisma.notificationTemplate.create({
       data: {

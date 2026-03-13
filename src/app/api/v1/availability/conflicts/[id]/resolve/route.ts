@@ -3,14 +3,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveConflict } from '@/services/availabilityService';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // TODO: extract actorId from session/auth
-    const actorId = 'system';
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
 
     const conflict = await resolveConflict(params.id, actorId);
 

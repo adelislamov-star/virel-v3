@@ -11,6 +11,10 @@ import {
 import { dispatchNotification } from '@/services/notificationService';
 import { recalculateClientRisk } from '@/services/fraudService';
 import { runDailyRetentionScan } from '@/services/retentionService';
+import { detectFromBooking } from '@/services/lostRevenueService';
+import { rebuildDemandStats } from '@/services/demandAnalyticsService';
+import { buildPerformanceSnapshot, buildScoreSnapshot } from '@/services/staffAnalyticsService';
+import { buildSnapshot } from '@/services/ownerAnalyticsService';
 import { prisma } from '@/lib/db/client';
 
 // ─── Handler registry ────────────────────────────────────
@@ -86,6 +90,95 @@ const handlers: Record<string, JobHandler> = {
     } else {
       await writeLog(jobId, 'complete', 'succeeded', 'Notification dispatched');
     }
+  },
+
+  // ── New cron-driven handlers ──────────────────────────────
+
+  lost_revenue_auto_detection: async (payload: any, jobId: string) => {
+    await writeLog(jobId, 'start', 'running', 'Lost revenue auto-detection started');
+    const lookbackHours = payload?.lookbackHours ?? 1;
+    const cutoff = new Date(Date.now() - lookbackHours * 60 * 60 * 1000);
+    const cancelledBookings = await prisma.booking.findMany({
+      where: {
+        status: 'cancelled',
+        updatedAt: { gte: cutoff },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    let detected = 0;
+    for (const b of cancelledBookings) {
+      try {
+        await detectFromBooking(b.id);
+        detected++;
+      } catch {
+        // skip individual failures
+      }
+    }
+    await writeLog(jobId, 'complete', 'succeeded', `Lost revenue: ${detected} bookings processed`);
+  },
+
+  operations_feed_auto_close: async (payload: any, jobId: string) => {
+    await writeLog(jobId, 'start', 'running', 'Operations feed auto-close started');
+    const olderThanHours = payload?.olderThanHours ?? 72;
+    const cutoff = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
+    const result = await prisma.operationsFeedItem.updateMany({
+      where: {
+        status: 'resolved',
+        resolvedAt: { lt: cutoff },
+      },
+      data: { status: 'dismissed' },
+    });
+    await writeLog(jobId, 'complete', 'succeeded', `Operations feed: ${result.count} items auto-dismissed`);
+  },
+
+  demand_stats_rebuild: async (payload: any, jobId: string) => {
+    await writeLog(jobId, 'start', 'running', 'Demand stats rebuild started');
+    const periodHours = payload?.periodHours ?? 1;
+    const periodEnd = new Date();
+    const periodStart = new Date(Date.now() - periodHours * 60 * 60 * 1000);
+    await rebuildDemandStats(periodStart, periodEnd);
+    await writeLog(jobId, 'complete', 'succeeded', 'Demand stats rebuilt');
+  },
+
+  staff_snapshot_build: async (payload: any, jobId: string) => {
+    await writeLog(jobId, 'start', 'running', 'Staff snapshots build started');
+    // Yesterday's boundaries
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const periodStart = yesterday;
+    const periodEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
+
+    const activeUsers = await prisma.user.findMany({
+      where: { status: 'active' },
+      select: { id: true },
+    });
+    let built = 0;
+    for (const u of activeUsers) {
+      try {
+        await buildPerformanceSnapshot(u.id, periodStart, periodEnd);
+        await buildScoreSnapshot(u.id, periodStart, periodEnd);
+        built++;
+      } catch {
+        // skip individual failures
+      }
+    }
+    await writeLog(jobId, 'complete', 'succeeded', `Staff snapshots: ${built} users processed`);
+  },
+
+  analytics_owner_rebuild: async (payload: any, jobId: string) => {
+    await writeLog(jobId, 'start', 'running', 'Owner analytics rebuild started');
+    const now = new Date();
+    // Yesterday
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
+    await buildSnapshot(yesterday, yesterdayEnd, 'daily');
+
+    // Current month
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    await buildSnapshot(monthStart, now, 'monthly');
+
+    await writeLog(jobId, 'complete', 'succeeded', 'Owner analytics: yesterday + current month rebuilt');
   },
 };
 

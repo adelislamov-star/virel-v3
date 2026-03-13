@@ -2,6 +2,7 @@
 // Signal creation, risk recalculation, status management, review
 
 import { prisma } from '@/lib/db/client';
+import { recordClientEvent } from '@/services/clientEventService';
 
 // ── Create Signal ───────────────────────────────────────────
 export async function createSignal(
@@ -58,6 +59,12 @@ export async function createSignal(
 
   // Recalculate risk after signal
   await recalculateClientRisk(params.clientId);
+
+  await recordClientEvent(params.clientId, 'fraud.signal.created', {
+    signalId: signal.id,
+    signalType: params.signalType,
+    riskScoreImpact: params.riskScoreImpact,
+  }, actorId);
 
   return signal;
 }
@@ -141,6 +148,12 @@ export async function changeClientRiskStatus(
       },
     });
   });
+
+  await recordClientEvent(clientId, 'risk_status.changed', {
+    previousStatus,
+    newStatus: nextStatus,
+    reasonCode,
+  }, actorId);
 
   return { clientId, previousStatus, newStatus: nextStatus };
 }

@@ -1,7 +1,7 @@
-// SLA MONITORING
+// SLA MONITORING + SYSTEM HEALTH
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 type SLARecord = {
   id: string;
@@ -25,6 +25,31 @@ type SLAStats = {
   breachedToday: number;
 };
 
+type CronHealthEntry = {
+  cronPath: string;
+  lastExecutedAt: string | null;
+  lastStatus: string;
+  lastDurationMs: number | null;
+};
+
+type StalledJob = {
+  id: string;
+  type: string;
+  startedAt: string | null;
+  lastHeartbeatAt: string | null;
+};
+
+type DeadLetterEntry = { type: string; count: number };
+
+type HealthData = {
+  cronHealth: CronHealthEntry[];
+  stalledJobs: StalledJob[];
+  deadLetterByType: DeadLetterEntry[];
+  deadLetterTotal: number;
+  failedNotifications: number;
+  queueStats: { queued: number; running: number; failed24h: number };
+};
+
 export default function SLAMonitoringPage() {
   const [stats, setStats] = useState<SLAStats | null>(null);
   const [breachedRecords, setBreachedRecords] = useState<SLARecord[]>([]);
@@ -32,8 +57,23 @@ export default function SLAMonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [checking, setChecking] = useState(false);
+  const [health, setHealth] = useState<HealthData | null>(null);
 
-  useEffect(() => { loadAll(); }, [filter]);
+  const loadHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/sla/health');
+      const d = await res.json();
+      if (d.success) setHealth(d.data);
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadAll(); loadHealth(); }, [filter]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const iv = setInterval(() => { loadAll(); loadHealth(); }, 60_000);
+    return () => clearInterval(iv);
+  }, [filter]);
 
   async function loadAll() {
     try {
@@ -191,6 +231,132 @@ export default function SLAMonitoringPage() {
             <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-8 text-center"><p className="text-zinc-500">No SLA records found.</p></div>
           )}
         </div>
+      </div>
+
+      {/* ── System Health ─────────────────────────────────────── */}
+      <div className="mt-12 border-t border-zinc-800/50 pt-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-100">System Health</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">Cron jobs, queue, notifications — auto-refreshes every 60s</p>
+          </div>
+          <button onClick={() => { loadAll(); loadHealth(); }} className="px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition-colors">
+            Refresh
+          </button>
+        </div>
+
+        {!health ? (
+          <div className="animate-pulse space-y-4">
+            <div className="h-40 bg-zinc-800/30 rounded-xl" />
+          </div>
+        ) : (
+          <>
+            {/* Queue Stats */}
+            <div className="grid grid-cols-4 gap-4 mb-8">
+              <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Queued Jobs</p>
+                <p className="text-2xl font-semibold text-zinc-100 mt-2">{health.queueStats.queued}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Running Jobs</p>
+                <p className="text-2xl font-semibold text-zinc-100 mt-2">{health.queueStats.running}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Failed (24h)</p>
+                <p className={`text-2xl font-semibold mt-2 ${health.queueStats.failed24h > 0 ? 'text-red-400' : 'text-zinc-100'}`}>{health.queueStats.failed24h}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Failed Notifications (24h)</p>
+                <p className={`text-2xl font-semibold mt-2 ${health.failedNotifications > 0 ? 'text-red-400' : 'text-zinc-100'}`}>{health.failedNotifications}</p>
+              </div>
+            </div>
+
+            {/* Cron Health Table */}
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">Cron Health</h3>
+              <div className="rounded-xl border border-zinc-800/50 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800/50">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Cron Path</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Last Run</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {health.cronHealth.map((c) => (
+                      <tr key={c.cronPath} className="border-b border-zinc-800/30">
+                        <td className="px-4 py-2.5 text-zinc-300 font-mono text-xs">{c.cronPath}</td>
+                        <td className="px-4 py-2.5 text-zinc-500 text-xs">
+                          {c.lastExecutedAt ? new Date(c.lastExecutedAt).toLocaleString() : 'Never'}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
+                            c.lastStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                              : c.lastStatus === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                              : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                          }`}>{c.lastStatus}</span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-zinc-500 text-xs">
+                          {c.lastDurationMs != null ? `${c.lastDurationMs}ms` : '\u2014'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Stalled Jobs */}
+            {health.stalledJobs.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-3">Stalled Jobs ({health.stalledJobs.length})</h3>
+                <div className="space-y-2">
+                  {health.stalledJobs.map((j) => (
+                    <div key={j.id} className="rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-red-500/10 text-red-400 border-red-500/20">STALLED</span>
+                          <span className="font-medium text-zinc-200">{j.type}</span>
+                          <span className="text-zinc-500 text-xs">{j.id.slice(0, 8)}...</span>
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          Last heartbeat: {j.lastHeartbeatAt ? new Date(j.lastHeartbeatAt).toLocaleString() : 'None'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dead Letter Queue */}
+            {health.deadLetterTotal > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-amber-400 uppercase tracking-wider mb-3">Dead Letter Queue — Last 7 Days ({health.deadLetterTotal})</h3>
+                <div className="rounded-xl border border-zinc-800/50 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-800/50">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Job Type</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {health.deadLetterByType.map((d) => (
+                        <tr key={d.type} className="border-b border-zinc-800/30">
+                          <td className="px-4 py-2.5 text-zinc-300">{d.type}</td>
+                          <td className="px-4 py-2.5 text-right text-amber-400 font-medium">{d.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

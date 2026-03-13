@@ -1,4 +1,5 @@
 // UNIT ECONOMICS — GET detailed unit economics
+// RBAC: OWNER
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 
@@ -6,25 +7,38 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'month';
+    const dateFromParam = searchParams.get('dateFrom');
+    const dateToParam = searchParams.get('dateTo');
+    const granularity = searchParams.get('granularity') || 'monthly';
 
     const now = new Date();
     let periodStart: Date;
-    switch (period) {
-      case 'week':
-        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'quarter':
-        periodStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-        break;
-      default:
-        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    let periodEnd: Date = now;
+
+    if (dateFromParam && dateToParam) {
+      periodStart = new Date(dateFromParam);
+      periodEnd = new Date(dateToParam);
+    } else {
+      switch (period) {
+        case 'week':
+          periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'quarter':
+          periodStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+          break;
+        default:
+          periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
     }
+
+    const periodFilter = { gte: periodStart, lte: periodEnd };
 
     // Booking-level economics
     const bookingsWithPayments = await prisma.booking.findMany({
       where: {
-        createdAt: { gte: periodStart },
-        status: { in: ['completed', 'confirmed', 'in_progress'] }
+        createdAt: periodFilter,
+        status: { in: ['completed', 'confirmed', 'in_progress'] },
+        deletedAt: null,
       },
       include: {
         payments: { where: { status: 'succeeded' } },
@@ -37,9 +51,9 @@ export async function GET(request: NextRequest) {
     let totalPayout = 0;
 
     for (const b of bookingsWithPayments) {
-      const bookingRevenue = b.payments.reduce((s, p) => s + p.amount, 0);
+      const bookingRevenue = b.payments.reduce((s, p) => s + Number(p.amount), 0);
       totalRevenue += bookingRevenue;
-      totalPayout += bookingRevenue * 0.8; // 80% payout estimate
+      totalPayout += bookingRevenue * 0.8;
     }
 
     const avgBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
@@ -52,7 +66,7 @@ export async function GET(request: NextRequest) {
       where: { status: 'active' },
       include: { plan: true }
     });
-    const mrr = activeMemberships.reduce((s, m) => s + m.plan.priceMonthly, 0);
+    const mrr = activeMemberships.reduce((s, m) => s + Number(m.plan.priceMonthly), 0);
     const activeCount = activeMemberships.length;
     const arpu = activeCount > 0 ? mrr / activeCount : avgBookingValue;
 
@@ -63,14 +77,23 @@ export async function GET(request: NextRequest) {
     const activeAtStart = activeCount + cancelledThisMonth;
     const churnRate = activeAtStart > 0 ? cancelledThisMonth / activeAtStart : 0;
 
+    const totalClients = await prisma.client.count({ where: { deletedAt: null } });
+    const totalSpentAgg = await prisma.payment.aggregate({
+      where: { status: 'succeeded' },
+      _sum: { amount: true },
+    });
+    const avgClientLtv = totalClients > 0
+      ? Number(totalSpentAgg._sum.amount ?? 0) / totalClients
+      : 0;
+
     const ltvEstimate = churnRate > 0 ? arpu * (1 / churnRate) : arpu * 12;
-    const cacEstimate = 0; // Placeholder
+    const cacEstimate = 0;
     const ltvCacRatio = cacEstimate > 0 ? ltvEstimate / cacEstimate : 0;
     const paybackPeriodMonths = arpu > 0 && cacEstimate > 0 ? cacEstimate / arpu : 0;
 
     // By lead source
     const inquiries = await prisma.inquiry.findMany({
-      where: { createdAt: { gte: periodStart } },
+      where: { createdAt: periodFilter },
       select: { source: true, status: true }
     });
 
@@ -97,7 +120,7 @@ export async function GET(request: NextRequest) {
       if (!modelMap[b.model.id]) {
         modelMap[b.model.id] = { modelId: b.model.id, modelName: b.model.name, bookings: 0, revenue: 0, payout: 0 };
       }
-      const rev = b.payments.reduce((s, p) => s + p.amount, 0);
+      const rev = b.payments.reduce((s, p) => s + Number(p.amount), 0);
       modelMap[b.model.id].bookings++;
       modelMap[b.model.id].revenue += rev;
       modelMap[b.model.id].payout += rev * 0.8;
@@ -108,21 +131,76 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
+    // ── Monthly breakdown ──────────────────────────────
+    const monthlyData: { month: string; revenue: number; bookings: number; arpu: number; newClients: number; churnedClients: number }[] = [];
+
+    // Generate month boundaries within the period
+    const startMonth = new Date(periodStart.getFullYear(), periodStart.getMonth(), 1);
+    const endMonth = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1);
+    const cursor = new Date(startMonth);
+
+    while (cursor <= endMonth) {
+      const mStart = new Date(cursor);
+      const mEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59);
+      const mFilter = { gte: mStart, lte: mEnd };
+
+      const [mRevenue, mBookings, mNewClients, mChurned] = await Promise.all([
+        prisma.payment.aggregate({
+          where: { status: 'succeeded', createdAt: mFilter },
+          _sum: { amount: true },
+        }),
+        prisma.booking.count({
+          where: { createdAt: mFilter, deletedAt: null },
+        }),
+        prisma.client.count({
+          where: { createdAt: mFilter, deletedAt: null },
+        }),
+        prisma.clientRetentionProfile.count({
+          where: { segment: 'lost', updatedAt: mFilter },
+        }),
+      ]);
+
+      const mRev = Number(mRevenue._sum.amount ?? 0);
+      const mUniqueClients = await prisma.booking.findMany({
+        where: { createdAt: mFilter, deletedAt: null },
+        select: { clientId: true },
+        distinct: ['clientId'],
+      });
+      const mUniqueCount = mUniqueClients.filter(b => b.clientId).length;
+      const mArpu = mUniqueCount > 0 ? mRev / mUniqueCount : 0;
+
+      monthlyData.push({
+        month: mStart.toISOString().slice(0, 7),
+        revenue: Math.round(mRev * 100) / 100,
+        bookings: mBookings,
+        arpu: Math.round(mArpu * 100) / 100,
+        newClients: mNewClients,
+        churnedClients: mChurned,
+      });
+
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
     return NextResponse.json({
+      success: true,
       data: {
         profitPerBooking: Math.round(profitPerBooking * 100) / 100,
         avgBookingValue: Math.round(avgBookingValue * 100) / 100,
         avgCommission: Math.round(avgCommission * 100) / 100,
         avgPayout: Math.round(avgPayout * 100) / 100,
+        arpu: Math.round(arpu * 100) / 100,
+        mrr: Math.round(mrr * 100) / 100,
+        avgClientLtv: Math.round(avgClientLtv * 100) / 100,
         ltvEstimate: Math.round(ltvEstimate * 100) / 100,
         cacEstimate,
         ltvCacRatio: Math.round(ltvCacRatio * 100) / 100,
         paybackPeriodMonths: Math.round(paybackPeriodMonths * 10) / 10,
         bySource,
-        byModel
+        byModel,
+        monthly: monthlyData,
       }
     });
   } catch (error: any) {
-    return NextResponse.json({ error: { code: 'ANALYTICS_FAILED', message: error.message } }, { status: 500 });
+    return NextResponse.json({ success: false, error: { code: 'ANALYTICS_FAILED', message: error.message } }, { status: 500 });
   }
 }

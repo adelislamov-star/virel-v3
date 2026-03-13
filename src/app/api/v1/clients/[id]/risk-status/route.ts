@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
+import { recordClientEvent } from '@/services/clientEventService';
+import { requireRole, isActor } from '@/lib/auth';
 
 const RiskStatusSchema = z.object({
   riskStatus: z.enum(['normal', 'monitoring', 'restricted', 'blocked']),
@@ -15,9 +17,12 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
+    const actorId = auth.userId;
+
     const body = await request.json();
     const data = RiskStatusSchema.parse(body);
-    const actorId = 'system'; // TODO: from auth
 
     const client = await prisma.client.findUnique({ where: { id: params.id } });
     if (!client || client.deletedAt) {
@@ -55,6 +60,12 @@ export async function PATCH(
         after: { riskStatus: data.riskStatus, reasonCode: data.reasonCode },
       },
     });
+
+    await recordClientEvent(params.id, 'risk_status.changed', {
+      previousStatus,
+      newStatus: data.riskStatus,
+      reasonCode: data.reasonCode,
+    }, actorId);
 
     return NextResponse.json({ success: true, data: { client: updated } });
   } catch (error: any) {

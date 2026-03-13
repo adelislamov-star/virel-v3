@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import BookingStateMachine, { BookingStatus } from '@/lib/state-machines/booking';
 import { createBookingSlot, removeBookingSlot } from '@/services/availabilityService';
+import { recordClientEvent, ClientEventType } from '@/services/clientEventService';
 
 const prisma = new PrismaClient();
 
@@ -94,6 +95,22 @@ export async function POST(
 
       return updated;
     });
+
+    // Record client timeline event
+    const bookingEventMap: Record<string, ClientEventType> = {
+      confirmed: 'booking.confirmed',
+      cancelled: 'booking.cancelled',
+      completed: 'booking.completed',
+      no_show: 'booking.no_show',
+    };
+    if (result.clientId && bookingEventMap[newStatus]) {
+      await recordClientEvent(result.clientId, bookingEventMap[newStatus], {
+        bookingId: params.id,
+        from: currentStatus,
+        to: newStatus,
+        reason: data.reason,
+      }, 'system');
+    }
 
     // Availability engine integration (outside transaction — uses own writes)
     try {

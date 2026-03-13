@@ -2,14 +2,15 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Target, CalendarDays, MessageSquare, Users, Star,
   AlertTriangle, Shield, FileText, AppWindow, Clock,
   DollarSign, Crown, BarChart3, LineChart, TrendingUp,
   Timer, Database, Settings, CreditCard, RefreshCw,
   Bell, Briefcase, MapPin, UserCheck, Search,
-  Activity, PieChart
+  Activity, PieChart, LogOut
 } from 'lucide-react';
 
 const sections = [
@@ -69,8 +70,28 @@ const sections = [
   }
 ];
 
+interface CurrentUser {
+  name: string;
+  email: string;
+  roles: string[];
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.success) setUser(d.data); })
+      .catch(() => {});
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/admin/login');
+  }, [router]);
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--admin-bg)' }}>
@@ -112,9 +133,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-zinc-800/50">
-          <p className="text-xs text-zinc-600">admin@virel.com</p>
+        {/* Footer — Current user + sign out */}
+        <div className="px-4 py-3 border-t border-zinc-800/50">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-zinc-300 truncate">{user?.name ?? '...'}</p>
+              <p className="text-[11px] text-zinc-600 truncate">{user?.email ?? ''}</p>
+              {user?.roles?.[0] && (
+                <p className="text-[10px] text-amber-500/70 uppercase tracking-wider mt-0.5">{user.roles[0]}</p>
+              )}
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={14} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
       </aside>
 
