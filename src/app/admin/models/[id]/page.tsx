@@ -144,6 +144,22 @@ export default function ModelEditPage() {
         </div>
         <div className="flex gap-3">
           <Button
+            variant="outline"
+            onClick={() => {
+              const url = `${window.location.origin}/companions/${model.slug}`;
+              navigator.clipboard.writeText(url);
+              showToast('Profile link copied', 'success');
+            }}
+          >
+            Copy Link
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => window.open(`/companions/${model.slug}`, '_blank')}
+          >
+            Preview
+          </Button>
+          <Button
             variant="destructive"
             onClick={deleteModel}
             disabled={deleting}

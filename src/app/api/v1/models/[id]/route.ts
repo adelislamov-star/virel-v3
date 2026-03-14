@@ -5,12 +5,15 @@ import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
 import { ensureExtensionTables } from '@/lib/db/ensure-tables';
 import { logAudit } from '@/lib/audit';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
     await ensureExtensionTables();
 
     const model = await prisma.model.findUnique({
@@ -91,6 +94,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const body = await request.json();
     
     // Update basic info
@@ -159,6 +164,8 @@ export async function PATCH(
       if (c.phone !== undefined) contactData.phone = c.phone || null;
       if (c.phone2 !== undefined) contactData.phone2 = c.phone2 || null;
       if (c.email !== undefined) contactData.email = c.email || null;
+      if (c.telegramPhone !== undefined) contactData.telegramPhone = c.telegramPhone || null;
+      if (c.telegramTag !== undefined) contactData.telegramTag = c.telegramTag ? c.telegramTag.replace(/^@/, '') : null;
       if (c.whatsapp !== undefined) contactData.whatsapp = c.whatsapp;
       if (c.telegram !== undefined) contactData.telegram = c.telegram;
       if (c.viber !== undefined) contactData.viber = c.viber;
@@ -367,6 +374,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(_request, ['OWNER']);
+    if (!isActor(auth)) return auth;
     const id = params.id;
 
     // 1. Get all media files to delete from R2

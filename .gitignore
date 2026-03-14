@@ -45,3 +45,5 @@ check-table.js
 
 .vercel
 .env*.local
+nul
+.claude/worktrees/

@@ -29,6 +29,12 @@ type ConfirmationNeeded = {
   modelName: string;
 };
 
+type AttentionModel = {
+  id: string;
+  name: string;
+  reason: string;
+};
+
 type DashboardData = {
   revenue: { total: number; commission: number; avgBookingValue: number; mrr: number };
   operations: { activeBookings: number; cancellationRate: number; openIncidents: number; pendingReviews: number };
@@ -38,6 +44,7 @@ type DashboardData = {
   topViewedModels: TopModel[];
   confirmationsNeeded: ConfirmationNeeded[];
   weeklyRevenue: { thisWeek: number; lastWeek: number };
+  modelsNeedingAttention?: AttentionModel[];
 };
 
 function formatDate(d: string) {
@@ -60,8 +67,9 @@ function timeAgo(d: string) {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attentionModels, setAttentionModels] = useState<AttentionModel[]>([]);
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => { loadDashboard(); loadAttentionModels(); }, []);
 
   async function loadDashboard() {
     try {
@@ -73,6 +81,27 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadAttentionModels() {
+    try {
+      const res = await fetch('/api/v1/models?all=true');
+      const json = await res.json();
+      const models = json.data?.models || [];
+      const attention: AttentionModel[] = [];
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+      for (const m of models) {
+        if (m.status === 'draft' && new Date(m.createdAt).getTime() < sevenDaysAgo) {
+          attention.push({ id: m.id, name: m.name, reason: 'Draft > 7 days' });
+        } else if (!m._count?.media && m._count?.media !== undefined && m._count.media === 0) {
+          attention.push({ id: m.id, name: m.name, reason: 'No photos' });
+        } else if (m.dataCompletenessScore !== undefined && m.dataCompletenessScore < 50) {
+          attention.push({ id: m.id, name: m.name, reason: 'Low completeness' });
+        }
+      }
+      setAttentionModels(attention.slice(0, 10));
+    } catch {}
   }
 
   if (loading) {
@@ -267,6 +296,25 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ═══ MODELS NEEDING ATTENTION ═══ */}
+      {attentionModels.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Models Needing Attention</h2>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+            <div className="space-y-2">
+              {attentionModels.map((m) => (
+                <Link key={m.id} href={`/admin/models/${m.id}`}>
+                  <div className="flex items-center justify-between text-sm hover:bg-zinc-800/30 rounded-lg px-3 py-2 transition-colors">
+                    <span className="text-zinc-200">{m.name}</span>
+                    <span className="text-xs text-amber-400 font-medium">{m.reason}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ BOTTOM PANELS ═══ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

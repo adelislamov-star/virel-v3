@@ -1,8 +1,3 @@
-// VIREL v3 - OPERATIONS PLATFORM
-// Database Schema v3.0
-// 30+ Tables for Operations Platform
-// Date: 27 February 2026
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,89 +8,70 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ============================================
-// USERS & ACCESS (RBAC)
-// ============================================
-
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  phone           String?
-  name            String
-  passwordHash    String
-  
-  // Status
-  status          String    @default("active") // active, disabled
-  lastLoginAt     DateTime?
-  
-  // Telegram
-  telegramChatId  String?
-
-  // Two-Factor Authentication
-  twoFactorSecret  String?
-  twoFactorEnabled Boolean  @default(false)
-
-  // Relations
-  roles           UserRole[]
-  sessions        Session[]
-  auditLogs       AuditLog[]
-  assignedTasks   Task[]     @relation("AssignedTasks")
-  assignedInquiries Inquiry[] @relation("AssignedInquiries")
-  assignedBookings Booking[]  @relation("AssignedBookings")
+  id                   String                     @id @default(cuid())
+  email                String                     @unique
+  phone                String?
+  name                 String
+  passwordHash         String
+  status               String                     @default("active")
+  lastLoginAt          DateTime?
+  telegramChatId       String?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean                    @default(false)
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  auditLogs            AuditLog[]
+  assignedBookings     Booking[]                  @relation("AssignedBookings")
+  assignedInquiries    Inquiry[]                  @relation("AssignedInquiries")
+  createdPayments      Payment[]                  @relation("CreatedPayments")
+  sessions             Session[]
   performanceSnapshots StaffPerformanceSnapshot[]
   scoreSnapshots       StaffScoreSnapshot[]
-  createdPayments      Payment[]  @relation("CreatedPayments")
+  assignedTasks        Task[]                     @relation("AssignedTasks")
+  roles                UserRole[]
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
   @@index([email])
   @@index([status])
   @@map("users")
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  code        String   @unique // OWNER, OPS_MANAGER, OPERATOR, etc
+  id          String           @id @default(cuid())
+  code        String           @unique
   name        String
   description String?
-  
-  // Relations
-  users       UserRole[]
   permissions RolePermission[]
-  
+  users       UserRole[]
+
   @@map("roles")
 }
 
 model Permission {
-  id          String   @id @default(cuid())
-  code        String   @unique // bookings.read, bookings.update
+  id          String           @id @default(cuid())
+  code        String           @unique
   description String?
-  
-  // Relations
   roles       RolePermission[]
-  
+
   @@map("permissions")
 }
 
 model RolePermission {
   roleId       String
   permissionId String
-  
-  role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
-  
+  role         Role       @relation(fields: [roleId], references: [id])
+
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
 
 model UserRole {
-  userId  String
-  roleId  String
-  
-  user    User @relation(fields: [userId], references: [id])
-  role    Role @relation(fields: [roleId], references: [id])
-  
+  userId String
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
   @@id([userId, roleId])
   @@map("user_roles")
 }
@@ -103,166 +79,124 @@ model UserRole {
 model Session {
   id           String   @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  
   token        String   @unique
   refreshToken String?  @unique
-  
   ipAddress    String?
-  userAgent    String?  @db.Text
-  
+  userAgent    String?
   expiresAt    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+  user         User     @relation(fields: [userId], references: [id])
+
   @@index([userId])
   @@index([token])
   @@index([expiresAt])
   @@map("sessions")
 }
 
-// ============================================
-// MODELS (Companions)
-// ============================================
-
 model Model {
-  id              String   @id @default(cuid())
-  publicCode      String   @unique // Short code: "SOPHIA-MF"
-  name            String
-  slug            String   @unique
-  
-  // Location
-  primaryLocationId String?
-  primaryLocation   Location? @relation("PrimaryLocation", fields: [primaryLocationId], references: [id])
-  
-  // Status
-  status          String   @default("draft") // draft, review, published, hidden, archived
-  visibility      String   @default("public") // public, private, unlisted
-  
-  // Internal
-  ratingInternal  Float?   // 0-5
-  notesInternal   String?  @db.Text
-
-  // AI Learning
-  aiParseExampleId  String?
-  aiParseExample    AIParseExample? @relation(fields: [aiParseExampleId], references: [id])
-
-  // Quality & Risk Scoring
-  dataCompletenessScore  Int      @default(0)   // 0-100
-  modelRiskIndex         String   @default("green") // green, yellow, red
-
-  // Phase 2 — Physical (extras beyond ModelStats)
-  measurements     String?      // "32D-25-33"
-  piercingDetails  String[]     // ["Belly", "Nipples"]
-  education        String?      // "Graduate", "Masters"
-  travel           String?      // "London only" | "UK & Europe" | "Worldwide"
-  hairLength       String?      // Long | Medium | Short
-  ethnicity        String?      // White European | Latin | Asian | Mixed | etc.
-
-  // Contact & Logistics (internal)
-  phone            String?
-  phone2           String?
-  email            String?
-  whatsapp         Boolean      @default(false)
-  telegram         Boolean      @default(false)
-  viber            Boolean      @default(false)
-  signal           Boolean      @default(false)
-
-  // Incall address (internal)
-  postcode         String?
-  street           String?
-  houseNumber      String?
-  floor            String?
-  flatNumber       String?
-  nearestStation   String?
-
-  // Availability settings
-  availableAllDay  Boolean      @default(false)
-  availableDays    String[]     // ["Monday","Tuesday",...]
-
-  // Payment methods accepted
-  paymentCash          Boolean @default(false)
-  paymentTerminal      Boolean @default(false)
-  paymentBankTransfer  Boolean @default(false)
-  paymentMonese        Boolean @default(false)
-  paymentMonzo         Boolean @default(false)
-  paymentRevolut       Boolean @default(false)
-  paymentStarling      Boolean @default(false)
-  paymentBTC           Boolean @default(false)
-  paymentLTC           Boolean @default(false)
-  paymentUSDT          Boolean @default(false)
-
-  // Work preferences
-  worksWithCouples     Boolean @default(false)
-  worksWithWomen       Boolean @default(false)
-  willingDisabled      Boolean @default(false)
-  willingPrivatePlaces Boolean @default(false)
-  willingInternational Boolean @default(false)
-  willingLongDistance   Boolean @default(false)
-  hasFlatmates         Boolean @default(false)
-  dinnerDates          Boolean @default(false)
-  travelCompanion      Boolean @default(false)
-
-  // Personal
-  dateOfBirth      DateTime?
-  internalRating   Float?       // 0-5
-  workingName      String?      // public pseudonym
-  ageForWeb        Int?         // displayed age (may differ from real)
-  bio              String?      @db.Text
-
-  // Phase 2 — Marketing & Presentation
-  tagline          String?      // "Slender Russian Blonde"
-  isExclusive      Boolean      @default(false)
-  isVerified       Boolean      @default(false)
-  availability     String?      // Available Now | Advanced Notice | Away | On Holiday
-  duoPartnerIds    String[]     // IDs моделей для DUO
-  wardrobe         String[]     // ["Schoolgirl", "Nurse", "Latex"]
-  publicTags       String[]     // ["GFE", "Open-minded", "Massage Specialist"]
-
-  // Phase 2 — Trust & Safety
-  verificationNote String?
-  lastActiveAt     DateTime?
-  responseTimeMin  Int?
-
-  // Phase 2 — SEO
-  seoTitle         String?
-  seoDescription   String?
-
-  // Phase 3 — Analytics: View tracking
-  viewsTotal       Int       @default(0)
-  viewsToday       Int       @default(0)
-  lastViewedAt     DateTime?
-
-  // Relations
-  stats           ModelStats?
-  media           ModelMedia[]
-  services        ModelService[]
-  categories      ModelCategory[]
-  attributes      ModelAttribute[]
-  availabilitySlots AvailabilitySlot[]
+  id                     String                   @id @default(cuid())
+  publicCode             String                   @unique
+  name                   String
+  slug                   String                   @unique
+  primaryLocationId      String?
+  status                 String                   @default("draft")
+  visibility             String                   @default("public")
+  ratingInternal         Float?
+  notesInternal          String?
+  aiParseExampleId       String?
+  dataCompletenessScore  Int                      @default(0)
+  modelRiskIndex         String                   @default("green")
+  deletedAt              DateTime?                @map("deleted_at")
+  deletedBy              String?                  @map("deleted_by")
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  availability           String?
+  duoPartnerIds          String[]
+  education              String?
+  isExclusive            Boolean                  @default(false)
+  isVerified             Boolean                  @default(false)
+  lastActiveAt           DateTime?
+  measurements           String?
+  piercingDetails        String[]
+  publicTags             String[]
+  responseTimeMin        Int?
+  seoDescription         String?
+  seoTitle               String?
+  tagline                String?
+  travel                 String?
+  verificationNote       String?
+  wardrobe               String[]
+  ageForWeb              Int?
+  availableAllDay        Boolean                  @default(false)
+  availableDays          String[]
+  bio                    String?
+  dateOfBirth            DateTime?
+  dinnerDates            Boolean                  @default(false)
+  email                  String?
+  ethnicity              String?
+  flatNumber             String?
+  floor                  String?
+  hairLength             String?
+  hasFlatmates           Boolean                  @default(false)
+  houseNumber            String?
+  internalRating         Float?
+  nearestStation         String?
+  paymentBTC             Boolean                  @default(false)
+  paymentBankTransfer    Boolean                  @default(false)
+  paymentCash            Boolean                  @default(false)
+  paymentLTC             Boolean                  @default(false)
+  paymentMonese          Boolean                  @default(false)
+  paymentMonzo           Boolean                  @default(false)
+  paymentRevolut         Boolean                  @default(false)
+  paymentStarling        Boolean                  @default(false)
+  paymentTerminal        Boolean                  @default(false)
+  paymentUSDT            Boolean                  @default(false)
+  phone                  String?
+  phone2                 String?
+  postcode               String?
+  signal                 Boolean                  @default(false)
+  street                 String?
+  telegram               Boolean                  @default(false)
+  telegramPhone          String?
+  telegramTag            String?
+  travelCompanion        Boolean                  @default(false)
+  viber                  Boolean                  @default(false)
+  whatsapp               Boolean                  @default(false)
+  willingDisabled        Boolean                  @default(false)
+  willingInternational   Boolean                  @default(false)
+  willingLongDistance    Boolean                  @default(false)
+  willingPrivatePlaces   Boolean                  @default(false)
+  workingName            String?
+  worksWithCouples       Boolean                  @default(false)
+  worksWithWomen         Boolean                  @default(false)
+  lastViewedAt           DateTime?
+  viewsToday             Int                      @default(0)
+  viewsTotal             Int                      @default(0)
+  offeredOffers          AlternativeOffer[]       @relation("OfferedModel")
+  requestedOffers        AlternativeOffer[]       @relation("RequestedModel")
+  availabilityConflicts  AvailabilityConflict[]
   availabilityMismatches AvailabilityMismatch[]
-  inquiryMatches  InquiryMatch[]
-  bookings        Booking[]
-  reviews         Review[]
-  incidents       Incident[]  @relation("ModelIncidents")
-  fraudSignals    FraudSignal[]
-  modelAvailabilities  ModelAvailability[]
-  availabilityConflicts AvailabilityConflict[]
-  similaritiesAsA    ModelSimilarity[]   @relation("ModelSimilarityA")
-  similaritiesAsB    ModelSimilarity[]   @relation("ModelSimilarityB")
-  requestedOffers    AlternativeOffer[]  @relation("RequestedModel")
-  offeredOffers      AlternativeOffer[]  @relation("OfferedModel")
-  complaintPatterns  ReviewComplaintPattern[]
-  payments           Payment[]
-  modelRates         ModelRate[]
-  modelLocations     ModelLocation[]
-
-  // Soft delete
-  deletedAt       DateTime? @map("deleted_at")
-  deletedBy       String?   @map("deleted_by")
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  availabilitySlots      AvailabilitySlot[]
+  bookings               Booking[]
+  fraudSignals           FraudSignal[]
+  incidents              Incident[]               @relation("ModelIncidents")
+  inquiryMatches         InquiryMatch[]
+  attributes             ModelAttribute[]
+  modelAvailabilities    ModelAvailability[]
+  categories             ModelCategory[]
+  modelLocations         ModelLocation[]
+  media                  ModelMedia[]
+  modelRates             ModelRate[]
+  services               ModelService[]
+  similaritiesAsA        ModelSimilarity[]        @relation("ModelSimilarityA")
+  similaritiesAsB        ModelSimilarity[]        @relation("ModelSimilarityB")
+  stats                  ModelStats?
+  aiParseExample         AIParseExample?          @relation(fields: [aiParseExampleId], references: [id])
+  primaryLocation        Location?                @relation("PrimaryLocation", fields: [primaryLocationId], references: [id])
+  payments               Payment[]
+  complaintPatterns      ReviewComplaintPattern[]
+  reviews                Review[]
 
   @@index([slug])
   @@index([status])
@@ -272,45 +206,41 @@ model Model {
 }
 
 model ModelStats {
-  modelId         String   @id
-  model           Model    @relation(fields: [modelId], references: [id])
-  
-  age             Int?
-  height          Int?
-  weight          Int?
-  dressSize       String?
-  feetSize        String?  @map("feet_size")
-  bustSize        String?
-  bustType        String?
-  hairColour      String?
-  eyeColour       String?
-  smokingStatus   String?
-  tattooStatus    String?
-  piercingStatus  String?
-  orientation     String?
-  nationality     String?
-  languages       String[]
-  uniforms        String[]
-  
+  modelId        String   @id
+  age            Int?
+  height         Int?
+  weight         Int?
+  dressSize      String?
+  feetSize       String?  @map("feet_size")
+  bustSize       String?
+  bustType       String?
+  hairColour     String?
+  eyeColour      String?
+  smokingStatus  String?
+  tattooStatus   String?
+  piercingStatus String?
+  orientation    String?
+  nationality    String?
+  languages      String[]
+  uniforms       String[]
+  model          Model    @relation(fields: [modelId], references: [id])
+
   @@map("model_stats")
 }
 
 model ModelMedia {
-  id          String   @id @default(cuid())
-  modelId     String
-  model       Model    @relation(fields: [modelId], references: [id])
-  
-  type        String   // photo, video
-  storageKey  String
-  url         String
-  checksum    String?
-  
-  isPrimary   Boolean  @default(false)
-  isPublic    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  
-  createdAt   DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  modelId    String
+  type       String
+  storageKey String
+  url        String
+  checksum   String?
+  isPrimary  Boolean  @default(false)
+  isPublic   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  model      Model    @relation(fields: [modelId], references: [id])
+
   @@index([modelId])
   @@index([modelId, isPrimary])
   @@map("model_media")
@@ -319,232 +249,189 @@ model ModelMedia {
 model ModelService {
   modelId       String
   serviceId     String
-  isEnabled     Boolean  @default(true)
-  isExtra       Boolean  @default(false)
+  isEnabled     Boolean @default(true)
   extraPrice    Float?
-  isDoublePrice Boolean  @default(false)
-  isPOA         Boolean  @default(false)
-
-  model       Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  service     Service  @relation(fields: [serviceId], references: [id])
+  isExtra       Boolean @default(false)
+  isDoublePrice Boolean @default(false)
+  isPOA         Boolean @default(false)
+  model         Model   @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  service       Service @relation(fields: [serviceId], references: [id])
 
   @@id([modelId, serviceId])
   @@map("model_services")
 }
 
 model ModelCategory {
-  modelId     String
-  categoryId  String
-  
-  model       Model    @relation(fields: [modelId], references: [id])
-  category    Category @relation(fields: [categoryId], references: [id])
-  
+  modelId    String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  model      Model    @relation(fields: [modelId], references: [id])
+
   @@id([modelId, categoryId])
   @@map("model_categories")
 }
 
 model ModelAttribute {
-  modelId           String
-  attributeValueId  String
-  
-  model             Model          @relation(fields: [modelId], references: [id])
-  attributeValue    AttributeValue @relation(fields: [attributeValueId], references: [id])
-  
+  modelId          String
+  attributeValueId String
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id])
+  model            Model          @relation(fields: [modelId], references: [id])
+
   @@id([modelId, attributeValueId])
   @@map("model_attributes")
 }
 
-// ============================================
-// DIRECTORIES (Services, Categories, Attributes, Locations)
-// ============================================
-
 model Service {
-  id               String   @id @default(cuid())
-  title            String
-  slug             String   @unique
-  category         String   @default("Other")
-  description      String?
+  id                String           @id @default(cuid())
+  title             String
+  slug              String           @unique
+  category          String           @default("Other")
+  description       String?
   defaultExtraPrice Float?
-  status           String   @default("active")
-  isPopular        Boolean  @default(false)
-
-  // Phase 2 — public site fields
-  name             String?   @unique
-  publicName       String?
-  introText        String?   @db.Text
-  fullDescription  String?   @db.Text
-  seoTitle         String?
-  seoDescription   String?
-  seoKeywords      String?
-  isPublic         Boolean   @default(true)
-  isActive         Boolean   @default(true)
-  sortOrder        Int       @default(0)
-
-  // Relations
-  models      ModelService[]
-  bookings    BookingService[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status            String           @default("active")
+  isPopular         Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  fullDescription   String?
+  introText         String?
+  isActive          Boolean          @default(true)
+  isPublic          Boolean          @default(true)
+  name              String?          @unique
+  publicName        String?
+  seoDescription    String?
+  seoKeywords       String?
+  seoTitle          String?
+  sortOrder         Int              @default(0)
+  bookings          BookingService[]
+  models            ModelService[]
 
   @@map("services")
 }
 
 model Category {
-  id              String   @id @default(cuid())
+  id              String          @id @default(cuid())
   title           String
-  slug            String   @unique
+  slug            String          @unique
   h1              String?
-  introHtml       String?  @db.Text
-  descriptionHtml String?  @db.Text
-  status          String   @default("active")
-  isPopular       Boolean  @default(false)
-  
-  // SEO
+  introHtml       String?
+  descriptionHtml String?
+  status          String          @default("active")
+  isPopular       Boolean         @default(false)
   seoTitle        String?
   seoDescription  String?
   seoKeywords     String?
-  
-  // Relations
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   models          ModelCategory[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+
   @@map("categories")
 }
 
 model Attribute {
-  id          String   @id @default(cuid())
-  code        String   @unique // hair_colour, bust_type
-  name        String
-  isFilterable Boolean @default(true)
-  isPublic    Boolean  @default(true)
-  dataType    String   @default("enum") // enum, text, number
-  status      String   @default("active")
-  
-  // Relations
-  values      AttributeValue[]
-  
+  id           String           @id @default(cuid())
+  code         String           @unique
+  name         String
+  isFilterable Boolean          @default(true)
+  isPublic     Boolean          @default(true)
+  dataType     String           @default("enum")
+  status       String           @default("active")
+  values       AttributeValue[]
+
   @@map("attributes")
 }
 
 model AttributeValue {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   attributeId String
-  attribute   Attribute @relation(fields: [attributeId], references: [id])
-  
   value       String
-  sortOrder   Int      @default(0)
-  status      String   @default("active")
-  
-  // Relations
+  sortOrder   Int              @default(0)
+  status      String           @default("active")
+  attribute   Attribute        @relation(fields: [attributeId], references: [id])
   models      ModelAttribute[]
-  
+
   @@unique([attributeId, value])
   @@map("attribute_values")
 }
 
 model Location {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  county      String?
-  country     String   @default("UK")
-  timezone    String   @default("Europe/London")
-  latitude    Float?
-  longitude   Float?
-  status      String   @default("active")
-  isPopular   Boolean  @default(false)
-  
-  // Relations
-  models      Model[]  @relation("PrimaryLocation")
-  inquiries   Inquiry[]
-  bookings    Booking[]
-  
+  id        String    @id @default(cuid())
+  title     String
+  slug      String    @unique
+  county    String?
+  country   String    @default("UK")
+  timezone  String    @default("Europe/London")
+  latitude  Float?
+  longitude Float?
+  status    String    @default("active")
+  isPopular Boolean   @default(false)
+  bookings  Booking[]
+  inquiries Inquiry[]
+  models    Model[]   @relation("PrimaryLocation")
+
   @@map("locations")
 }
 
 model CallRate {
-  id              String   @id @default(cuid())
+  id              String  @id @default(cuid())
   locationId      String?
-  currency        String   @default("GBP")
+  currency        String  @default("GBP")
   durationMinutes Int
   price           Float
-  status          String   @default("active")
-  
+  status          String  @default("active")
+
   @@map("call_rates")
 }
 
-// ============================================
-// CLIENTS, INQUIRIES, BOOKINGS
-// ============================================
-
 model Client {
-  id              String   @id @default(cuid())
-  fullName        String?
-  email           String?
-  phone           String?
-  preferredChannel String? // web, telegram, whatsapp, phone
-  tags            String[] // ["vip", "regular"]
-
-  // Name
-  firstName        String?  @map("first_name")
-  lastName         String?  @map("last_name")
-
-  // Locale
-  language         String?
-  city             String?
-  country          String?
-
-  // Risk & Finance
-  riskStatus       String   @default("normal") // normal, monitoring, restricted, blocked
-  totalSpent       Decimal  @default(0)  @db.Decimal(12,2)
-  bookingCount     Int      @default(0)
-  chargebackCount  Int      @default(0)
-  refundCount      Int      @default(0)  @map("refund_count")
-  cancellationRate Decimal  @default(0)  @db.Decimal(5,2) @map("cancellation_rate")
-  notes            String?  @db.Text
-
-  // Phase 2 — Client preferences & tiers
-  preferredLanguage  String?       // en | ru | ar
-  preferredCurrency  String?       // GBP | EUR | USD | AED
-  tier               String?       // standard | premium | vip
-  totalSpend         Float?
-  lastBookingAt      DateTime?
-  internalNotes      String?       @db.Text
-  wishlistModelIds   String[]
-  preferredDistricts String[]
-  marketingOptIn     Boolean       @default(false)
-  telegramId         String?
-  telegramUsername   String?
-
-  // VIP & Merge
-  vipStatus          String?   @map("vip_status")
-  mergedIntoClientId String?   @map("merged_into_client_id")
-
-  // Soft delete
-  deletedAt        DateTime? @map("deleted_at")
-  deletedBy        String?   @map("deleted_by")
-
-  // Relations
-  inquiries       Inquiry[]
-  bookings        Booking[]
-  reviews          Review[]
-  fraudSignals     FraudSignal[]
-  incidents        Incident[]    @relation("ClientIncidents")
-  membership       ClientMembership?
-  identities       ClientIdentity[]
-  riskHistory      ClientRiskHistory[]
-  events           ClientEvent[]
-  mergeCandidatesAsPrimary   ClientMergeCandidate[] @relation("MergePrimary")
-  mergeCandidatesAsDuplicate ClientMergeCandidate[] @relation("MergeDuplicate")
-  retentionProfile  ClientRetentionProfile?
-  retentionActions  RetentionAction[]
-  payments         Payment[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                         String                  @id @default(cuid())
+  fullName                   String?
+  email                      String?
+  phone                      String?
+  preferredChannel           String?
+  tags                       String[]
+  firstName                  String?                 @map("first_name")
+  lastName                   String?                 @map("last_name")
+  language                   String?
+  city                       String?
+  country                    String?
+  riskStatus                 String                  @default("normal")
+  totalSpent                 Decimal                 @default(0) @db.Decimal(12, 2)
+  bookingCount               Int                     @default(0)
+  chargebackCount            Int                     @default(0)
+  refundCount                Int                     @default(0) @map("refund_count")
+  cancellationRate           Decimal                 @default(0) @map("cancellation_rate") @db.Decimal(5, 2)
+  notes                      String?
+  vipStatus                  String?                 @map("vip_status")
+  mergedIntoClientId         String?                 @map("merged_into_client_id")
+  deletedAt                  DateTime?               @map("deleted_at")
+  deletedBy                  String?                 @map("deleted_by")
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  internalNotes              String?
+  lastBookingAt              DateTime?
+  marketingOptIn             Boolean                 @default(false)
+  preferredCurrency          String?
+  preferredDistricts         String[]
+  preferredLanguage          String?
+  telegramId                 String?
+  telegramUsername           String?
+  tier                       String?
+  totalSpend                 Float?
+  wishlistModelIds           String[]
+  bookings                   Booking[]
+  events                     ClientEvent[]
+  identities                 ClientIdentity[]
+  membership                 ClientMembership?
+  mergeCandidatesAsDuplicate ClientMergeCandidate[]  @relation("MergeDuplicate")
+  mergeCandidatesAsPrimary   ClientMergeCandidate[]  @relation("MergePrimary")
+  retentionProfile           ClientRetentionProfile?
+  riskHistory                ClientRiskHistory[]
+  fraudSignals               FraudSignal[]
+  incidents                  Incident[]              @relation("ClientIncidents")
+  inquiries                  Inquiry[]
+  payments                   Payment[]
+  retentionActions           RetentionAction[]
+  reviews                    Review[]
 
   @@index([email])
   @@index([phone])
@@ -555,35 +442,27 @@ model Client {
 }
 
 model Inquiry {
-  id                  String   @id @default(cuid())
-  source              String   // web, telegram, whatsapp, phone, partner
-  externalRef         String?  // ID from external system
-  
+  id                  String         @id @default(cuid())
+  source              String
+  externalRef         String?
   clientId            String?
-  client              Client?  @relation(fields: [clientId], references: [id])
-  
-  status              String   @default("new") // new, qualified, awaiting_client, awaiting_deposit, converted, lost, spam
-  priority            String   @default("normal") // low, normal, high, critical
-  
+  status              String         @default("new")
+  priority            String         @default("normal")
   subject             String?
-  message             String?  @db.Text
-  
+  message             String?
   requestedLocationId String?
-  requestedLocation   Location? @relation(fields: [requestedLocationId], references: [id])
   requestedServices   Json?
   requestedTimeFrom   DateTime?
   requestedTimeTo     DateTime?
-  
   assignedTo          String?
-  assignedUser        User?    @relation("AssignedInquiries", fields: [assignedTo], references: [id])
-  
-  // Relations
-  matches             InquiryMatch[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
   booking             Booking?
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
+  assignedUser        User?          @relation("AssignedInquiries", fields: [assignedTo], references: [id])
+  client              Client?        @relation(fields: [clientId], references: [id])
+  requestedLocation   Location?      @relation(fields: [requestedLocationId], references: [id])
+  matches             InquiryMatch[]
+
   @@unique([source, externalRef])
   @@index([status, priority])
   @@index([assignedTo, status])
@@ -592,70 +471,54 @@ model Inquiry {
 }
 
 model InquiryMatch {
-  id          String   @id @default(cuid())
-  inquiryId   String
-  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id])
-  
-  modelId     String
-  model       Model    @relation(fields: [modelId], references: [id])
-  
-  score       Float    // 0-100
-  reason      Json     // Why match
-  
-  createdAt   DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  inquiryId String
+  modelId   String
+  score     Float
+  reason    Json
+  createdAt DateTime @default(now())
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id])
+  model     Model    @relation(fields: [modelId], references: [id])
+
   @@index([inquiryId])
   @@index([modelId])
   @@map("inquiry_matches")
 }
 
 model Booking {
-  id                String   @id @default(cuid())
-  shortId           String?  @unique // BK-12345, human-readable
-  inquiryId         String?  @unique
-  inquiry           Inquiry? @relation(fields: [inquiryId], references: [id])
-  
-  clientId          String
-  client            Client   @relation(fields: [clientId], references: [id])
-  
-  modelId           String
-  model             Model    @relation(fields: [modelId], references: [id])
-  
-  locationId        String
-  location          Location @relation(fields: [locationId], references: [id])
-  
-  startAt           DateTime
-  endAt             DateTime
-  
-  status            String   @default("draft") // draft, pending, deposit_required, confirmed, in_progress, completed, cancelled, no_show, expired, disputed
-  bookingType       String   @default("outcall") @map("booking_type")
-
-  priceTotal        Decimal  @db.Decimal(12,2)
-  currency          String   @default("GBP")
-  depositRequired   Decimal? @db.Decimal(12,2)
-  depositStatus     String   @default("none") // none, pending, paid, failed
-  paymentStatus     String   @default("unpaid") // unpaid, partial, paid, refunded
-  
-  assignedTo        String?
-  assignedUser      User?    @relation("AssignedBookings", fields: [assignedTo], references: [id])
-  
-  notesInternal     String?  @db.Text
-  
-  // Relations
-  services          BookingService[]
-  timeline          BookingTimeline[]
-  payments          Payment[]
-  reviews           Review[]
-  incidents         Incident[]
-  fraudSignals      FraudSignal[]
-  lostRevenue       LostRevenueEntry[]
-
-  // Soft delete
-  deletedAt         DateTime? @map("deleted_at")
-  deletedBy         String?   @map("deleted_by")
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String             @id @default(cuid())
+  shortId         String?            @unique
+  inquiryId       String?            @unique
+  clientId        String
+  modelId         String
+  locationId      String
+  startAt         DateTime
+  endAt           DateTime
+  status          String             @default("draft")
+  bookingType     String             @default("outcall") @map("booking_type")
+  priceTotal      Decimal            @db.Decimal(12, 2)
+  currency        String             @default("GBP")
+  depositRequired Decimal?           @db.Decimal(12, 2)
+  depositStatus   String             @default("none")
+  paymentStatus   String             @default("unpaid")
+  assignedTo      String?
+  notesInternal   String?
+  deletedAt       DateTime?          @map("deleted_at")
+  deletedBy       String?            @map("deleted_by")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  services        BookingService[]
+  timeline        BookingTimeline[]
+  assignedUser    User?              @relation("AssignedBookings", fields: [assignedTo], references: [id])
+  client          Client             @relation(fields: [clientId], references: [id])
+  inquiry         Inquiry?           @relation(fields: [inquiryId], references: [id])
+  location        Location           @relation(fields: [locationId], references: [id])
+  model           Model              @relation(fields: [modelId], references: [id])
+  fraudSignals    FraudSignal[]
+  incidents       Incident[]
+  lostRevenue     LostRevenueEntry[]
+  payments        Payment[]
+  reviews         Review[]
 
   @@index([clientId])
   @@index([modelId])
@@ -669,70 +532,58 @@ model Booking {
 }
 
 model BookingService {
-  bookingId   String
-  serviceId   String
-  
-  booking     Booking  @relation(fields: [bookingId], references: [id])
-  service     Service  @relation(fields: [serviceId], references: [id])
-  
+  bookingId String
+  serviceId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id])
+
   @@id([bookingId, serviceId])
   @@map("booking_services")
 }
 
 model BookingTimeline {
-  id          String   @id @default(cuid())
-  bookingId   String
-  booking     Booking  @relation(fields: [bookingId], references: [id])
-  
-  eventType   String   // status_changed, payment_received, note_added
-  payload     Json
-  
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  bookingId String
+  eventType String
+  payload   Json
+  createdBy String?
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+
   @@index([bookingId, createdAt])
   @@map("booking_timeline")
 }
 
-// ============================================
-// AVAILABILITY
-// ============================================
-
 model AvailabilityRule {
-  id          String   @id @default(cuid())
-  name        String
-  scope       String   // global, location, model
-  locationId  String?
-  modelId     String?
-  rule        Json     // Schedule, restrictions, blackouts
-  status      String   @default("active")
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id         String   @id @default(cuid())
+  name       String
+  scope      String
+  locationId String?
+  modelId    String?
+  rule       Json
+  status     String   @default("active")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@map("availability_rules")
 }
 
 model AvailabilitySlot {
-  id          String   @id @default(cuid())
-  modelId     String
-  model       Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
-
-  startAt     DateTime
-  endAt       DateTime
-  status      String   @default("available") // available, unavailable, tentative
-  source      String   @default("manual") // manual, automation, sync
-  confidence  Float    @default(1.0)
-
-  // Phase 2 — simple slot fields
-  date        DateTime?
-  timeFrom    String?    // "10:00"
-  timeTo      String?    // "22:00"
-  type        String?    // available | busy | away | tentative
-  note        String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  modelId    String
+  startAt    DateTime
+  endAt      DateTime
+  status     String    @default("available")
+  source     String    @default("manual")
+  confidence Float     @default(1.0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  date       DateTime?
+  note       String?
+  timeFrom   String?
+  timeTo     String?
+  type       String?
+  model      Model     @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   @@index([modelId, startAt])
   @@index([status, startAt])
@@ -741,45 +592,36 @@ model AvailabilitySlot {
 }
 
 model AvailabilityMismatch {
-  id              String   @id @default(cuid())
-  modelId         String
-  model           Model    @relation(fields: [modelId], references: [id])
-  
-  expectedStatus  String
-  actualStatus    String
-  detectedAt      DateTime
-  severity        String   // low, medium, high, critical
-  context         Json
-  resolvedAt      DateTime?
-  
+  id             String    @id @default(cuid())
+  modelId        String
+  expectedStatus String
+  actualStatus   String
+  detectedAt     DateTime
+  severity       String
+  context        Json
+  resolvedAt     DateTime?
+  model          Model     @relation(fields: [modelId], references: [id])
+
   @@index([detectedAt])
   @@index([modelId, resolvedAt])
   @@map("availability_mismatches")
 }
 
-// ============================================
-// TASKS, EXCEPTIONS, SLA
-// ============================================
-
 model Task {
-  id              String   @id @default(cuid())
-  type            String   // confirm_booking, request_deposit, follow_up
-  status          String   @default("open") // open, in_progress, done, failed, cancelled
-  priority        String   @default("normal") // low, normal, high, critical
-  subject         String
-  
-  entityType      String   // inquiry, booking, model, payment
-  entityId        String
-  
-  assignedTo      String?
-  assignedUser    User?    @relation("AssignedTasks", fields: [assignedTo], references: [id])
-  
-  dueAt           DateTime?
-  slaDeadlineAt   DateTime?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id            String    @id @default(cuid())
+  type          String
+  status        String    @default("open")
+  priority      String    @default("normal")
+  subject       String
+  entityType    String
+  entityId      String
+  assignedTo    String?
+  dueAt         DateTime?
+  slaDeadlineAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  assignedUser  User?     @relation("AssignedTasks", fields: [assignedTo], references: [id])
+
   @@index([assignedTo, status])
   @@index([status, slaDeadlineAt])
   @@index([entityType, entityId])
@@ -787,86 +629,64 @@ model Task {
 }
 
 model Exception {
-  id          String   @id @default(cuid())
-  type        String   // payment_failed, no_show_risk, mismatch, overbooking
-  status      String   @default("open") // open, investigating, resolved, dismissed
-  severity    String   // low, medium, high, critical
-  
-  entityType  String
-  entityId    String
-  
-  summary     String
-  details     Json
-  
-  resolvedAt  DateTime?
-  resolvedBy  String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id         String    @id @default(cuid())
+  type       String
+  status     String    @default("open")
+  severity   String
+  entityType String
+  entityId   String
+  summary    String
+  details    Json
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   @@index([status, severity])
   @@index([entityType, entityId])
   @@map("exceptions")
 }
 
 model SLAPolicy {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   name            String
-  appliesTo       String   // task_type, exception_type
-  key             String   // confirm_booking, payment_failed
+  appliesTo       String
+  key             String
   deadlineMinutes Int
-  escalation      Json     // Where to escalate
-  status          String   @default("active")
-
+  escalation      Json
+  status          String      @default("active")
   records         SLARecord[]
 
   @@map("sla_policies")
 }
 
-// ============================================
-// PAYMENTS
-// ============================================
-
 model Payment {
-  id                String   @id @default(cuid())
-
-  // Links (all optional for manual payments)
-  clientId          String?
-  modelId           String?
+  id                String    @id @default(cuid())
   bookingId         String?
-  createdById       String?
-
-  // Provider (legacy / Stripe)
-  provider          String?  // stripe, revolut, custom
+  provider          String?
   providerPaymentId String?
-  stripePaymentId   String?
-  type              String?  // deposit, full, refund
-
-  // Core fields
-  amount            Decimal  @db.Decimal(12,2)
-  currency          String   @default("GBP")
-  method            String?  // cash, bank_transfer, card, crypto
-  status            String   @default("pending") // pending, received, refunded (manual) / succeeded, failed, cancelled, disputed (provider)
-
-  // Details
-  reference         String?
-  notes             String?  @db.Text
-
-  // Provider details
+  type              String?
+  status            String    @default("pending")
+  amount            Decimal   @db.Decimal(12, 2)
+  currency          String    @default("GBP")
   failureReason     String?
-  refundedAmount    Decimal? @db.Decimal(12,2)
+  refundedAmount    Decimal?  @db.Decimal(12, 2)
   refundedAt        DateTime?
-  raw               Json?    // Full provider response
-
+  raw               Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  clientId          String?
+  createdById       String?
+  method            String?
+  modelId           String?
+  notes             String?
   receivedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relations
-  client            Client?  @relation(fields: [clientId], references: [id])
-  model             Model?   @relation(fields: [modelId], references: [id])
-  booking           Booking? @relation(fields: [bookingId], references: [id])
-  createdBy         User?    @relation("CreatedPayments", fields: [createdById], references: [id])
+  reference         String?
+  stripePaymentId   String?
+  booking           Booking?  @relation(fields: [bookingId], references: [id])
+  client            Client?   @relation(fields: [clientId], references: [id])
+  createdBy         User?     @relation("CreatedPayments", fields: [createdById], references: [id])
+  model             Model?    @relation(fields: [modelId], references: [id])
 
   @@unique([provider, providerPaymentId])
   @@index([bookingId])
@@ -876,44 +696,34 @@ model Payment {
   @@map("payments")
 }
 
-// ============================================
-// INTEGRATIONS & WEBHOOKS
-// ============================================
-
 model Integration {
-  id          String   @id @default(cuid())
-  code        String   @unique // stripe, telegram_diva, whatsapp
+  id          String       @id @default(cuid())
+  code        String       @unique
   name        String
-  type        String   // payment, messaging, calendar, partner
-  status      String   @default("active")
-  config      Json     // Keys, URLs, tokens
-  
-  // Relations
+  type        String
+  status      String       @default("active")
+  config      Json
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   webhooksIn  WebhookIn[]
   webhooksOut WebhookOut[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+
   @@map("integrations")
 }
 
 model WebhookIn {
-  id              String   @id @default(cuid())
-  integrationId   String
-  integration     Integration @relation(fields: [integrationId], references: [id])
-  
-  eventType       String
-  headers         Json
-  payload         Json
-  
-  receivedAt      DateTime @default(now())
-  processedAt     DateTime?
-  status          String   @default("received") // received, processed, failed
-  error           String?  @db.Text
-  
-  idempotencyKey  String?
-  
+  id             String      @id @default(cuid())
+  integrationId  String
+  eventType      String
+  headers        Json
+  payload        Json
+  receivedAt     DateTime    @default(now())
+  processedAt    DateTime?
+  status         String      @default("received")
+  error          String?
+  idempotencyKey String?
+  integration    Integration @relation(fields: [integrationId], references: [id])
+
   @@unique([integrationId, idempotencyKey])
   @@index([integrationId, receivedAt])
   @@index([status, receivedAt])
@@ -921,46 +731,36 @@ model WebhookIn {
 }
 
 model WebhookOut {
-  id              String   @id @default(cuid())
-  integrationId   String
-  integration     Integration @relation(fields: [integrationId], references: [id])
-  
-  eventType       String
-  targetUrl       String
-  payload         Json
-  
-  createdAt       DateTime @default(now())
-  sentAt          DateTime?
-  status          String   @default("pending") // pending, sent, failed
-  attempts        Int      @default(0)
-  lastError       String?  @db.Text
-  
+  id            String      @id @default(cuid())
+  integrationId String
+  eventType     String
+  targetUrl     String
+  payload       Json
+  createdAt     DateTime    @default(now())
+  sentAt        DateTime?
+  status        String      @default("pending")
+  attempts      Int         @default(0)
+  lastError     String?
+  integration   Integration @relation(fields: [integrationId], references: [id])
+
   @@index([status, createdAt])
   @@map("webhooks_out")
 }
 
-// ============================================
-// AUDIT & EVENTS
-// ============================================
-
 model AuditLog {
-  id            String   @id @default(cuid())
-  actorUserId   String?
-  actor         User?    @relation(fields: [actorUserId], references: [id])
-  actorType     String   @default("user") // user, system
-  
-  action        String   // STATUS_CHANGE, CREATE, UPDATE, DELETE
-  entityType    String
-  entityId      String
-  
-  before        Json?
-  after         Json?
-  
-  ipAddress     String?
-  userAgent     String?  @db.Text
-  
-  createdAt     DateTime @default(now())
-  
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorType   String   @default("user")
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+
   @@index([entityType, entityId, createdAt])
   @@index([actorUserId, createdAt])
   @@index([createdAt])
@@ -968,67 +768,52 @@ model AuditLog {
 }
 
 model DomainEvent {
-  id          String   @id @default(cuid())
-  eventType   String   // inquiry.created, payment.succeeded
+  id          String    @id @default(cuid())
+  eventType   String
   entityType  String
   entityId    String
   payload     Json
-  
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   publishedAt DateTime?
-  
+
   @@index([eventType, createdAt])
   @@index([publishedAt])
   @@map("domain_events")
 }
 
-// ============================================
-// AUTOMATION
-// ============================================
-
 model AutomationRule {
-  id          String   @id @default(cuid())
-  name        String
-  status      String   @default("active") // active, disabled, testing
-  trigger     String   // inquiry.created, payment.succeeded
-  conditions  Json     // IF conditions
-  actions     Json     // THEN actions
-  limits      Json?    // Rate limits
-  
-  // Relations
-  executions  AutomationExecution[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id         String                @id @default(cuid())
+  name       String
+  status     String                @default("active")
+  trigger    String
+  conditions Json
+  actions    Json
+  limits     Json?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  executions AutomationExecution[]
+
   @@map("automation_rules")
 }
 
 model AutomationExecution {
-  id          String   @id @default(cuid())
-  ruleId      String
-  rule        AutomationRule @relation(fields: [ruleId], references: [id])
-  
-  eventId     String   // from domain_events
-  status      String   @default("running") // running, done, failed
-  
-  startedAt   DateTime @default(now())
-  finishedAt  DateTime?
-  logs        Json?
-  
+  id         String         @id @default(cuid())
+  ruleId     String
+  eventId    String
+  status     String         @default("running")
+  startedAt  DateTime       @default(now())
+  finishedAt DateTime?
+  logs       Json?
+  rule       AutomationRule @relation(fields: [ruleId], references: [id])
+
   @@unique([ruleId, eventId])
   @@map("automation_executions")
 }
 
-// ============================================
-// MODEL APPLICATIONS
-// ============================================
-
 model ModelApplication {
   id              String   @id @default(cuid())
-  source          String   @default("self") // 'self' | 'admin'
-  status          String   @default("new")  // 'new' | 'reviewing' | 'approved' | 'rejected'
-
+  source          String   @default("self")
+  status          String   @default("new")
   name            String
   age             Int?
   height          Int?
@@ -1047,7 +832,6 @@ model ModelApplication {
   orientation     String?
   workWithCouples Boolean  @default(false)
   workWithWomen   Boolean  @default(false)
-
   rate30min       Int?
   rate45min       Int?
   rate1hIn        Int?
@@ -1060,7 +844,6 @@ model ModelApplication {
   rateOvernight   Int?
   blackClients    Boolean  @default(true)
   disabledClients Boolean  @default(true)
-
   addressStreet   String?
   addressFlat     String?
   addressPostcode String?
@@ -1068,10 +851,8 @@ model ModelApplication {
   airportHeathrow Boolean  @default(false)
   airportGatwick  Boolean  @default(false)
   airportStansted Boolean  @default(false)
-
   services        String[]
-  notesInternal   String?  @db.Text
-
+  notesInternal   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -1080,43 +861,31 @@ model ModelApplication {
   @@map("model_applications")
 }
 
-// ============================================
-// REVIEWS & REPUTATION
-// ============================================
-
 model Review {
-  id                String   @id @default(cuid())
-  bookingId         String
-  booking           Booking  @relation(fields: [bookingId], references: [id])
-  clientId          String
-  client            Client   @relation(fields: [clientId], references: [id])
-  modelId           String
-  model             Model    @relation(fields: [modelId], references: [id])
-
-  rating            Int      // 1-5
-  text              String?  @db.Text
-  status            String   @default("pending") // pending, approved, rejected, flagged, escalated
-  isVerifiedBooking Boolean  @default(true)
-
-  sentimentScore    Float?   // -1 to 1
-  toxicityFlag      Boolean  @default(false)
-  suspiciousFlag    Boolean  @default(false)
-
-  replyByModel      String?  @db.Text
-  replyByManager    String?  @db.Text
-
-  // Public visibility & moderation
-  publicVisibilityStatus String  @default("hidden") @map("public_visibility_status")
+  id                     String    @id @default(cuid())
+  bookingId              String
+  clientId               String
+  modelId                String
+  rating                 Int
+  text                   String?
+  status                 String    @default("pending")
+  isVerifiedBooking      Boolean   @default(true)
+  sentimentScore         Float?
+  toxicityFlag           Boolean   @default(false)
+  suspiciousFlag         Boolean   @default(false)
+  replyByModel           String?
+  replyByManager         String?
+  publicVisibilityStatus String    @default("hidden") @map("public_visibility_status")
   language               String?
-  moderatedBy            String?  @map("moderated_by")
+  moderatedBy            String?   @map("moderated_by")
   moderatedAt            DateTime? @map("moderated_at")
-
-  // Soft delete
-  deletedAt         DateTime? @map("deleted_at")
-  deletedBy         String?   @map("deleted_by")
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  deletedAt              DateTime? @map("deleted_at")
+  deletedBy              String?   @map("deleted_by")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  booking                Booking   @relation(fields: [bookingId], references: [id])
+  client                 Client    @relation(fields: [clientId], references: [id])
+  model                  Model     @relation(fields: [modelId], references: [id])
 
   @@index([modelId, status])
   @@index([clientId])
@@ -1125,25 +894,15 @@ model Review {
   @@map("reviews")
 }
 
-// ============================================
-// FRAUD DETECTION
-// ============================================
-
 model FraudSignal {
-  id              String   @id @default(cuid())
-  clientId        String
-  client          Client   @relation(fields: [clientId], references: [id])
-  bookingId       String?
-  booking         Booking? @relation(fields: [bookingId], references: [id])
-  modelId         String?
-  model           Model?   @relation(fields: [modelId], references: [id])
-
-  signalType      String   // high_velocity, chargeback, ip_mismatch, suspicious_pattern, manual_flag
-  riskScoreImpact Int
-  metadata        Json?
-
-  // Extended fields
-  sourceModule             String?   @map("source_module") // payments, inquiries, bookings, membership, retention, manual
+  id                       String    @id @default(cuid())
+  clientId                 String
+  bookingId                String?
+  modelId                  String?
+  signalType               String
+  riskScoreImpact          Int
+  metadata                 Json?
+  sourceModule             String?   @map("source_module")
   ipAddress                String?   @map("ip_address")
   deviceFingerprint        String?   @map("device_fingerprint")
   geoCountry               String?   @map("geo_country")
@@ -1151,15 +910,17 @@ model FraudSignal {
   cardFingerprint          String?   @map("card_fingerprint")
   velocity1h               Int?      @map("velocity_1h")
   velocity24h              Int?      @map("velocity_24h")
-  cancellationRateSnapshot Decimal?  @db.Decimal(5,2)  @map("cancellation_rate_snapshot")
-  refundRateSnapshot       Decimal?  @db.Decimal(5,2)  @map("refund_rate_snapshot")
+  cancellationRateSnapshot Decimal?  @map("cancellation_rate_snapshot") @db.Decimal(5, 2)
+  refundRateSnapshot       Decimal?  @map("refund_rate_snapshot") @db.Decimal(5, 2)
   riskScoreBefore          Int?      @map("risk_score_before")
   riskScoreAfter           Int?      @map("risk_score_after")
-  status                   String    @default("new") // new, reviewing, confirmed, dismissed
+  status                   String    @default("new")
   reviewedBy               String?   @map("reviewed_by")
   reviewedAt               DateTime? @map("reviewed_at")
-
-  createdAt       DateTime @default(now())
+  createdAt                DateTime  @default(now())
+  booking                  Booking?  @relation(fields: [bookingId], references: [id])
+  client                   Client    @relation(fields: [clientId], references: [id])
+  model                    Model?    @relation(fields: [modelId], references: [id])
 
   @@index([clientId])
   @@index([signalType])
@@ -1169,44 +930,32 @@ model FraudSignal {
   @@map("fraud_signals")
 }
 
-// ============================================
-// INCIDENT MANAGEMENT
-// ============================================
-
 model Incident {
-  id                  String    @id @default(cuid())
-  bookingId           String?
-  booking             Booking?  @relation(fields: [bookingId], references: [id])
-
-  reporterType        String    // client, model, staff
-  reporterClientId    String?
-  reporterClient      Client?   @relation("ClientIncidents", fields: [reporterClientId], references: [id])
-  reporterModelId     String?
-  reporterModel       Model?    @relation("ModelIncidents", fields: [reporterModelId], references: [id])
-  reporterUserId      String?
-
-  status              String    @default("reported") // reported, investigating, resolved, closed
-  severity            String    @default("medium")   // low, medium, high, critical
-  incidentType        String    @default("general")  @map("incident_type")
-
-  description         String    @db.Text
-  resolutionDetails   String?   @db.Text
-  compensationAmount  Decimal?  @db.Decimal(12,2)
-
-  // Extended fields
-  sourceChannel       String?   @map("source_channel")
-  resolutionType      String?   @map("resolution_type")
-  compensationStatus  String    @default("none") @map("compensation_status")
-  linkedReviewId      String?   @map("linked_review_id")
-  linkedPaymentId     String?   @map("linked_payment_id")
-  closedAt            DateTime? @map("closed_at")
-
-  // Soft delete
-  deletedAt           DateTime? @map("deleted_at")
-  deletedBy           String?   @map("deleted_by")
-
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  bookingId          String?
+  reporterType       String
+  reporterClientId   String?
+  reporterModelId    String?
+  reporterUserId     String?
+  status             String    @default("reported")
+  severity           String    @default("medium")
+  incidentType       String    @default("general") @map("incident_type")
+  description        String
+  resolutionDetails  String?
+  compensationAmount Decimal?  @db.Decimal(12, 2)
+  sourceChannel      String?   @map("source_channel")
+  resolutionType     String?   @map("resolution_type")
+  compensationStatus String    @default("none") @map("compensation_status")
+  linkedReviewId     String?   @map("linked_review_id")
+  linkedPaymentId    String?   @map("linked_payment_id")
+  closedAt           DateTime? @map("closed_at")
+  deletedAt          DateTime? @map("deleted_at")
+  deletedBy          String?   @map("deleted_by")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  booking            Booking?  @relation(fields: [bookingId], references: [id])
+  reporterClient     Client?   @relation("ClientIncidents", fields: [reporterClientId], references: [id])
+  reporterModel      Model?    @relation("ModelIncidents", fields: [reporterModelId], references: [id])
 
   @@index([status])
   @@index([severity])
@@ -1215,40 +964,32 @@ model Incident {
   @@map("incidents")
 }
 
-// ============================================
-// REVENUE LEAKAGE CONTROL
-// ============================================
-
 model LostRevenueEntry {
   id                   String    @id @default(cuid())
-  // type values: unanswered_lead, model_unavailable, client_declined_price, payment_failed,
-  //   booking_cancelled_after_hold, no_alternative_offered, receptionist_delay, double_booking_loss,
-  //   dispute_refund, no_show, wrong_quote, service_mismatch
   type                 String
-  amount               Decimal   @db.Decimal(12,2)
-  amountType           String    @default("estimated")  @map("amount_type")
+  amount               Decimal   @db.Decimal(12, 2)
+  amountType           String    @default("estimated") @map("amount_type")
   currency             String    @default("GBP")
   bookingId            String?   @map("booking_id")
-  booking              Booking?  @relation(fields: [bookingId], references: [id])
   leadId               String?   @map("lead_id")
   clientId             String?   @map("client_id")
   modelId              String?   @map("model_id")
   receptionistId       String?   @map("receptionist_id")
   responsibleUserId    String?   @map("responsible_user_id")
   rootCause            String    @map("root_cause")
-  responsibleRole      String    @map("responsible_role") // client, model, receptionist, system
-  status               String    @default("open") // open, resolved, waived
-  detectionSource      String    @default("manual")  @map("detection_source")
+  responsibleRole      String    @map("responsible_role")
+  status               String    @default("open")
+  detectionSource      String    @default("manual") @map("detection_source")
   detectedBy           String?   @map("detected_by")
   detectedByType       String?   @map("detected_by_type")
-  detectedAt           DateTime  @default(now())  @map("detected_at")
+  detectedAt           DateTime  @default(now()) @map("detected_at")
   operationsFeedItemId String?   @map("operations_feed_item_id")
-  notes                String?   @db.Text
+  notes                String?
   resolvedAt           DateTime? @map("resolved_at")
   resolvedBy           String?   @map("resolved_by")
-
-  createdAt            DateTime  @default(now())  @map("created_at")
-  updatedAt            DateTime  @updatedAt       @map("updated_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  booking              Booking?  @relation(fields: [bookingId], references: [id])
 
   @@index([type])
   @@index([type, status])
@@ -1261,21 +1002,16 @@ model LostRevenueEntry {
   @@map("lost_revenue_registry")
 }
 
-// ============================================
-// SEO & CONTENT CONTROL
-// ============================================
-
 model SEOPage {
   id              String    @id @default(cuid())
-  pageType        String    // model_profile, geo_page, blog_post, service_page
+  pageType        String
   path            String    @unique
   title           String
   metaDescription String
-  indexStatus     String    @default("indexed") // indexed, not_indexed, blocked
+  indexStatus     String    @default("indexed")
   canonicalUrl    String?
   schemaMarkup    Json?
   lastCrawledAt   DateTime?
-
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -1284,108 +1020,77 @@ model SEOPage {
   @@map("seo_pages")
 }
 
-// ============================================
-// SYSTEM SETTINGS
-// ============================================
-
 model SystemSetting {
-  key             String   @id
-  value           Json
-  description     String?
-  isEditableByUI  Boolean  @default(true)
-
-  updatedAt       DateTime @updatedAt
+  key            String   @id
+  value          Json
+  description    String?
+  isEditableByUI Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
 
   @@map("system_settings")
 }
 
-// ============================================
-// DYNAMIC PRICING
-// ============================================
-
 model PricingRule {
-  id              String   @id @default(cuid())
-  name            String
-  status          String   @default("active") // active, disabled, testing
-  priority        Int      @default(0)
-
-  conditionType   String   // day_of_week, time_of_day, demand, season, advance_booking
-  conditionConfig Json
-
-  actionType      String   // multiply, add, set_minimum
-  actionValue     Decimal  @db.Decimal(12,4)
-
-  appliesTo       String   @default("all") // all, location, model, service
-  scopeEntityId   String?
-
-  timesApplied    Int      @default(0)
-  revenueImpact   Decimal  @default(0) @db.Decimal(12,2)
-
-  // Versioning
-  version           Int      @default(1)
-  previousVersionId String?  @map("previous_version_id")
-
-  // Soft delete
+  id                String    @id @default(cuid())
+  name              String
+  status            String    @default("active")
+  priority          Int       @default(0)
+  conditionType     String
+  conditionConfig   Json
+  actionType        String
+  actionValue       Decimal   @db.Decimal(12, 4)
+  appliesTo         String    @default("all")
+  scopeEntityId     String?
+  timesApplied      Int       @default(0)
+  revenueImpact     Decimal   @default(0) @db.Decimal(12, 2)
+  version           Int       @default(1)
+  previousVersionId String?   @map("previous_version_id")
   deletedAt         DateTime? @map("deleted_at")
   deletedBy         String?   @map("deleted_by")
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([status, priority])
   @@map("pricing_rules")
 }
 
-// ============================================
-// MEMBERSHIP & SUBSCRIPTIONS
-// ============================================
-
 model MembershipPlan {
-  id                     String   @id @default(cuid())
+  id                     String             @id @default(cuid())
   name                   String
   tier                   Int
-  priceMonthly           Decimal  @db.Decimal(12,2)
-  currency               String   @default("GBP")
-  bookingDiscountPercent Int      @default(0)
-  prioritySupportLevel   Int      @default(0)
+  priceMonthly           Decimal            @db.Decimal(12, 2)
+  currency               String             @default("GBP")
+  bookingDiscountPercent Int                @default(0)
+  prioritySupportLevel   Int                @default(0)
   perks                  Json?
-  status                 String   @default("active") // active, archived
-
-  // Versioning
-  version                Int      @default(1)
-  previousVersionId      String?  @map("previous_version_id")
-
-  // Soft delete
-  deletedAt              DateTime? @map("deleted_at")
-  deletedBy              String?   @map("deleted_by")
-
+  status                 String             @default("active")
+  version                Int                @default(1)
+  previousVersionId      String?            @map("previous_version_id")
+  deletedAt              DateTime?          @map("deleted_at")
+  deletedBy              String?            @map("deleted_by")
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
   memberships            ClientMembership[]
-
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
 
   @@map("membership_plans")
 }
 
 model ClientMembership {
-  id            String    @id @default(cuid())
-  clientId      String    @unique
-  client        Client    @relation(fields: [clientId], references: [id])
+  id            String                   @id @default(cuid())
+  clientId      String                   @unique
   planId        String
-  plan          MembershipPlan @relation(fields: [planId], references: [id])
-
-  status        String    @default("pending") // pending, active, past_due, suspended, cancelled, expired
-  startedAt     DateTime  @default(now())
+  status        String                   @default("pending")
+  startedAt     DateTime                 @default(now())
   expiresAt     DateTime?
-  autoRenew     Boolean   @default(true)
+  autoRenew     Boolean                  @default(true)
   nextBillingAt DateTime?
-  abuseFlag     Boolean   @default(false) @map("abuse_flag")
-
-  invoices      SubscriptionInvoice[]
+  abuseFlag     Boolean                  @default(false) @map("abuse_flag")
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  client        Client                   @relation(fields: [clientId], references: [id])
+  plan          MembershipPlan           @relation(fields: [planId], references: [id])
   benefitUsages MembershipBenefitUsage[]
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  invoices      SubscriptionInvoice[]
 
   @@index([status])
   @@index([nextBillingAt])
@@ -1393,117 +1098,91 @@ model ClientMembership {
 }
 
 model SubscriptionInvoice {
-  id                  String   @id @default(cuid())
-  clientMembershipId  String
-  membership          ClientMembership @relation(fields: [clientMembershipId], references: [id])
-
-  amount              Decimal  @db.Decimal(12,2)
-  currency            String   @default("GBP")
-  status              String   @default("draft") // draft, paid, failed, void
-  periodStart         DateTime
-  periodEnd           DateTime
-  stripeInvoiceId     String?
-  paidAt              DateTime?
-
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String           @id @default(cuid())
+  clientMembershipId String
+  amount             Decimal          @db.Decimal(12, 2)
+  currency           String           @default("GBP")
+  status             String           @default("draft")
+  periodStart        DateTime
+  periodEnd          DateTime
+  stripeInvoiceId    String?
+  paidAt             DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  membership         ClientMembership @relation(fields: [clientMembershipId], references: [id])
 
   @@index([clientMembershipId])
   @@index([status])
   @@map("subscription_invoices")
 }
 
-// ============================================
-// SLA TRACKING
-// ============================================
-
 model SLARecord {
-  id              String    @id @default(cuid())
-  policyId        String
-  policy          SLAPolicy @relation(fields: [policyId], references: [id])
-
-  entityType      String
-  entityId        String
-
-  startedAt       DateTime  @default(now())
-  deadlineAt      DateTime
-  completedAt     DateTime?
-  breached        Boolean   @default(false)
-
-  escalatedAt     DateTime?
-  escalatedTo     String?
+  id          String    @id @default(cuid())
+  policyId    String
+  entityType  String
+  entityId    String
+  startedAt   DateTime  @default(now())
+  deadlineAt  DateTime
+  completedAt DateTime?
+  breached    Boolean   @default(false)
+  escalatedAt DateTime?
+  escalatedTo String?
+  policy      SLAPolicy @relation(fields: [policyId], references: [id])
 
   @@index([breached, deadlineAt])
   @@index([entityType, entityId])
   @@map("sla_records")
 }
 
-// ============================================
-// DATA GOVERNANCE
-// ============================================
-
 model DataQualityCheck {
-  id              String    @id @default(cuid())
-  checkType       String    // profile_completeness, outdated_profile, missing_photos, stale_availability, price_anomaly
-  entityType      String
-  entityId        String
-
-  status          String    @default("open") // open, resolved, ignored
-  severity        String    @default("warning") // info, warning, error
-  details         Json
-
-  resolvedAt      DateTime?
-  resolvedBy      String?
-
-  createdAt       DateTime  @default(now())
+  id         String    @id @default(cuid())
+  checkType  String
+  entityType String
+  entityId   String
+  status     String    @default("open")
+  severity   String    @default("warning")
+  details    Json
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
 
   @@index([status, severity])
   @@index([entityType, entityId])
   @@map("data_quality_checks")
 }
 
-// ============================================
-// AI LEARNING
-// ============================================
-
 model AIParseExample {
-  id          String   @id @default(cuid())
-  inputType   String   // 'document' | 'photo_arrangement'
-  inputHash   String   // SHA-256 hash of input text
-  inputText   String?  @db.Text
-  outputJson  Json     // the successful parsed result
-  wasEdited   Boolean  @default(false)
-  editedJson  Json?    // the corrected version after admin edits
-  createdAt   DateTime @default(now())
-
-  // Relation
-  models      Model[]
+  id         String   @id @default(cuid())
+  inputType  String
+  inputHash  String
+  inputText  String?
+  outputJson Json
+  wasEdited  Boolean  @default(false)
+  editedJson Json?
+  createdAt  DateTime @default(now())
+  models     Model[]
 
   @@index([inputType, createdAt])
   @@index([inputHash])
   @@map("ai_parse_examples")
 }
 
-// ============================================
-// CLIENT IDENTITY & MERGE
-// ============================================
-
 model ClientIdentity {
   id              String    @id @default(cuid())
   clientId        String    @map("client_id")
-  client          Client    @relation(fields: [clientId], references: [id])
   identityType    String    @map("identity_type")
   rawValue        String    @map("raw_value")
   normalizedValue String    @map("normalized_value")
-  isPrimary       Boolean   @default(false)  @map("is_primary")
-  isVerified      Boolean   @default(false)  @map("is_verified")
-  confidenceScore Float     @default(1.0)    @map("confidence_score")
+  isPrimary       Boolean   @default(false) @map("is_primary")
+  isVerified      Boolean   @default(false) @map("is_verified")
+  confidenceScore Float     @default(1.0) @map("confidence_score")
   source          String    @default("manual")
   verifiedAt      DateTime? @map("verified_at")
   lastSeenAt      DateTime? @map("last_seen_at")
-  isActive        Boolean   @default(true)   @map("is_active")
-  createdAt       DateTime  @default(now())  @map("created_at")
-  updatedAt       DateTime  @updatedAt       @map("updated_at")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  client          Client    @relation(fields: [clientId], references: [id])
 
   @@index([clientId])
   @@index([normalizedValue])
@@ -1519,12 +1198,11 @@ model ClientMergeCandidate {
   score             Float
   reasonsJson       Json      @map("reasons_json")
   status            String    @default("open")
-  createdAt         DateTime  @default(now())  @map("created_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
   resolvedAt        DateTime? @map("resolved_at")
   resolvedBy        String?   @map("resolved_by")
-
-  primaryClient     Client    @relation("MergePrimary", fields: [primaryClientId], references: [id])
   duplicateClient   Client    @relation("MergeDuplicate", fields: [duplicateClientId], references: [id])
+  primaryClient     Client    @relation("MergePrimary", fields: [primaryClientId], references: [id])
 
   @@index([primaryClientId])
   @@index([duplicateClientId])
@@ -1539,7 +1217,7 @@ model ClientMergeLog {
   mergedBy          String   @map("merged_by")
   reasonCode        String   @map("reason_code")
   mergeSummaryJson  Json     @map("merge_summary_json")
-  createdAt         DateTime @default(now())  @map("created_at")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   @@map("client_merge_logs")
 }
@@ -1547,33 +1225,33 @@ model ClientMergeLog {
 model ClientRiskHistory {
   id             String   @id @default(cuid())
   clientId       String   @map("client_id")
-  client         Client   @relation(fields: [clientId], references: [id])
   previousStatus String   @map("previous_status")
   newStatus      String   @map("new_status")
   reason         String
   createdBy      String   @map("created_by")
-  createdAt      DateTime @default(now())  @map("created_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  client         Client   @relation(fields: [clientId], references: [id])
 
   @@index([clientId])
   @@map("client_risk_history")
 }
 
 model ClientEvent {
-  id           String    @id @default(cuid())
-  clientId     String    @map("client_id")
-  client       Client    @relation(fields: [clientId], references: [id])
-  eventType    String    @map("event_type")
-  entityType   String?   @map("entity_type")
-  entityId     String?   @map("entity_id")
+  id           String   @id @default(cuid())
+  clientId     String   @map("client_id")
+  eventType    String   @map("event_type")
+  entityType   String?  @map("entity_type")
+  entityId     String?  @map("entity_id")
   title        String
-  description  String?   @db.Text
-  metadataJson Json?     @map("metadata_json")
-  severity     String    @default("info")
-  actorType    String    @default("system")  @map("actor_type")
-  createdBy    String?   @map("created_by")
-  source       String    @default("system")
-  visibility   String    @default("internal")
-  createdAt    DateTime  @default(now())  @map("created_at")
+  description  String?
+  metadataJson Json?    @map("metadata_json")
+  severity     String   @default("info")
+  actorType    String   @default("system") @map("actor_type")
+  createdBy    String?  @map("created_by")
+  source       String   @default("system")
+  visibility   String   @default("internal")
+  createdAt    DateTime @default(now()) @map("created_at")
+  client       Client   @relation(fields: [clientId], references: [id])
 
   @@index([clientId])
   @@index([eventType])
@@ -1582,29 +1260,25 @@ model ClientEvent {
   @@map("client_events")
 }
 
-// ============================================
-// AVAILABILITY ENGINE
-// ============================================
-
 model ModelAvailability {
-  id              String    @id @default(cuid())
-  modelId         String    @map("model_id")
-  model           Model     @relation(fields: [modelId], references: [id])
-  startAt         DateTime  @map("start_at")
-  endAt           DateTime  @map("end_at")
-  timezone        String    @default("Europe/London")
-  status          String    // available, booked, blocked, travel, cooldown, unavailable
-  source          String    // manual, booking, incident, system
-  sourceRefType   String?   @map("source_ref_type")   // booking, incident, manual_block, policy, system
-  sourceRefId     String?   @map("source_ref_id")
-  bookingId       String?   @map("booking_id")
-  locationId      String?   @map("location_id")
-  city            String?
-  area            String?
-  addressText     String?   @map("address_text")
-  notes           String?   @db.Text
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt      @map("updated_at")
+  id            String   @id @default(cuid())
+  modelId       String   @map("model_id")
+  startAt       DateTime @map("start_at")
+  endAt         DateTime @map("end_at")
+  timezone      String   @default("Europe/London")
+  status        String
+  source        String
+  sourceRefType String?  @map("source_ref_type")
+  sourceRefId   String?  @map("source_ref_id")
+  bookingId     String?  @map("booking_id")
+  locationId    String?  @map("location_id")
+  city          String?
+  area          String?
+  addressText   String?  @map("address_text")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  model         Model    @relation(fields: [modelId], references: [id])
 
   @@index([modelId, startAt, endAt])
   @@index([bookingId])
@@ -1613,15 +1287,15 @@ model ModelAvailability {
 }
 
 model AvailabilityPolicy {
-  id                              String   @id @default(cuid())
-  defaultBufferMinutes            Int      @default(30)  @map("default_buffer_minutes")
-  sameLocationBufferMinutes       Int      @default(15)  @map("same_location_buffer_minutes")
-  differentLocationBufferMinutes  Int      @default(60)  @map("different_location_buffer_minutes")
-  travelBufferMinutes             Int      @default(90)  @map("travel_buffer_minutes")
-  cooldownMinutes                 Int      @default(20)  @map("cooldown_minutes")
-  conflictStrategy                String   @default("reject") @map("conflict_strategy") // reject, warn, escalate
-  createdAt                       DateTime @default(now()) @map("created_at")
-  updatedAt                       DateTime @updatedAt      @map("updated_at")
+  id                             String   @id @default(cuid())
+  defaultBufferMinutes           Int      @default(30) @map("default_buffer_minutes")
+  sameLocationBufferMinutes      Int      @default(15) @map("same_location_buffer_minutes")
+  differentLocationBufferMinutes Int      @default(60) @map("different_location_buffer_minutes")
+  travelBufferMinutes            Int      @default(90) @map("travel_buffer_minutes")
+  cooldownMinutes                Int      @default(20) @map("cooldown_minutes")
+  conflictStrategy               String   @default("reject") @map("conflict_strategy")
+  createdAt                      DateTime @default(now()) @map("created_at")
+  updatedAt                      DateTime @updatedAt @map("updated_at")
 
   @@map("availability_policies")
 }
@@ -1629,14 +1303,14 @@ model AvailabilityPolicy {
 model AvailabilityConflict {
   id                String    @id @default(cuid())
   modelId           String    @map("model_id")
-  model             Model     @relation(fields: [modelId], references: [id])
   bookingId         String?   @map("booking_id")
   conflictingSlotId String    @map("conflicting_slot_id")
-  conflictType      String    @map("conflict_type") // overlap, travel_gap_too_short, cooldown_violation, manual_block_conflict
-  status            String    @default("open") // open, resolved, ignored
+  conflictType      String    @map("conflict_type")
+  status            String    @default("open")
   resolvedBy        String?   @map("resolved_by")
   createdAt         DateTime  @default(now()) @map("created_at")
   resolvedAt        DateTime? @map("resolved_at")
+  model             Model     @relation(fields: [modelId], references: [id])
 
   @@index([modelId])
   @@index([bookingId])
@@ -1644,33 +1318,23 @@ model AvailabilityConflict {
   @@map("availability_conflicts")
 }
 
-// ============================================
-// OPERATIONS FEED
-// ============================================
-
 model OperationsFeedItem {
   id             String    @id @default(cuid())
-  // type values: sla_breach, fraud_alert, incident_opened, review_flagged, booking_dispute,
-  //   payment_failed, lost_revenue, model_profile_issue, availability_conflict,
-  //   membership_past_due, retention_task, queue_failed_job
   type           String
-  // sourceModule values: sla, fraud, reviews, bookings, payments, retention, jobs, membership, data_quality, lost_revenue
   sourceModule   String    @map("source_module")
-  // priority values: critical, high, medium, low
   priority       String    @default("medium")
   entityType     String    @map("entity_type")
   entityId       String    @map("entity_id")
   dedupeKey      String?   @map("dedupe_key")
   title          String
-  description    String?   @db.Text
+  description    String?
   assignedUserId String?   @map("assigned_user_id")
-  // status values: new, acknowledged, in_progress, resolved, dismissed
   status         String    @default("new")
   dueAt          DateTime? @map("due_at")
   snoozedUntil   DateTime? @map("snoozed_until")
-  resolutionNote String?   @db.Text  @map("resolution_note")
+  resolutionNote String?   @map("resolution_note")
   metadataJson   Json?     @map("metadata_json")
-  createdAt      DateTime  @default(now())  @map("created_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
   resolvedAt     DateTime? @map("resolved_at")
 
   @@index([priority])
@@ -1682,37 +1346,27 @@ model OperationsFeedItem {
   @@map("operations_feed_items")
 }
 
-// ============================================
-// JOB QUEUE
-// ============================================
-
 model JobQueue {
   id              String    @id @default(cuid())
-  // type values: send_email, send_telegram, send_sms, generate_report, fraud_scan,
-  //   media_processing, seo_generation, pricing_recalculation, retention_scan,
-  //   membership_billing, notification_dispatch
   type            String
   payloadJson     Json      @map("payload_json")
   dedupeKey       String?   @map("dedupe_key")
-  // status values: queued, running, succeeded, failed, dead_letter, cancelled
   status          String    @default("queued")
-  // priority values: critical, high, normal, low
   priority        String    @default("normal")
   attempts        Int       @default(0)
-  maxAttempts     Int       @default(3)  @map("max_attempts")
+  maxAttempts     Int       @default(3) @map("max_attempts")
   workerName      String?   @map("worker_name")
   parentJobId     String?   @map("parent_job_id")
   lockToken       String?   @map("lock_token")
   lockedAt        DateTime? @map("locked_at")
   lastHeartbeatAt DateTime? @map("last_heartbeat_at")
-  scheduledAt     DateTime  @default(now())  @map("scheduled_at")
+  scheduledAt     DateTime  @default(now()) @map("scheduled_at")
   startedAt       DateTime? @map("started_at")
   finishedAt      DateTime? @map("finished_at")
   failedAt        DateTime? @map("failed_at")
-  errorText       String?   @db.Text  @map("error_text")
-  createdAt       DateTime  @default(now())  @map("created_at")
-  updatedAt       DateTime  @updatedAt       @map("updated_at")
-
+  errorText       String?   @map("error_text")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
   logs            JobLog[]
 
   @@index([status, priority])
@@ -1726,36 +1380,31 @@ model JobQueue {
 model JobLog {
   id        String   @id @default(cuid())
   jobId     String   @map("job_id")
-  job       JobQueue @relation(fields: [jobId], references: [id])
   step      String
   status    String
-  message   String   @db.Text
-  createdAt DateTime @default(now())  @map("created_at")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+  job       JobQueue @relation(fields: [jobId], references: [id])
 
   @@index([jobId])
   @@map("job_logs")
 }
 
-// ============================================
-// NOTIFICATIONS ENGINE
-// ============================================
-
 model NotificationTemplate {
-  id                String    @id @default(cuid())
-  code              String    @unique
+  id                String         @id @default(cuid())
+  code              String         @unique
   name              String
   channel           String
-  eventType         String    @map("event_type")
-  subjectTemplate   String?   @db.Text  @map("subject_template")
-  bodyTemplate      String    @db.Text  @map("body_template")
-  isActive          Boolean   @default(true)  @map("is_active")
-  version           Int       @default(1)
-  previousVersionId String?   @map("previous_version_id")
-  deletedAt         DateTime? @map("deleted_at")
-  deletedBy         String?   @map("deleted_by")
-  createdAt         DateTime  @default(now())  @map("created_at")
-  updatedAt         DateTime  @updatedAt       @map("updated_at")
-
+  eventType         String         @map("event_type")
+  subjectTemplate   String?        @map("subject_template")
+  bodyTemplate      String         @map("body_template")
+  isActive          Boolean        @default(true) @map("is_active")
+  version           Int            @default(1)
+  previousVersionId String?        @map("previous_version_id")
+  deletedAt         DateTime?      @map("deleted_at")
+  deletedBy         String?        @map("deleted_by")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
   notifications     Notification[]
 
   @@index([code])
@@ -1765,28 +1414,27 @@ model NotificationTemplate {
 }
 
 model Notification {
-  id               String    @id @default(cuid())
-  templateId       String?   @map("template_id")
-  template         NotificationTemplate? @relation(fields: [templateId], references: [id])
-  eventType        String    @map("event_type")
-  recipientType    String    @map("recipient_type")
-  recipientId      String    @map("recipient_id")
-  recipientAddress String?   @map("recipient_address")
+  id               String                @id @default(cuid())
+  templateId       String?               @map("template_id")
+  eventType        String                @map("event_type")
+  recipientType    String                @map("recipient_type")
+  recipientId      String                @map("recipient_id")
+  recipientAddress String?               @map("recipient_address")
   channel          String
   provider         String?
-  status           String    @default("queued")
-  idempotencyKey   String    @unique  @map("idempotency_key")
-  payloadJson      Json      @map("payload_json")
-  renderedSubject  String?   @db.Text  @map("rendered_subject")
-  renderedBody     String    @db.Text  @map("rendered_body")
-  scheduledAt      DateTime? @map("scheduled_at")
-  sentAt           DateTime? @map("sent_at")
-  failedAt         DateTime? @map("failed_at")
-  retryCount       Int       @default(0)  @map("retry_count")
-  createdAt        DateTime  @default(now())  @map("created_at")
-  updatedAt        DateTime  @updatedAt       @map("updated_at")
-
+  status           String                @default("queued")
+  idempotencyKey   String                @unique @map("idempotency_key")
+  payloadJson      Json                  @map("payload_json")
+  renderedSubject  String?               @map("rendered_subject")
+  renderedBody     String                @map("rendered_body")
+  scheduledAt      DateTime?             @map("scheduled_at")
+  sentAt           DateTime?             @map("sent_at")
+  failedAt         DateTime?             @map("failed_at")
+  retryCount       Int                   @default(0) @map("retry_count")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
   logs             NotificationLog[]
+  template         NotificationTemplate? @relation(fields: [templateId], references: [id])
 
   @@index([recipientType, recipientId])
   @@index([eventType])
@@ -1795,57 +1443,50 @@ model Notification {
 }
 
 model NotificationLog {
-  id                String   @id @default(cuid())
-  notificationId    String   @map("notification_id")
-  notification      Notification @relation(fields: [notificationId], references: [id])
-  attemptNumber     Int      @map("attempt_number")
+  id                String       @id @default(cuid())
+  notificationId    String       @map("notification_id")
+  attemptNumber     Int          @map("attempt_number")
   provider          String
-  providerMessageId String?  @map("provider_message_id")
+  providerMessageId String?      @map("provider_message_id")
   status            String
-  responseJson      Json?    @map("response_json")
-  errorText         String?  @db.Text  @map("error_text")
-  createdAt         DateTime @default(now())  @map("created_at")
+  responseJson      Json?        @map("response_json")
+  errorText         String?      @map("error_text")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  notification      Notification @relation(fields: [notificationId], references: [id])
 
   @@index([notificationId])
   @@map("notification_logs")
 }
 
 model NotificationPreference {
-  id         String   @id @default(cuid())
-  clientId   String   @map("client_id")
-  channel    String
-  eventType  String   @map("event_type")
-  isEnabled  Boolean  @default(true)  @map("is_enabled")
-  updatedAt  DateTime @updatedAt  @map("updated_at")
+  id        String   @id @default(cuid())
+  clientId  String   @map("client_id")
+  channel   String
+  eventType String   @map("event_type")
+  isEnabled Boolean  @default(true) @map("is_enabled")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([clientId])
   @@index([channel, eventType])
   @@map("notification_preferences")
 }
 
-// ============================================
-// RETENTION ENGINE
-// ============================================
-
 model ClientRetentionProfile {
-  id                    String    @id @default(cuid())
-  clientId              String    @unique  @map("client_id")
-  lastBookingAt         DateTime? @map("last_booking_at")
-  daysSinceLastBooking  Int       @default(0)  @map("days_since_last_booking")
-  totalBookings         Int       @default(0)  @map("total_bookings")
-  totalSpent            Decimal   @default(0)  @db.Decimal(12,2)  @map("total_spent")
-  avgBookingValue       Decimal   @default(0)  @db.Decimal(12,2)  @map("avg_booking_value")
-  // segment: new, active, cooling, at_risk, lost, vip, whale
-  segment               String    @default("new")
-  segmentReason         String?   @map("segment_reason")
-  churnRiskScore        Int       @default(0)  @map("churn_risk_score")
-  churnRiskFactorsJson  Json?     @map("churn_risk_factors_json")
-  // nextBestActionType: follow_up, win_back_offer, vip_checkin, membership_offer, manual_call
-  nextBestActionType    String?   @map("next_best_action_type")
-  updatedAt             DateTime  @updatedAt  @map("updated_at")
-
-  client                Client    @relation(fields: [clientId], references: [id])
-  retentionActions      RetentionAction[]
+  id                   String            @id @default(cuid())
+  clientId             String            @unique @map("client_id")
+  lastBookingAt        DateTime?         @map("last_booking_at")
+  daysSinceLastBooking Int               @default(0) @map("days_since_last_booking")
+  totalBookings        Int               @default(0) @map("total_bookings")
+  totalSpent           Decimal           @default(0) @map("total_spent") @db.Decimal(12, 2)
+  avgBookingValue      Decimal           @default(0) @map("avg_booking_value") @db.Decimal(12, 2)
+  segment              String            @default("new")
+  segmentReason        String?           @map("segment_reason")
+  churnRiskScore       Int               @default(0) @map("churn_risk_score")
+  churnRiskFactorsJson Json?             @map("churn_risk_factors_json")
+  nextBestActionType   String?           @map("next_best_action_type")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  client               Client            @relation(fields: [clientId], references: [id])
+  retentionActions     RetentionAction[]
 
   @@index([segment])
   @@index([churnRiskScore])
@@ -1853,26 +1494,22 @@ model ClientRetentionProfile {
 }
 
 model RetentionAction {
-  id                  String    @id @default(cuid())
-  clientId            String    @map("client_id")
-  retentionProfileId  String?   @map("retention_profile_id")
-  ownerUserId         String?   @map("owner_user_id")
-  // actionType: follow_up, win_back_offer, vip_checkin, membership_offer, birthday_message, inactivity_alert, manual_call_task
-  actionType          String    @map("action_type")
-  // status: planned, sent, completed, failed, cancelled
-  status              String    @default("planned")
-  // channel: email, telegram, sms, internal, phone_call
-  channel             String
-  scheduledAt         DateTime  @map("scheduled_at")
-  completedAt         DateTime? @map("completed_at")
-  expiresAt           DateTime? @map("expires_at")
-  convertedBookingId  String?   @map("converted_booking_id")
-  result              String?
-  metadataJson        Json?     @map("metadata_json")
-  createdAt           DateTime  @default(now())  @map("created_at")
-
-  client              Client    @relation(fields: [clientId], references: [id])
-  retentionProfile    ClientRetentionProfile? @relation(fields: [retentionProfileId], references: [id])
+  id                 String                  @id @default(cuid())
+  clientId           String                  @map("client_id")
+  retentionProfileId String?                 @map("retention_profile_id")
+  ownerUserId        String?                 @map("owner_user_id")
+  actionType         String                  @map("action_type")
+  status             String                  @default("planned")
+  channel            String
+  scheduledAt        DateTime                @map("scheduled_at")
+  completedAt        DateTime?               @map("completed_at")
+  expiresAt          DateTime?               @map("expires_at")
+  convertedBookingId String?                 @map("converted_booking_id")
+  result             String?
+  metadataJson       Json?                   @map("metadata_json")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  client             Client                  @relation(fields: [clientId], references: [id])
+  retentionProfile   ClientRetentionProfile? @relation(fields: [retentionProfileId], references: [id])
 
   @@index([clientId])
   @@index([ownerUserId])
@@ -1883,36 +1520,29 @@ model RetentionAction {
 }
 
 model RetentionCampaign {
-  id                String    @id @default(cuid())
+  id                String   @id @default(cuid())
   name              String
-  // triggerType: inactivity, post_booking, vip_followup, churn_risk, membership_expiry
-  triggerType       String    @map("trigger_type")
-  segmentFilter     Json      @map("segment_filter")
-  // channel: email, telegram, sms, internal, phone_call
+  triggerType       String   @map("trigger_type")
+  segmentFilter     Json     @map("segment_filter")
   channel           String
-  templateId        String?   @map("template_id")
-  isActive          Boolean   @default(true)  @map("is_active")
-  version           Int       @default(1)
-  previousVersionId String?   @map("previous_version_id")
-  createdAt         DateTime  @default(now())  @map("created_at")
-  updatedAt         DateTime  @updatedAt       @map("updated_at")
+  templateId        String?  @map("template_id")
+  isActive          Boolean  @default(true) @map("is_active")
+  version           Int      @default(1)
+  previousVersionId String?  @map("previous_version_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@map("retention_campaigns")
 }
-
-// ============================================
-// ALTERNATIVE OFFERS ENGINE
-// ============================================
 
 model ModelSimilarity {
   id                String   @id @default(cuid())
   modelAId          String   @map("model_a_id")
   modelBId          String   @map("model_b_id")
   similarityScore   Float    @map("similarity_score")
-  similarityVersion Int      @default(1)  @map("similarity_version")
+  similarityVersion Int      @default(1) @map("similarity_version")
   factorsJson       Json     @map("factors_json")
-  updatedAt         DateTime @updatedAt  @map("updated_at")
-
+  updatedAt         DateTime @updatedAt @map("updated_at")
   modelA            Model    @relation("ModelSimilarityA", fields: [modelAId], references: [id])
   modelB            Model    @relation("ModelSimilarityB", fields: [modelBId], references: [id])
 
@@ -1923,28 +1553,24 @@ model ModelSimilarity {
 }
 
 model AlternativeOffer {
-  id                 String    @id @default(cuid())
-  offerSetId         String?   @map("offer_set_id")
-  inquiryId          String?   @map("inquiry_id")
-  bookingId          String?   @map("booking_id")
-  requestedModelId   String    @map("requested_model_id")
-  offeredModelId     String    @map("offered_model_id")
-  // generationReason: requested_model_unavailable, price_mismatch, location_mismatch, schedule_conflict, vip_restriction
-  generationReason   String    @map("generation_reason")
-  rank               Int
-  // status: generated, shown, accepted, rejected, expired
-  status             String    @default("generated")
-  // presentedByType: system, receptionist, manager
-  presentedByType    String?   @map("presented_by_type")
-  presentedById      String?   @map("presented_by_id")
-  shownAt            DateTime? @map("shown_at")
-  acceptedAt         DateTime? @map("accepted_at")
-  rejectedAt         DateTime? @map("rejected_at")
-  createdAt          DateTime  @default(now())  @map("created_at")
-
-  requestedModel     Model     @relation("RequestedModel", fields: [requestedModelId], references: [id])
-  offeredModel       Model     @relation("OfferedModel", fields: [offeredModelId], references: [id])
-  conversion         OfferConversion?
+  id               String           @id @default(cuid())
+  offerSetId       String?          @map("offer_set_id")
+  inquiryId        String?          @map("inquiry_id")
+  bookingId        String?          @map("booking_id")
+  requestedModelId String           @map("requested_model_id")
+  offeredModelId   String           @map("offered_model_id")
+  generationReason String           @map("generation_reason")
+  rank             Int
+  status           String           @default("generated")
+  presentedByType  String?          @map("presented_by_type")
+  presentedById    String?          @map("presented_by_id")
+  shownAt          DateTime?        @map("shown_at")
+  acceptedAt       DateTime?        @map("accepted_at")
+  rejectedAt       DateTime?        @map("rejected_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  offeredModel     Model            @relation("OfferedModel", fields: [offeredModelId], references: [id])
+  requestedModel   Model            @relation("RequestedModel", fields: [requestedModelId], references: [id])
+  conversion       OfferConversion?
 
   @@index([inquiryId])
   @@index([bookingId])
@@ -1955,39 +1581,33 @@ model AlternativeOffer {
 }
 
 model OfferConversion {
-  id                  String    @id @default(cuid())
-  alternativeOfferId  String    @unique  @map("alternative_offer_id")
-  convertedBookingId  String?   @map("converted_booking_id")
-  revenueAmount       Decimal?  @db.Decimal(12,2)  @map("revenue_amount")
-  createdAt           DateTime  @default(now())  @map("created_at")
-
-  alternativeOffer    AlternativeOffer @relation(fields: [alternativeOfferId], references: [id])
+  id                 String           @id @default(cuid())
+  alternativeOfferId String           @unique @map("alternative_offer_id")
+  convertedBookingId String?          @map("converted_booking_id")
+  revenueAmount      Decimal?         @map("revenue_amount") @db.Decimal(12, 2)
+  createdAt          DateTime         @default(now()) @map("created_at")
+  alternativeOffer   AlternativeOffer @relation(fields: [alternativeOfferId], references: [id])
 
   @@map("offer_conversions")
 }
 
-// ============================================
-// STAFF PERFORMANCE ANALYTICS
-// ============================================
-
 model StaffPerformanceSnapshot {
-  id                          String    @id @default(cuid())
-  userId                      String    @map("user_id")
-  periodStart                 DateTime  @map("period_start")
-  periodEnd                   DateTime  @map("period_end")
-  bookingsCompleted           Int       @default(0) @map("bookings_completed")
-  bookingsCancelled           Int       @default(0) @map("bookings_cancelled")
-  inquiriesHandled            Int       @default(0) @map("inquiries_handled")
-  inquiriesConverted          Int       @default(0) @map("inquiries_converted")
-  conversionRate              Float     @default(0) @map("conversion_rate")
-  revenueGenerated            Decimal   @default(0) @db.Decimal(12,2) @map("revenue_generated")
-  lostRevenueAmount           Decimal   @default(0) @db.Decimal(12,2) @map("lost_revenue_amount")
-  cancellationRate            Float     @default(0) @map("cancellation_rate")
-  complaintsCount             Int       @default(0) @map("complaints_count")
-  retentionActionsCompleted   Int       @default(0) @map("retention_actions_completed")
-  createdAt                   DateTime  @default(now()) @map("created_at")
-
-  user                        User      @relation(fields: [userId], references: [id])
+  id                        String   @id @default(cuid())
+  userId                    String   @map("user_id")
+  periodStart               DateTime @map("period_start")
+  periodEnd                 DateTime @map("period_end")
+  bookingsCompleted         Int      @default(0) @map("bookings_completed")
+  bookingsCancelled         Int      @default(0) @map("bookings_cancelled")
+  inquiriesHandled          Int      @default(0) @map("inquiries_handled")
+  inquiriesConverted        Int      @default(0) @map("inquiries_converted")
+  conversionRate            Float    @default(0) @map("conversion_rate")
+  revenueGenerated          Decimal  @default(0) @map("revenue_generated") @db.Decimal(12, 2)
+  lostRevenueAmount         Decimal  @default(0) @map("lost_revenue_amount") @db.Decimal(12, 2)
+  cancellationRate          Float    @default(0) @map("cancellation_rate")
+  complaintsCount           Int      @default(0) @map("complaints_count")
+  retentionActionsCompleted Int      @default(0) @map("retention_actions_completed")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  user                      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, periodStart, periodEnd])
   @@index([userId])
@@ -1996,18 +1616,17 @@ model StaffPerformanceSnapshot {
 }
 
 model StaffScoreSnapshot {
-  id              String    @id @default(cuid())
-  userId          String    @map("user_id")
-  periodStart     DateTime  @map("period_start")
-  periodEnd       DateTime  @map("period_end")
-  totalScore      Float     @default(0) @map("total_score")
-  breakdown       Json      @default("{}") // { metricKey: { raw, weight, weighted } }
-  manualAdjust    Float     @default(0) @map("manual_adjust")
-  adjustReason    String?   @map("adjust_reason")
-  adjustedBy      String?   @map("adjusted_by")
-  createdAt       DateTime  @default(now()) @map("created_at")
-
-  user            User      @relation(fields: [userId], references: [id])
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  periodStart  DateTime @map("period_start")
+  periodEnd    DateTime @map("period_end")
+  totalScore   Float    @default(0) @map("total_score")
+  breakdown    Json     @default("{}")
+  manualAdjust Float    @default(0) @map("manual_adjust")
+  adjustReason String?  @map("adjust_reason")
+  adjustedBy   String?  @map("adjusted_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, periodStart, periodEnd])
   @@index([userId])
@@ -2016,37 +1635,32 @@ model StaffScoreSnapshot {
 }
 
 model StaffScoreRule {
-  id              String    @id @default(cuid())
-  metricKey       String    @unique @map("metric_key")
-  label           String
-  weight          Float     @default(0)
-  description     String?
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  metricKey   String   @unique @map("metric_key")
+  label       String
+  weight      Float    @default(0)
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("staff_score_rules")
 }
 
-// ============================================
-// MEMBERSHIP BENEFIT USAGE
-// ============================================
-
 model MembershipBenefitUsage {
-  id                  String    @id @default(cuid())
-  clientMembershipId  String    @map("client_membership_id")
-  bookingId           String?   @map("booking_id")
-  retentionActionId   String?   @map("retention_action_id")
-  benefitType         String    @map("benefit_type") // discount, priority_support, vip_access, early_access, fee_waiver, free_upgrade
-  valueAmount         Decimal   @db.Decimal(12,2)  @map("value_amount")
-  currency            String    @default("GBP")
-  status              String    @default("reserved") // reserved, used, reversed, expired
-  metadataJson        Json?     @map("metadata_json")
-  createdBy           String    @map("created_by")
-  expiresAt           DateTime? @map("expires_at")
-  createdAt           DateTime  @default(now())  @map("created_at")
-
-  membership          ClientMembership @relation(fields: [clientMembershipId], references: [id])
+  id                 String           @id @default(cuid())
+  clientMembershipId String           @map("client_membership_id")
+  bookingId          String?          @map("booking_id")
+  retentionActionId  String?          @map("retention_action_id")
+  benefitType        String           @map("benefit_type")
+  valueAmount        Decimal          @map("value_amount") @db.Decimal(12, 2)
+  currency           String           @default("GBP")
+  status             String           @default("reserved")
+  metadataJson       Json?            @map("metadata_json")
+  createdBy          String           @map("created_by")
+  expiresAt          DateTime?        @map("expires_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  membership         ClientMembership @relation(fields: [clientMembershipId], references: [id])
 
   @@index([clientMembershipId])
   @@index([bookingId])
@@ -2055,32 +1669,24 @@ model MembershipBenefitUsage {
   @@map("membership_benefit_usages")
 }
 
-// ============================================
-// PRICING DECISION LOG
-// ============================================
-
 model PricingDecisionLog {
-  id                   String   @id @default(cuid())
-  bookingId            String?  @map("booking_id")
-  modelId              String?  @map("model_id")
-  currency             String   @default("GBP")
-  basePrice            Decimal  @db.Decimal(12,2)  @map("base_price")
-  finalPrice           Decimal  @db.Decimal(12,2)  @map("final_price")
-  decisionSource       String   @map("decision_source") // rule_engine, manual_override, fallback
-  appliedRulesJson     Json     @map("applied_rules_json")
-  pricingRuleVersion   Int?     @map("pricing_rule_version")
-  marginImpact         Decimal? @db.Decimal(12,2)  @map("margin_impact")
-  createdAt            DateTime @default(now())  @map("created_at")
+  id                 String   @id @default(cuid())
+  bookingId          String?  @map("booking_id")
+  modelId            String?  @map("model_id")
+  currency           String   @default("GBP")
+  basePrice          Decimal  @map("base_price") @db.Decimal(12, 2)
+  finalPrice         Decimal  @map("final_price") @db.Decimal(12, 2)
+  decisionSource     String   @map("decision_source")
+  appliedRulesJson   Json     @map("applied_rules_json")
+  pricingRuleVersion Int?     @map("pricing_rule_version")
+  marginImpact       Decimal? @map("margin_impact") @db.Decimal(12, 2)
+  createdAt          DateTime @default(now()) @map("created_at")
 
   @@index([bookingId])
   @@index([modelId])
   @@index([createdAt])
   @@map("pricing_decision_logs")
 }
-
-// ============================================
-// REVIEW COMPLAINT PATTERNS
-// ============================================
 
 model ReviewComplaintPattern {
   id          String   @id @default(cuid())
@@ -2089,18 +1695,13 @@ model ReviewComplaintPattern {
   count       Int      @default(1)
   periodStart DateTime @map("period_start")
   periodEnd   DateTime @map("period_end")
-  createdAt   DateTime @default(now())  @map("created_at")
-
+  createdAt   DateTime @default(now()) @map("created_at")
   model       Model    @relation(fields: [modelId], references: [id])
 
   @@index([modelId])
   @@index([periodStart, periodEnd])
   @@map("review_complaint_patterns")
 }
-
-// ============================================
-// DEMAND STATS
-// ============================================
 
 model DemandStats {
   id                   String   @id @default(cuid())
@@ -2110,11 +1711,11 @@ model DemandStats {
   timeSlot             DateTime @map("time_slot")
   requests             Int      @default(0)
   bookings             Int      @default(0)
-  conversionRate       Decimal  @default(0)  @db.Decimal(5,2)  @map("conversion_rate")
-  avgPrice             Decimal  @default(0)  @db.Decimal(12,2)  @map("avg_price")
-  availableModelsCount Int      @default(0)  @map("available_models_count")
-  demandScore          Int      @default(0)  @map("demand_score")
-  createdAt            DateTime @default(now())  @map("created_at")
+  conversionRate       Decimal  @default(0) @map("conversion_rate") @db.Decimal(5, 2)
+  avgPrice             Decimal  @default(0) @map("avg_price") @db.Decimal(12, 2)
+  availableModelsCount Int      @default(0) @map("available_models_count")
+  demandScore          Int      @default(0) @map("demand_score")
+  createdAt            DateTime @default(now()) @map("created_at")
 
   @@index([locationId])
   @@index([timeSlot])
@@ -2122,76 +1723,60 @@ model DemandStats {
   @@map("demand_stats")
 }
 
-// ============================================
-// OWNER ANALYTICS SNAPSHOTS
-// ============================================
-
 model OwnerAnalyticsSnapshot {
-  id                            String   @id @default(cuid())
-  periodStart                   DateTime @map("period_start")
-  periodEnd                     DateTime @map("period_end")
-  granularity                   String   @default("daily")
-
-  totalRevenue                  Decimal  @default(0) @db.Decimal(12,2) @map("total_revenue")
-  netMargin                     Decimal  @default(0) @db.Decimal(5,2)  @map("net_margin")
-  totalBookings                 Int      @default(0) @map("total_bookings")
-  completedBookings             Int      @default(0) @map("completed_bookings")
-  cancelledBookings             Int      @default(0) @map("cancelled_bookings")
-  conversionRate                Decimal  @default(0) @db.Decimal(5,2)  @map("conversion_rate")
-  arpu                          Decimal  @default(0) @db.Decimal(12,2)
-  mrr                           Decimal  @default(0) @db.Decimal(12,2)
-  churnRate                     Decimal  @default(0) @db.Decimal(5,2)  @map("churn_rate")
-  chargebackRate                Decimal  @default(0) @db.Decimal(5,2)  @map("chargeback_rate")
-
-  lostRevenueAmount             Decimal  @default(0) @db.Decimal(12,2) @map("lost_revenue_amount")
-  lostRevenueByRootCauseJson    Json?    @map("lost_revenue_by_root_cause_json")
-
-  altOfferAcceptanceRate        Decimal  @default(0) @db.Decimal(5,2)  @map("alt_offer_acceptance_rate")
-  retentionRecoveryRate         Decimal  @default(0) @db.Decimal(5,2)  @map("retention_recovery_rate")
-  clientDuplicateRate           Decimal  @default(0) @db.Decimal(5,2)  @map("client_duplicate_rate")
-
-  jobsFailedRate                Decimal  @default(0) @db.Decimal(5,2)  @map("jobs_failed_rate")
-  notificationDeliveryRate      Decimal  @default(0) @db.Decimal(5,2)  @map("notification_delivery_rate")
-
-  availabilityConflictCount     Int      @default(0) @map("availability_conflict_count")
-  membershipBenefitCost         Decimal  @default(0) @db.Decimal(12,2) @map("membership_benefit_cost")
-  riskEscalationsCount          Int      @default(0) @map("risk_escalations_count")
-  vipRevenueShare               Decimal  @default(0) @db.Decimal(5,2)  @map("vip_revenue_share")
-  winbackConversionRate         Decimal  @default(0) @db.Decimal(5,2)  @map("winback_conversion_rate")
-
-  staffConversionRankingJson    Json?    @map("staff_conversion_ranking_json")
-  staffLostRevenueRankingJson   Json?    @map("staff_lost_revenue_ranking_json")
-
-  createdAt                     DateTime @default(now()) @map("created_at")
+  id                          String   @id @default(cuid())
+  periodStart                 DateTime @map("period_start")
+  periodEnd                   DateTime @map("period_end")
+  granularity                 String   @default("daily")
+  totalRevenue                Decimal  @default(0) @map("total_revenue") @db.Decimal(12, 2)
+  netMargin                   Decimal  @default(0) @map("net_margin") @db.Decimal(5, 2)
+  totalBookings               Int      @default(0) @map("total_bookings")
+  completedBookings           Int      @default(0) @map("completed_bookings")
+  cancelledBookings           Int      @default(0) @map("cancelled_bookings")
+  conversionRate              Decimal  @default(0) @map("conversion_rate") @db.Decimal(5, 2)
+  arpu                        Decimal  @default(0) @db.Decimal(12, 2)
+  mrr                         Decimal  @default(0) @db.Decimal(12, 2)
+  churnRate                   Decimal  @default(0) @map("churn_rate") @db.Decimal(5, 2)
+  chargebackRate              Decimal  @default(0) @map("chargeback_rate") @db.Decimal(5, 2)
+  lostRevenueAmount           Decimal  @default(0) @map("lost_revenue_amount") @db.Decimal(12, 2)
+  lostRevenueByRootCauseJson  Json?    @map("lost_revenue_by_root_cause_json")
+  altOfferAcceptanceRate      Decimal  @default(0) @map("alt_offer_acceptance_rate") @db.Decimal(5, 2)
+  retentionRecoveryRate       Decimal  @default(0) @map("retention_recovery_rate") @db.Decimal(5, 2)
+  clientDuplicateRate         Decimal  @default(0) @map("client_duplicate_rate") @db.Decimal(5, 2)
+  jobsFailedRate              Decimal  @default(0) @map("jobs_failed_rate") @db.Decimal(5, 2)
+  notificationDeliveryRate    Decimal  @default(0) @map("notification_delivery_rate") @db.Decimal(5, 2)
+  availabilityConflictCount   Int      @default(0) @map("availability_conflict_count")
+  membershipBenefitCost       Decimal  @default(0) @map("membership_benefit_cost") @db.Decimal(12, 2)
+  riskEscalationsCount        Int      @default(0) @map("risk_escalations_count")
+  vipRevenueShare             Decimal  @default(0) @map("vip_revenue_share") @db.Decimal(5, 2)
+  winbackConversionRate       Decimal  @default(0) @map("winback_conversion_rate") @db.Decimal(5, 2)
+  staffConversionRankingJson  Json?    @map("staff_conversion_ranking_json")
+  staffLostRevenueRankingJson Json?    @map("staff_lost_revenue_ranking_json")
+  createdAt                   DateTime @default(now()) @map("created_at")
 
   @@index([periodStart, periodEnd])
   @@index([granularity])
   @@map("owner_analytics_snapshots")
 }
 
-// ── Cron Job Logging ──────────────────────────────────────────
 model CronLog {
-  id          String   @id @default(cuid())
-  cronPath    String   @map("cron_path")
-  status      String   // success, error
-  durationMs  Int?     @map("duration_ms")
-  resultJson  Json?    @map("result_json")
-  errorText   String?  @db.Text @map("error_text")
-  executedAt  DateTime @default(now()) @map("executed_at")
+  id         String   @id @default(cuid())
+  cronPath   String   @map("cron_path")
+  status     String
+  durationMs Int?     @map("duration_ms")
+  resultJson Json?    @map("result_json")
+  errorText  String?  @map("error_text")
+  executedAt DateTime @default(now()) @map("executed_at")
 
   @@index([cronPath])
   @@index([executedAt])
   @@map("cron_logs")
 }
 
-// ============================================
-// PHASE 2 — CALL RATES & MODEL PRICING
-// ============================================
-
 model CallRateMaster {
   id          String      @id @default(cuid())
-  label       String      // "30 min", "1 Hour", "Overnight (9 hrs)"
-  durationMin Int         // 30, 60, 90, 120, 180, 540...
+  label       String
+  durationMin Int
   sortOrder   Int         @default(0)
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
@@ -2206,23 +1791,19 @@ model ModelRate {
   callRateMasterId String
   incallPrice      Float?
   outcallPrice     Float?
-  model            Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
   callRateMaster   CallRateMaster @relation(fields: [callRateMasterId], references: [id])
+  model            Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   @@unique([modelId, callRateMasterId])
   @@map("model_rates")
 }
 
-// ============================================
-// PHASE 2 — DISTRICTS & TRANSPORT (SEO GEO)
-// ============================================
-
 model District {
   id             String          @id @default(cuid())
-  name           String          @unique  // "Mayfair"
-  slug           String          @unique  // "mayfair"
-  tier           Int             @default(1)  // 1=top, 2=high, 3=medium
-  description    String?         @db.Text
+  name           String          @unique
+  slug           String          @unique
+  tier           Int             @default(1)
+  description    String?
   hotels         String[]
   restaurants    String[]
   landmarks      String[]
@@ -2234,19 +1815,19 @@ model District {
   sortOrder      Int             @default(0)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  transportHubs  TransportHub[]
   modelLocations ModelLocation[]
+  transportHubs  TransportHub[]
 
   @@map("districts")
 }
 
 model TransportHub {
   id             String   @id @default(cuid())
-  name           String   @unique  // "Bond Street"
-  slug           String   @unique  // "bond-street"
+  name           String   @unique
+  slug           String   @unique
   districtId     String
   walkingMinutes Int      @default(5)
-  description    String?  @db.Text
+  description    String?
   seoTitle       String?
   seoDescription String?
   isActive       Boolean  @default(true)
@@ -2263,52 +1844,43 @@ model ModelLocation {
   isPrimary      Boolean  @default(false)
   transportHubId String?
   walkingMinutes Int?
-  model          Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
   district       District @relation(fields: [districtId], references: [id])
+  model          Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   @@unique([modelId, districtId])
   @@map("model_locations")
 }
 
-// ============================================
-// PHASE 2 — BOOKING REQUESTS (PUBLIC SITE)
-// ============================================
-
 model BookingRequest {
   id               String    @id @default(cuid())
-  // Client info
   clientName       String
   clientEmail      String
   clientPhone      String
   clientTelegramId String?
-  preferredContact String    // whatsapp | telegram | phone | email
-  // Booking details
+  preferredContact String
   modelId          String?
-  model2Id         String?   // для DUO бронирования
+  model2Id         String?
   districtId       String?
-  callType         String    // incall | outcall
+  callType         String
   date             DateTime
-  duration         Int       // минуты
-  address          String?   // для outcall
+  duration         Int
+  address          String?
   hotelName        String?
   roomNumber       String?
-  // Pricing
   basePrice        Float
   extrasTotal      Float     @default(0)
   grandTotal       Float
   currency         String    @default("GBP")
-  selectedExtras   Json      // [{serviceId, name, price}]
-  // Extras
-  specialRequests  String?   @db.Text
-  occasion         String?   // birthday | anniversary | business | leisure
+  selectedExtras   Json
+  specialRequests  String?
+  occasion         String?
   restaurantNeeded Boolean   @default(false)
   transportNeeded  Boolean   @default(false)
-  // Status
-  status           String    @default("pending")  // pending | confirmed | cancelled
+  status           String    @default("pending")
   confirmedAt      DateTime?
   confirmedBy      String?
-  internalNotes    String?   @db.Text
-  source           String    @default("website")  // website | phone | whatsapp
+  internalNotes    String?
+  source           String    @default("website")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -2317,10 +1889,6 @@ model BookingRequest {
   @@index([createdAt])
   @@map("booking_requests")
 }
-
-// ============================================
-// PHASE 2 — SMART MATCH (AI QUIZ)
-// ============================================
 
 model SmartMatchSession {
   id        String   @id @default(cuid())
@@ -2333,20 +1901,16 @@ model SmartMatchSession {
   @@map("smart_match_sessions")
 }
 
-// ============================================
-// PHASE 2 — CONCIERGE PARTNERS
-// ============================================
-
 model ConciergePartner {
   id          String   @id @default(cuid())
-  type        String   // restaurant | hotel | chauffeur | flowers | gifts
+  type        String
   name        String
   districtId  String?
   address     String?
   website     String?
   phone       String?
-  description String?  @db.Text
-  priceRange  String?  // "££££"
+  description String?
+  priceRange  String?
   imageUrl    String?
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -2357,18 +1921,14 @@ model ConciergePartner {
   @@map("concierge_partners")
 }
 
-// ============================================
-// PHASE 2 — BLOG / EDITORIAL
-// ============================================
-
 model BlogPost {
   id               String    @id @default(cuid())
   title            String
   slug             String    @unique
-  excerpt          String?   @db.Text
-  content          String    @db.Text
+  excerpt          String?
+  content          String
   coverImage       String?
-  category         String    // guide | lifestyle | london | news
+  category         String
   tags             String[]
   seoTitle         String?
   seoDescription   String?
@@ -2384,4 +1944,29 @@ model BlogPost {
   @@index([category])
   @@index([isPublished])
   @@map("blog_posts")
+}
+
+model model_addresses {
+  id                 String   @id
+  model_id           String   @unique
+  street             String?
+  flat_number        String?
+  flat_floor         Int?
+  post_code          String?
+  tube_station       String?
+  heathrow_available Boolean  @default(false)
+  gatwick_available  Boolean  @default(false)
+  stansted_available Boolean  @default(false)
+  is_active          Boolean  @default(true)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model model_work_preferences {
+  id                       String  @id
+  model_id                 String  @unique
+  work_with_couples        Boolean @default(false)
+  work_with_women          Boolean @default(false)
+  black_clients_welcome    Boolean @default(true)
+  disabled_clients_welcome Boolean @default(true)
 }

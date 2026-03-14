@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
         phone: body.phone || null,
         phone2: body.phone2 || null,
         email: body.email || null,
+        telegramPhone: body.telegramPhone || null,
+        telegramTag: body.telegramTag ? body.telegramTag.replace(/^@/, '') : null,
         whatsapp: body.whatsapp === true,
         telegram: body.telegram === true,
         viber: body.viber === true,

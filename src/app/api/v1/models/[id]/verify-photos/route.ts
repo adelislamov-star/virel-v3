@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { logAudit } from '@/lib/audit';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: 'AI not configured' }, { status: 503 });
     }

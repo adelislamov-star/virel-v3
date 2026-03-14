@@ -3,10 +3,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
-
-const prisma = new PrismaClient();
+import { requireRole, isActor } from '@/lib/auth';
 
 // -----------------------------------------------
 // PATCH — update media (isPrimary, isPublic)
@@ -16,6 +15,8 @@ export async function PATCH(
   { params }: { params: { id: string; mediaId: string } },
 ) {
   try {
+    const auth = await requireRole(req, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const body = await req.json();
 
     // If setting as primary, unset others first
@@ -58,6 +59,8 @@ export async function DELETE(
   { params }: { params: { id: string; mediaId: string } },
 ) {
   try {
+    const auth = await requireRole(_req, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const media = await prisma.modelMedia.findUnique({
       where: { id: params.mediaId },
     });

@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { logAudit } from '@/lib/audit';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
     const { id } = await params;
     const locations = await prisma.modelLocation.findMany({
       where: { modelId: id },
@@ -26,6 +29,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const { id: modelId } = await params;
     const body = await request.json();
     const { districtIds, primaryDistrictId, transportHubId, walkingMinutes } = body as {

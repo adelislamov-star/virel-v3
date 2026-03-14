@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 import { ModelProfileStateMachine, type ModelProfileStatus } from '@/lib/state-machines/model-profile';
+import { requireRole, isActor } from '@/lib/auth';
 
 const StatusChangeSchema = z.object({
   newStatus: z.enum(['draft', 'review', 'published', 'hidden', 'archived']),
@@ -17,6 +18,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const { id } = await params;
     const body = await request.json();
     const data = StatusChangeSchema.parse(body);

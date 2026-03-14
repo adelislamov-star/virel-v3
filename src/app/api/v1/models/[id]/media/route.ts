@@ -4,11 +4,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/client';
 import { uploadMedia, generateThumbnail, buildKey } from '@/lib/storage/r2';
 import { randomUUID } from 'crypto';
-
-const prisma = new PrismaClient();
+import { requireRole, isActor } from '@/lib/auth';
 
 // -----------------------------------------------
 // GET — list media for model
@@ -18,6 +17,8 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
+    const auth = await requireRole(_req, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
     const media = await prisma.modelMedia.findMany({
       where: { modelId: params.id },
       orderBy: { sortOrder: 'asc' },
@@ -40,6 +41,8 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   try {
+    const auth = await requireRole(req, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const isPrimary = formData.get('isPrimary') === 'true';
@@ -148,6 +151,8 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
+    const auth = await requireRole(req, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const body = await req.json();
     // body.order = [{ id, sortOrder }, ...]
     if (!Array.isArray(body.order)) {

@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createManualBlock } from '@/services/availabilityService';
+import { requireRole, isActor } from '@/lib/auth';
+
 const BlockSchema = z.object({
   startAt: z.string().datetime(),
   endAt: z.string().datetime(),
@@ -17,6 +19,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
     const actorId = request.cookies.get('virel-token')?.value || 'system';
 
     const body = await request.json();

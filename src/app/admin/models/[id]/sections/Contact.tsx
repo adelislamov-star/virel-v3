@@ -8,6 +8,8 @@ interface Props {
     phone?: string | null;
     phone2?: string | null;
     email?: string | null;
+    telegramPhone?: string | null;
+    telegramTag?: string | null;
     whatsapp?: boolean;
     telegram?: boolean;
     viber?: boolean;
@@ -22,6 +24,8 @@ export default function Contact({ model, modelId, onToast, onModelUpdate }: Prop
   const [phone, setPhone] = useState(model.phone || '');
   const [phone2, setPhone2] = useState(model.phone2 || '');
   const [email, setEmail] = useState(model.email || '');
+  const [telegramPhone, setTelegramPhone] = useState(model.telegramPhone || '');
+  const [telegramTag, setTelegramTag] = useState(model.telegramTag || '');
   const [whatsapp, setWhatsapp] = useState(model.whatsapp || false);
   const [telegram, setTelegram] = useState(model.telegram || false);
   const [viber, setViber] = useState(model.viber || false);
@@ -42,6 +46,8 @@ export default function Contact({ model, modelId, onToast, onModelUpdate }: Prop
             phone: phone || null,
             phone2: phone2 || null,
             email: email || null,
+            telegramPhone: telegramPhone || null,
+            telegramTag: telegramTag || null,
             whatsapp,
             telegram,
             viber,
@@ -62,7 +68,7 @@ export default function Contact({ model, modelId, onToast, onModelUpdate }: Prop
     } finally {
       setSaving(false);
     }
-  }, [modelId, phone, phone2, email, whatsapp, telegram, viber, signal, onToast, onModelUpdate]);
+  }, [modelId, phone, phone2, email, telegramPhone, telegramTag, whatsapp, telegram, viber, signal, onToast, onModelUpdate]);
 
   const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500';
 
@@ -87,6 +93,14 @@ export default function Contact({ model, modelId, onToast, onModelUpdate }: Prop
         <div className="md:col-span-2">
           <label className="block text-xs text-zinc-400 mb-1">Email</label>
           <input type="email" className={inputCls} value={email} onChange={(e) => { setEmail(e.target.value); mark(); }} placeholder="email@example.com" />
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-400 mb-1">Telegram Phone</label>
+          <input className={inputCls} value={telegramPhone} onChange={(e) => { setTelegramPhone(e.target.value); mark(); }} placeholder="+44... (if different)" />
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-400 mb-1">Telegram Tag</label>
+          <input className={inputCls} value={telegramTag} onChange={(e) => { setTelegramTag(e.target.value); mark(); }} placeholder="username (without @)" />
         </div>
       </div>
 

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import PillToggle from '@/components/ui/PillToggle'
+import StickyFormFooter from '@/components/ui/StickyFormFooter'
 import {
   NATIONALITIES, ETHNICITIES, LANGUAGES, LANGUAGE_LEVELS,
   LONDON_STATIONS, HEIGHTS, WEIGHTS, DRESS_SIZES, FOOT_SIZES,
@@ -16,63 +18,74 @@ import {
 interface LanguageEntry { language: string; level: string }
 
 interface FormData {
-  // Step 1
+  // Step 1 — Identity & Profile
   name: string; workingName: string; dateOfBirth: string; ageForWeb: string;
   nationality: string; ethnicity: string;
+  internalRating: number; status: string; visibility: string;
+  tagline: string; bio: string; internalNotes: string;
+  // Step 2 — Physical Stats
   height: string; weight: string; dressSize: string; footSize: string;
   bustSize: string; bustType: string; eyeColor: string; hairColor: string;
   hairLength: string; measurements: string; orientation: string;
   smoking: string; tattoo: string; piercings: string[];
   languages: LanguageEntry[];
   preferences: Record<string, boolean>;
-  internalRating: number; status: string; visibility: string;
-  tagline: string; bio: string; internalNotes: string;
-  // Step 2
+  // Step 3 — Rates & Services
   offersIncall: boolean; offersOutcall: boolean;
   rates: Record<string, { incall: string; outcall: string }>;
   selectedServices: Record<string, { enabled: boolean; extraPrice: string }>;
-  wardrobe: string[];
-  payments: Record<string, boolean>;
-  // Step 3
+  // Step 4 — Location & Contact
   phone: string; phone2: string; email: string;
+  telegramPhone: string; telegramTag: string;
   whatsapp: boolean; telegram: boolean; viber: boolean; signal: boolean;
   postcode: string; street: string; houseNumber: string; floor: string; flatNumber: string;
   nearestStation: string;
   availableAllDay: boolean; availableDays: string[];
   hasFlatmates: boolean;
-  // Step 4
+  wardrobe: string[];
+  payments: Record<string, boolean>;
+  // Step 5 — Photos & Publish
   photos: File[];
 }
 
 interface CallRate { id: string; label: string; durationMin: number; sortOrder: number; isActive: boolean }
 interface Service { id: string; title: string; category: string; isPublic: boolean; isExtra?: boolean }
 
-const STEPS = ['Personal Info', 'Rates & Services', 'Location & Availability', 'Photos & Save']
+const STEPS = [
+  'Identity & Profile',
+  'Physical Stats',
+  'Rates & Services',
+  'Location & Contact',
+  'Photos & Publish',
+]
 
 const defaultFormData: FormData = {
   name: '', workingName: '', dateOfBirth: '', ageForWeb: '',
   nationality: '', ethnicity: '',
+  internalRating: 0, status: 'draft', visibility: 'private',
+  tagline: '', bio: '', internalNotes: '',
   height: '', weight: '', dressSize: '', footSize: '',
   bustSize: '', bustType: '', eyeColor: '', hairColor: '',
   hairLength: '', measurements: '', orientation: '',
   smoking: '', tattoo: '', piercings: [],
   languages: [{ language: '', level: '' }],
   preferences: {},
-  internalRating: 0, status: 'draft', visibility: 'private',
-  tagline: '', bio: '', internalNotes: '',
   offersIncall: true, offersOutcall: true,
   rates: {},
   selectedServices: {},
-  wardrobe: [],
-  payments: {},
   phone: '', phone2: '', email: '',
+  telegramPhone: '', telegramTag: '',
   whatsapp: false, telegram: false, viber: false, signal: false,
   postcode: '', street: '', houseNumber: '', floor: '', flatNumber: '',
   nearestStation: '',
   availableAllDay: true, availableDays: [],
   hasFlatmates: false,
+  wardrobe: [],
+  payments: {},
   photos: [],
 }
+
+const LS_KEY = 'virel_new_model_draft'
 
 /* ─── Small helpers ─── */
 
@@ -202,8 +215,9 @@ export default function NewModelPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [generatingBio, setGeneratingBio] = useState(false)
 
-  // Step 2 data
+  // Step 3 data
   const [callRates, setCallRates] = useState<CallRate[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [loadingRates, setLoadingRates] = useState(false)
@@ -216,11 +230,39 @@ export default function NewModelPage() {
 
   const set = useCallback(<K extends keyof FormData>(key: K, value: FormData[K]) => {
     setForm(prev => ({ ...prev, [key]: value }))
+    setErrors(prev => {
+      if (prev[key as string]) {
+        const next = { ...prev }
+        delete next[key as string]
+        return next
+      }
+      return prev
+    })
   }, [])
 
-  // Fetch call rates + services when entering step 2
+  // localStorage persistence
   useEffect(() => {
-    if (step === 1 && callRates.length === 0) {
+    try {
+      const saved = localStorage.getItem(LS_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Don't restore photos (File objects can't be serialized)
+        delete parsed.photos
+        setForm(prev => ({ ...prev, ...parsed }))
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      const { photos, ...rest } = form
+      localStorage.setItem(LS_KEY, JSON.stringify(rest))
+    } catch {}
+  }, [form])
+
+  // Fetch call rates + services when entering step 3
+  useEffect(() => {
+    if (step === 2 && callRates.length === 0) {
       setLoadingRates(true)
       fetch('/api/v1/call-rates')
         .then(r => r.json())
@@ -233,7 +275,7 @@ export default function NewModelPage() {
         .catch(() => {})
         .finally(() => setLoadingRates(false))
     }
-    if (step === 1 && services.length === 0) {
+    if (step === 2 && services.length === 0) {
       setLoadingServices(true)
       fetch('/api/v1/services')
         .then(r => r.json())
@@ -265,12 +307,12 @@ export default function NewModelPage() {
       }
     }
 
-    if (s === 1) {
+    if (s === 2) {
       const hasAnyRate = Object.values(form.rates).some(r => r.incall || r.outcall)
       if (!hasAnyRate) errs.rates = 'At least one rate is required (1hr incall or outcall)'
     }
 
-    if (s === 2) {
+    if (s === 3) {
       if (!form.phone.trim()) errs.phone = 'Phone number is required'
     }
 
@@ -280,7 +322,7 @@ export default function NewModelPage() {
 
   function goNext() {
     if (validateStep(step)) {
-      const next = Math.min(step + 1, 3)
+      const next = Math.min(step + 1, 4)
       setVisitedSteps(prev => new Set([...prev, next]))
       setStep(next)
     }
@@ -315,10 +357,38 @@ export default function NewModelPage() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== idx))
   }
 
+  /* ─── AI Bio Generation ─── */
+  async function generateBio() {
+    setGeneratingBio(true)
+    try {
+      // We need a model ID for the API, but since this is a new model,
+      // we generate a placeholder bio based on form data
+      const prompt = `Write a sophisticated, glamorous companion profile bio.
+Name: ${form.name}. ${form.nationality ? `${form.nationality}. ` : ''}${form.tagline ? `${form.tagline}. ` : ''}
+150-200 words. Warm, intriguing, luxury tone. Never explicit. First person optional.
+Return ONLY valid JSON: {"bio": "...", "tagline": "..."}`
+
+      const res = await fetch('/api/v1/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      if (data.success && data.data) {
+        if (data.data.bio) set('bio', data.data.bio)
+        if (data.data.tagline && !form.tagline) set('tagline', data.data.tagline)
+      }
+    } catch {
+      // Silent fail — AI is optional
+    } finally {
+      setGeneratingBio(false)
+    }
+  }
+
   /* ─── Save ─── */
 
-  async function handleSave() {
-    if (!validateStep(2)) { setStep(2); return }
+  async function handleSave(asDraft = false) {
+    if (!asDraft && !validateStep(3)) { setStep(3); return }
     setSubmitting(true)
     setSubmitError('')
 
@@ -372,6 +442,8 @@ export default function NewModelPage() {
         phone: form.phone || undefined,
         phone2: form.phone2 || undefined,
         email: form.email || undefined,
+        telegramPhone: form.telegramPhone || undefined,
+        telegramTag: form.telegramTag ? form.telegramTag.replace(/^@/, '') : undefined,
         whatsapp: form.whatsapp,
         telegram: form.telegram,
         viber: form.viber,
@@ -388,8 +460,8 @@ export default function NewModelPage() {
         tagline: form.tagline || undefined,
         bio: form.bio || undefined,
         internalRating: form.internalRating,
-        status: form.status,
-        visibility: form.visibility,
+        status: asDraft ? 'draft' : form.status,
+        visibility: asDraft ? 'private' : form.visibility,
         offersIncall: form.offersIncall,
         offersOutcall: form.offersOutcall,
         rates: form.rates,
@@ -433,6 +505,9 @@ export default function NewModelPage() {
         }).catch(() => {})
       }
 
+      // Clear draft from localStorage
+      localStorage.removeItem(LS_KEY)
+
       router.push(`/admin/models/${data.modelId}`)
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to save.')
@@ -444,9 +519,14 @@ export default function NewModelPage() {
   /* ─── Service categories ─── */
   const serviceCategories = [...new Set(services.map(s => s.category))]
 
+  // Summary stats for Step 5
+  const serviceCount = Object.values(form.selectedServices).filter(s => s.enabled).length
+  const hasRates = Object.values(form.rates).some(r => r.incall || r.outcall)
+  const minRate = Math.min(...Object.values(form.rates).flatMap(r => [r.incall, r.outcall].filter(Boolean).map(Number)).filter(n => n > 0)) || 0
+
   /* ─── Render ─── */
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200">
+    <div className="min-h-screen bg-zinc-950 text-zinc-200 pb-20">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -496,7 +576,7 @@ export default function NewModelPage() {
           </div>
         </div>
 
-        {/* ═══════ STEP 1 ═══════ */}
+        {/* ═══════ STEP 1 — Identity & Profile ═══════ */}
         {step === 0 && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -538,8 +618,70 @@ export default function NewModelPage() {
               </div>
             </div>
 
-            {/* Physical */}
-            <SectionLabel>Physical</SectionLabel>
+            {/* Internal */}
+            <SectionLabel>Internal</SectionLabel>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="sm:col-span-2">
+                <FieldLabel>Internal Rating</FieldLabel>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range" min={0} max={10} step={1}
+                    value={form.internalRating}
+                    onChange={e => set('internalRating', parseFloat(e.target.value))}
+                    className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-amber-500 bg-zinc-700"
+                  />
+                  <span className="text-sm font-semibold text-amber-400 w-8 text-center">{form.internalRating}</span>
+                </div>
+              </div>
+              <div>
+                <FieldLabel>Status</FieldLabel>
+                <SelectInput value={form.status} onChange={v => set('status', v)} options={MODEL_STATUSES} />
+              </div>
+              <div>
+                <FieldLabel>Visibility</FieldLabel>
+                <SelectInput value={form.visibility} onChange={v => set('visibility', v)} options={MODEL_VISIBILITY} />
+              </div>
+              <div>
+                <FieldLabel>Tagline</FieldLabel>
+                <TextInput value={form.tagline} onChange={v => set('tagline', v)} placeholder="Short tagline" />
+              </div>
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1">
+                  <FieldLabel>About / Bio</FieldLabel>
+                  <button
+                    type="button"
+                    onClick={generateBio}
+                    disabled={generatingBio || !form.name}
+                    className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-40 transition-colors"
+                  >
+                    {generatingBio ? 'Generating...' : 'Generate with AI'}
+                  </button>
+                </div>
+                <textarea
+                  value={form.bio}
+                  onChange={e => set('bio', e.target.value)}
+                  rows={3}
+                  placeholder="Public bio..."
+                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>Internal Notes</FieldLabel>
+                <textarea
+                  value={form.internalNotes}
+                  onChange={e => set('internalNotes', e.target.value)}
+                  rows={3}
+                  placeholder="Notes visible only to staff..."
+                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════ STEP 2 — Physical Stats ═══════ */}
+        {step === 1 && (
+          <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               <div>
                 <FieldLabel>Height</FieldLabel>
@@ -593,27 +735,21 @@ export default function NewModelPage() {
                 <FieldLabel>Tattoo</FieldLabel>
                 <SelectInput value={form.tattoo} onChange={v => set('tattoo', v)} options={TATTOOS} />
               </div>
-              <div className="sm:col-span-2 lg:col-span-3">
-                <FieldLabel>Piercings</FieldLabel>
-                <div className="flex flex-wrap gap-3 mt-1">
-                  {PIERCINGS.map(p => (
-                    <Toggle
-                      key={p}
-                      checked={form.piercings.includes(p)}
-                      onChange={() => {
-                        if (p === 'None') {
-                          set('piercings', form.piercings.includes('None') ? [] : ['None'])
-                        } else {
-                          const without = form.piercings.filter(x => x !== 'None')
-                          set('piercings', without.includes(p) ? without.filter(x => x !== p) : [...without, p])
-                        }
-                      }}
-                      label={p}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
+
+            {/* Piercings — Pill Buttons */}
+            <SectionLabel>Piercings</SectionLabel>
+            <PillToggle
+              options={PIERCINGS}
+              selected={form.piercings}
+              onChange={(selected) => {
+                if (selected.includes('None') && !form.piercings.includes('None')) {
+                  set('piercings', ['None'])
+                } else {
+                  set('piercings', selected.filter(s => s !== 'None'))
+                }
+              }}
+            />
 
             {/* Languages */}
             <SectionLabel>Languages</SectionLabel>
@@ -666,69 +802,24 @@ export default function NewModelPage() {
               )}
             </div>
 
-            {/* Preferences */}
+            {/* Preferences — Pill Buttons */}
             <SectionLabel>Preferences</SectionLabel>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {PREFERENCE_FIELDS.map(pf => (
-                <Toggle
-                  key={pf.field}
-                  checked={form.preferences[pf.field] || false}
-                  onChange={() => set('preferences', { ...form.preferences, [pf.field]: !form.preferences[pf.field] })}
-                  label={pf.label}
-                />
-              ))}
-            </div>
-
-            {/* Internal */}
-            <SectionLabel>Internal</SectionLabel>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <FieldLabel>Internal Rating</FieldLabel>
-                <input
-                  type="number" min={0} max={5} step={0.5}
-                  value={form.internalRating}
-                  onChange={e => set('internalRating', parseFloat(e.target.value) || 0)}
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                />
-              </div>
-              <div>
-                <FieldLabel>Status</FieldLabel>
-                <SelectInput value={form.status} onChange={v => set('status', v)} options={MODEL_STATUSES} />
-              </div>
-              <div>
-                <FieldLabel>Visibility</FieldLabel>
-                <SelectInput value={form.visibility} onChange={v => set('visibility', v)} options={MODEL_VISIBILITY} />
-              </div>
-              <div>
-                <FieldLabel>Tagline</FieldLabel>
-                <TextInput value={form.tagline} onChange={v => set('tagline', v)} placeholder="Short tagline" />
-              </div>
-              <div className="sm:col-span-2">
-                <FieldLabel>About / Bio</FieldLabel>
-                <textarea
-                  value={form.bio}
-                  onChange={e => set('bio', e.target.value)}
-                  rows={3}
-                  placeholder="Public bio..."
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <FieldLabel>Internal Notes</FieldLabel>
-                <textarea
-                  value={form.internalNotes}
-                  onChange={e => set('internalNotes', e.target.value)}
-                  rows={3}
-                  placeholder="Notes visible only to staff..."
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
-                />
-              </div>
-            </div>
+            <PillToggle
+              options={PREFERENCE_FIELDS.map(pf => pf.label)}
+              selected={PREFERENCE_FIELDS.filter(pf => form.preferences[pf.field]).map(pf => pf.label)}
+              onChange={(selectedLabels) => {
+                const newPrefs: Record<string, boolean> = {}
+                PREFERENCE_FIELDS.forEach(pf => {
+                  newPrefs[pf.field] = selectedLabels.includes(pf.label)
+                })
+                set('preferences', newPrefs)
+              }}
+            />
           </div>
         )}
 
-        {/* ═══════ STEP 2 ═══════ */}
-        {step === 1 && (
+        {/* ═══════ STEP 3 — Rates & Services ═══════ */}
+        {step === 2 && (
           <div className="space-y-6">
             {/* Incall / Outcall toggles */}
             <div className="flex gap-6">
@@ -819,9 +910,10 @@ export default function NewModelPage() {
                     .filter(s => s.category === activeServiceTab)
                     .map(svc => {
                       const sel = form.selectedServices[svc.id]
+                      const isGroup = /mmf|group|duo/i.test(svc.title)
                       const isExtra = svc.title.includes('+Extra') || (svc as any).isExtra
                       return (
-                        <div key={svc.id} className="flex items-center gap-3">
+                        <div key={svc.id} className="space-y-1">
                           <Toggle
                             checked={sel?.enabled || false}
                             onChange={() => set('selectedServices', {
@@ -830,7 +922,12 @@ export default function NewModelPage() {
                             })}
                             label={svc.title}
                           />
-                          {isExtra && sel?.enabled && (
+                          {isGroup && sel?.enabled && (
+                            <div className="ml-6 text-xs text-zinc-400 space-y-1">
+                              <span className="text-zinc-500">Pricing: Double Price / POA handled on model edit page</span>
+                            </div>
+                          )}
+                          {isExtra && sel?.enabled && !isGroup && (
                             <input
                               type="number" min={0} placeholder="Extra price"
                               value={sel.extraPrice}
@@ -838,7 +935,7 @@ export default function NewModelPage() {
                                 ...form.selectedServices,
                                 [svc.id]: { ...sel, extraPrice: e.target.value }
                               })}
-                              className="w-24 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                              className="ml-6 w-24 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                             />
                           )}
                         </div>
@@ -847,42 +944,11 @@ export default function NewModelPage() {
                 </div>
               </>
             )}
-
-            {/* Wardrobe */}
-            <SectionLabel>Wardrobe</SectionLabel>
-            <div className="flex flex-wrap gap-2">
-              {WARDROBE_OPTIONS.map(w => (
-                <button
-                  key={w} type="button"
-                  onClick={() => set('wardrobe', form.wardrobe.includes(w) ? form.wardrobe.filter(x => x !== w) : [...form.wardrobe, w])}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                    form.wardrobe.includes(w)
-                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                      : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-600'
-                  }`}
-                >
-                  {w}
-                </button>
-              ))}
-            </div>
-
-            {/* Payment Methods */}
-            <SectionLabel>Payment Methods</SectionLabel>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {PAYMENT_METHODS.map(pm => (
-                <Toggle
-                  key={pm.value}
-                  checked={form.payments[pm.value] || false}
-                  onChange={() => set('payments', { ...form.payments, [pm.value]: !form.payments[pm.value] })}
-                  label={pm.label}
-                />
-              ))}
-            </div>
           </div>
         )}
 
-        {/* ═══════ STEP 3 ═══════ */}
-        {step === 2 && (
+        {/* ═══════ STEP 4 — Location & Contact ═══════ */}
+        {step === 3 && (
           <div className="space-y-6">
             {/* Contact */}
             <SectionLabel>Contact (internal)</SectionLabel>
@@ -901,12 +967,34 @@ export default function NewModelPage() {
                 <TextInput value={form.email} onChange={v => set('email', v)} placeholder="email@example.com" type="email" />
               </div>
             </div>
-            <div className="flex flex-wrap gap-6 mt-2">
-              <Toggle checked={form.whatsapp} onChange={() => set('whatsapp', !form.whatsapp)} label="WhatsApp" />
-              <Toggle checked={form.telegram} onChange={() => set('telegram', !form.telegram)} label="Telegram" />
-              <Toggle checked={form.viber} onChange={() => set('viber', !form.viber)} label="Viber" />
-              <Toggle checked={form.signal} onChange={() => set('signal', !form.signal)} label="Signal" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel>Telegram Phone</FieldLabel>
+                <TextInput value={form.telegramPhone} onChange={v => set('telegramPhone', v)} placeholder="+44 7... (if different)" />
+              </div>
+              <div>
+                <FieldLabel>Telegram Tag</FieldLabel>
+                <TextInput value={form.telegramTag} onChange={v => set('telegramTag', v)} placeholder="username (without @)" />
+              </div>
             </div>
+
+            {/* Messengers — Pill Toggles */}
+            <SectionLabel>Messengers</SectionLabel>
+            <PillToggle
+              options={['WhatsApp', 'Telegram', 'Viber', 'Signal']}
+              selected={[
+                ...(form.whatsapp ? ['WhatsApp'] : []),
+                ...(form.telegram ? ['Telegram'] : []),
+                ...(form.viber ? ['Viber'] : []),
+                ...(form.signal ? ['Signal'] : []),
+              ]}
+              onChange={(selected) => {
+                set('whatsapp', selected.includes('WhatsApp'))
+                set('telegram', selected.includes('Telegram'))
+                set('viber', selected.includes('Viber'))
+                set('signal', selected.includes('Signal'))
+              }}
+            />
 
             {/* Incall Location */}
             <SectionLabel>Incall Location</SectionLabel>
@@ -974,29 +1062,59 @@ export default function NewModelPage() {
                 </label>
               </div>
               {!form.availableAllDay && (
-                <div className="flex flex-wrap gap-3">
-                  {AVAILABILITY_DAYS.map(day => (
-                    <Toggle
-                      key={day}
-                      checked={form.availableDays.includes(day)}
-                      onChange={() => set('availableDays',
-                        form.availableDays.includes(day)
-                          ? form.availableDays.filter(d => d !== day)
-                          : [...form.availableDays, day]
-                      )}
-                      label={day}
-                    />
-                  ))}
-                </div>
+                <PillToggle
+                  options={AVAILABILITY_DAYS}
+                  selected={form.availableDays}
+                  onChange={(days) => set('availableDays', days)}
+                />
               )}
               <Toggle checked={form.hasFlatmates} onChange={() => set('hasFlatmates', !form.hasFlatmates)} label="Has Flatmates" />
             </div>
+
+            {/* Wardrobe — Pill Toggles */}
+            <SectionLabel>Wardrobe</SectionLabel>
+            <PillToggle
+              options={WARDROBE_OPTIONS}
+              selected={form.wardrobe}
+              onChange={(selected) => set('wardrobe', selected)}
+            />
+
+            {/* Payment Methods — Pill Toggles */}
+            <SectionLabel>Payment Methods</SectionLabel>
+            <PillToggle
+              options={PAYMENT_METHODS.map(pm => pm.label)}
+              selected={PAYMENT_METHODS.filter(pm => form.payments[pm.value]).map(pm => pm.label)}
+              onChange={(selectedLabels) => {
+                const newPayments: Record<string, boolean> = {}
+                PAYMENT_METHODS.forEach(pm => {
+                  newPayments[pm.value] = selectedLabels.includes(pm.label)
+                })
+                set('payments', newPayments)
+              }}
+            />
           </div>
         )}
 
-        {/* ═══════ STEP 4 ═══════ */}
-        {step === 3 && (
+        {/* ═══════ STEP 5 — Photos & Publish ═══════ */}
+        {step === 4 && (
           <div className="space-y-6">
+            {/* Quick Upload AI */}
+            <div className="rounded-xl border-2 border-amber-500/30 bg-amber-500/5 p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">AI</div>
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-400 mb-1">Quick Upload AI</h3>
+                  <p className="text-xs text-zinc-400 mb-3">Have an application form? Upload a PDF or photo and AI will fill 35+ fields automatically.</p>
+                  <Link
+                    href="/admin/models/quick-upload"
+                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 px-4 py-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                  >
+                    Upload Application Form
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             {/* Photo Upload */}
             <SectionLabel>Photos</SectionLabel>
             <div
@@ -1015,7 +1133,7 @@ export default function NewModelPage() {
               />
               <div className="text-4xl mb-3 text-zinc-500">+</div>
               <p className="text-sm font-medium text-zinc-300">Drag & drop photos here or click to browse</p>
-              <p className="text-xs text-zinc-500 mt-1">Accepts JPG, PNG, WEBP</p>
+              <p className="text-xs text-zinc-500 mt-1">First photo = Cover. Accepts JPG, PNG, WEBP</p>
             </div>
 
             {/* Photo Previews */}
@@ -1024,6 +1142,9 @@ export default function NewModelPage() {
                 {photoPreviews.map((src, idx) => (
                   <div key={idx} className="relative group rounded-lg overflow-hidden border border-zinc-800">
                     <img src={src} alt={`Photo ${idx + 1}`} className="w-full h-28 object-cover" />
+                    {idx === 0 && (
+                      <span className="absolute top-1 left-1 bg-amber-500 text-zinc-900 text-[10px] font-bold px-1.5 py-0.5 rounded">COVER</span>
+                    )}
                     <button
                       type="button"
                       onClick={e => { e.stopPropagation(); removePhoto(idx) }}
@@ -1037,7 +1158,7 @@ export default function NewModelPage() {
             )}
 
             {/* Profile Status */}
-            <SectionLabel>Profile Status</SectionLabel>
+            <SectionLabel>Publish</SectionLabel>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
               <div>
                 <FieldLabel>Status</FieldLabel>
@@ -1049,6 +1170,27 @@ export default function NewModelPage() {
               </div>
             </div>
 
+            {/* Summary */}
+            <SectionLabel>Summary</SectionLabel>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className={`rounded-lg border p-3 ${form.name ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-zinc-700 bg-zinc-900'}`}>
+                <span className="text-zinc-400">Name:</span>{' '}
+                <span className={form.name ? 'text-emerald-400' : 'text-zinc-500'}>{form.name || 'Not set'}</span>
+              </div>
+              <div className={`rounded-lg border p-3 ${hasRates ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-zinc-700 bg-zinc-900'}`}>
+                <span className="text-zinc-400">Rate from:</span>{' '}
+                <span className={hasRates ? 'text-emerald-400' : 'text-zinc-500'}>{hasRates ? `£${minRate}` : 'Not set'}</span>
+              </div>
+              <div className={`rounded-lg border p-3 ${serviceCount > 0 ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-zinc-700 bg-zinc-900'}`}>
+                <span className="text-zinc-400">Services:</span>{' '}
+                <span className={serviceCount > 0 ? 'text-emerald-400' : 'text-zinc-500'}>{serviceCount}</span>
+              </div>
+              <div className={`rounded-lg border p-3 ${form.photos.length > 0 ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+                <span className="text-zinc-400">Photos:</span>{' '}
+                <span className={form.photos.length > 0 ? 'text-emerald-400' : 'text-amber-400'}>{form.photos.length}{form.photos.length === 0 ? ' (none)' : ''}</span>
+              </div>
+            </div>
+
             {submitError && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm text-red-400">
                 {submitError}
@@ -1056,48 +1198,21 @@ export default function NewModelPage() {
             )}
           </div>
         )}
-
-        {/* ─── Navigation ─── */}
-        <div className="flex items-center justify-between mt-10 pt-6 border-t border-zinc-800 pb-8">
-          <div>
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={goBack}
-                className="px-5 py-2.5 rounded-lg text-sm font-medium border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors"
-              >
-                Back
-              </button>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href="/admin/models"
-              className="px-5 py-2.5 rounded-lg text-sm font-medium border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
-            >
-              Cancel
-            </Link>
-            {step < 3 ? (
-              <button
-                type="button"
-                onClick={goNext}
-                className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-amber-500 text-zinc-900 hover:bg-amber-400 transition-colors"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={submitting}
-                className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-amber-500 text-zinc-900 hover:bg-amber-400 transition-colors disabled:opacity-50"
-              >
-                {submitting ? 'Saving...' : 'Save Profile'}
-              </button>
-            )}
-          </div>
-        </div>
       </div>
+
+      {/* Sticky Footer */}
+      <StickyFormFooter
+        currentStep={step}
+        totalSteps={STEPS.length}
+        stepLabel={STEPS[step]}
+        onBack={goBack}
+        onNext={step < 4 ? goNext : undefined}
+        onCancel={() => router.push('/admin/models')}
+        onSaveDraft={() => handleSave(true)}
+        onSubmit={() => handleSave(false)}
+        isLastStep={step === 4}
+        saving={submitting}
+      />
     </div>
   )
 }
