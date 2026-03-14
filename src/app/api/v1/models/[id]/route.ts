@@ -1,5 +1,6 @@
 // GET MODEL WITH FULL PROFILE
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
 import { ensureExtensionTables } from '@/lib/db/ensure-tables';
@@ -113,7 +114,15 @@ export async function PATCH(
       const p = body.profile;
       const profileData: Record<string, unknown> = {};
       if (p.measurements !== undefined) profileData.measurements = p.measurements || null;
-      if (p.piercingDetails !== undefined) profileData.piercingDetails = p.piercingDetails || null;
+      if (p.piercingDetails !== undefined) {
+        if (Array.isArray(p.piercingDetails)) {
+          profileData.piercingDetails = p.piercingDetails;
+        } else if (typeof p.piercingDetails === 'string' && p.piercingDetails) {
+          profileData.piercingDetails = p.piercingDetails.split(',').map((s: string) => s.trim()).filter(Boolean);
+        } else {
+          profileData.piercingDetails = [];
+        }
+      }
       if (p.education !== undefined) profileData.education = p.education || null;
       if (p.travel !== undefined) profileData.travel = p.travel || null;
       if (p.tagline !== undefined) profileData.tagline = p.tagline || null;
@@ -330,6 +339,14 @@ export async function PATCH(
       req: request,
     });
 
+    // Revalidate frontend caches
+    revalidatePath('/companions');
+    revalidatePath('/');
+    try {
+      const m = await prisma.model.findUnique({ where: { id: params.id }, select: { slug: true } });
+      if (m?.slug) revalidatePath(`/companions/${m.slug}`);
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: 'Model updated'
@@ -389,6 +406,10 @@ export async function DELETE(
       entityId: id,
       req: _request,
     });
+
+    // Revalidate frontend caches
+    revalidatePath('/companions');
+    revalidatePath('/');
 
     return NextResponse.json({ success: true, message: 'Model deleted' });
 

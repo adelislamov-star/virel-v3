@@ -5,6 +5,7 @@ import { useState, useRef, useCallback } from 'react'
 interface QuickUploadModalProps {
   open: boolean
   onClose: () => void
+  onModelCreated?: () => void
 }
 
 interface UploadSummary {
@@ -33,7 +34,7 @@ function isImageFile(file: File): boolean {
   return file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(file.name.toLowerCase().split('.').pop() || '')
 }
 
-export default function QuickUploadModal({ open, onClose }: QuickUploadModalProps) {
+export default function QuickUploadModal({ open, onClose, onModelCreated }: QuickUploadModalProps) {
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [processing, setProcessing] = useState(false)
@@ -125,6 +126,7 @@ export default function QuickUploadModal({ open, onClose }: QuickUploadModalProp
         setSummary(data.summary)
         setModelId(data.modelId)
         setProcessing(false)
+        onModelCreated?.()
       } else {
         setError(data.error || 'Processing failed')
         setProcessing(false)

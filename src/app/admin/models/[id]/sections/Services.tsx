@@ -20,7 +20,13 @@ interface ServiceCategory {
 }
 
 interface ModelServiceState {
-  [serviceId: string]: { enabled: boolean; isExtra: boolean; extraPrice: string };
+  [serviceId: string]: { enabled: boolean; isExtra: boolean; extraPrice: string; isDoublePrice: boolean; isPOA: boolean };
+}
+
+const GROUP_SERVICE_TITLES = ['mmf', 'group', 'duo'];
+
+function isGroupService(svc: ServiceItem): boolean {
+  return GROUP_SERVICE_TITLES.some((t) => svc.title.toLowerCase().includes(t));
 }
 
 interface Props {
@@ -67,6 +73,8 @@ export default function Services({ modelId, onToast }: Props) {
               enabled: s.isEnabled !== false,
               isExtra: s.isExtra || false,
               extraPrice: s.extraPrice != null ? String(s.extraPrice) : '',
+              isDoublePrice: s.isDoublePrice || false,
+              isPOA: s.isPOA || false,
             };
           }
           setState(ms);
@@ -84,7 +92,7 @@ export default function Services({ modelId, onToast }: Props) {
       ...prev,
       [id]: prev[id]
         ? { ...prev[id], enabled: !prev[id].enabled }
-        : { enabled: true, isExtra: false, extraPrice: '' },
+        : { enabled: true, isExtra: false, extraPrice: '', isDoublePrice: false, isPOA: false },
     }));
     setDirty(true);
   };
@@ -105,11 +113,29 @@ export default function Services({ modelId, onToast }: Props) {
     setDirty(true);
   };
 
+  const toggleDoublePrice = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], isDoublePrice: !prev[id]?.isDoublePrice, isPOA: false },
+    }));
+    setDirty(true);
+  };
+
+  const togglePOA = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], isPOA: !prev[id]?.isPOA, isDoublePrice: false },
+    }));
+    setDirty(true);
+  };
+
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       const serviceIds: string[] = [];
       const extras: { serviceId: string; extraPrice: number }[] = [];
+      const doublePriceIds: string[] = [];
+      const poaIds: string[] = [];
 
       for (const [serviceId, s] of Object.entries(state)) {
         if (s.enabled) {
@@ -117,13 +143,15 @@ export default function Services({ modelId, onToast }: Props) {
           if (s.isExtra && s.extraPrice && !isNaN(parseFloat(s.extraPrice))) {
             extras.push({ serviceId, extraPrice: parseFloat(s.extraPrice) });
           }
+          if (s.isDoublePrice) doublePriceIds.push(serviceId);
+          if (s.isPOA) poaIds.push(serviceId);
         }
       }
 
       const res = await fetch(`/api/v1/models/${modelId}/services`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serviceIds, extras }),
+        body: JSON.stringify({ serviceIds, extras, doublePriceIds, poaIds }),
       });
       const json = await res.json();
       if (json.success) {
@@ -180,6 +208,7 @@ export default function Services({ modelId, onToast }: Props) {
             const s = state[svc.id];
             const isEnabled = s?.enabled || false;
             const isExtra = s?.isExtra || false;
+            const isGroup = isGroupService(svc);
             return (
               <div key={svc.id} className="rounded-lg hover:bg-zinc-800/50 transition-colors">
                 <div className="flex items-center gap-3 px-3 py-2">
@@ -194,7 +223,29 @@ export default function Services({ modelId, onToast }: Props) {
                     {svc.publicName && <span className="text-zinc-400"> — {svc.publicName}</span>}
                   </span>
                 </div>
-                {isEnabled && (
+                {isEnabled && isGroup && (
+                  <div className="flex items-center gap-4 px-10 pb-2">
+                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s?.isDoublePrice || false}
+                        onChange={() => toggleDoublePrice(svc.id)}
+                        className="accent-amber-500"
+                      />
+                      Double Price
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s?.isPOA || false}
+                        onChange={() => togglePOA(svc.id)}
+                        className="accent-amber-500"
+                      />
+                      POA
+                    </label>
+                  </div>
+                )}
+                {isEnabled && !isGroup && (
                   <div className="flex items-center gap-4 px-10 pb-2">
                     <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
                       <input

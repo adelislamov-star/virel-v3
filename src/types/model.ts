@@ -6,7 +6,7 @@ export interface ModelPhysicalStats {
   measurements: string | null;
   smokingStatus: string | null;
   tattooStatus: string | null;
-  piercingDetails: string | null;
+  piercingDetails: string[] | null;
   orientation: string | null;
   languages: string[];
   education: string | null;

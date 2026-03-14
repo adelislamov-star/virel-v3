@@ -6,6 +6,7 @@
 // Learning: stores successful parses as few-shot examples
 
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/client'
 import { uploadMedia, generateThumbnail, buildKey } from '@/lib/storage/r2'
 import { ensureExtensionTables } from '@/lib/db/ensure-tables'
@@ -73,21 +74,40 @@ interface AIParsedProfile {
   height_cm: number | null
   weight_kg: number | null
   nationality: string | null
+  ethnicity: string | null
   languages: string[]
   hair_colour: string | null
+  hair_length: string | null
   eye_colour: string | null
   bust_size: string | null
+  bust_type: string | null
   dress_size: string | null
   shoe_size: string | null
+  measurements: string | null
   orientation: string | null
   smokes: boolean | null
+  tattoo: string | null
   piercings: string | null
   works_with_couples: boolean | null
   serves_women: boolean | null
+  dinner_dates: boolean | null
+  travel_companion: boolean | null
   bio_text: string | null
+  tagline: string | null
+  education: string | null
+  travel: string | null
+  availability: string | null
+  phone: string | null
+  phone2: string | null
+  email: string | null
+  whatsapp: boolean | null
+  telegram: boolean | null
+  viber: boolean | null
+  signal: boolean | null
   address: string | null
   postcode: string | null
   tube_station: string | null
+  wardrobe: string[] | null
   rates: Record<string, { incall: number | null; outcall: number | null }> | null
   services: Array<{ name: string; enabled: boolean; extra_price: number | null }> | null
 }
@@ -126,26 +146,45 @@ const SYSTEM_PROMPT = `You are a data extraction AI for a London escort agency. 
 
 Return this exact JSON structure:
 {
-  "name": "string",
+  "name": "string - working name or first name",
   "age": number|null,
   "height_cm": number|null,
   "weight_kg": number|null,
-  "nationality": "string"|null,
-  "languages": ["string"],
-  "hair_colour": "string"|null,
-  "eye_colour": "string"|null,
-  "bust_size": "string"|null,
-  "dress_size": "string"|null,
-  "shoe_size": "string"|null,
-  "orientation": "string"|null,
+  "nationality": "string - e.g. Russian, British, Brazilian, etc."|null,
+  "ethnicity": "White European|Latin|Asian|Chinese|Indian|Black|Arabic|Mixed|Other"|null,
+  "languages": ["English (Fluent)", "Russian (Native)"],
+  "hair_colour": "Blonde|Brunette|Light Brown|Redhead|Black|Other"|null,
+  "hair_length": "Long|Medium|Short"|null,
+  "eye_colour": "Blue|Green|Brown|Hazel|Grey|Dark Brown|Black"|null,
+  "bust_size": "string - e.g. 34C, 32B"|null,
+  "bust_type": "Natural|Enhanced"|null,
+  "dress_size": "string - e.g. UK 10, EU 38"|null,
+  "shoe_size": "string - e.g. UK 5, EU 38"|null,
+  "measurements": "string - e.g. 32D-25-33"|null,
+  "orientation": "Heterosexual|Bisexual"|null,
   "smokes": boolean|null,
-  "piercings": "string"|null,
+  "tattoo": "None|Small|Medium|Large"|null,
+  "piercings": "string - e.g. Belly, Nipples or None"|null,
   "works_with_couples": boolean|null,
   "serves_women": boolean|null,
+  "dinner_dates": boolean|null,
+  "travel_companion": boolean|null,
   "bio_text": "string - write a short attractive 2-3 sentence bio for the website based on all available info"|null,
+  "tagline": "string - short 3-5 word catchy description, e.g. Slender Russian Blonde"|null,
+  "education": "string - e.g. Graduate, Student, Professional"|null,
+  "travel": "London only|UK & Europe|Worldwide"|null,
+  "availability": "Available Now|Advanced Notice|Away|On Holiday"|null,
+  "phone": "string - phone number with country code"|null,
+  "phone2": "string - second phone number"|null,
+  "email": "string - email address"|null,
+  "whatsapp": boolean,
+  "telegram": boolean,
+  "viber": boolean,
+  "signal": boolean,
   "address": "string"|null,
-  "postcode": "string"|null,
-  "tube_station": "string"|null,
+  "postcode": "string - UK postcode"|null,
+  "tube_station": "string - nearest tube/train station name"|null,
+  "wardrobe": ["Schoolgirl", "Nurse", "Latex"],
   "rates": {
     "30min": {"incall": number|null, "outcall": number|null},
     "45min": {"incall": number|null, "outcall": number|null},
@@ -161,10 +200,11 @@ Return this exact JSON structure:
 
 Height conversion: 1.70m=170, 1,70=170, 5ft7=170, 5'7"=170.
 Rates in GBP numbers only, no symbols. If only one rate given for a duration without specifying incall/outcall, assume it is incall. Outcall is usually £50 more + taxi.
-Use null for anything not found in the document.
+Use null for anything not found in the document. Use false for boolean fields if not mentioned.
 For services, use standard names: GFE, OWO, OWC, DFK, FK, 69, CIM, CIF, COB, Swallow, Snowballing, DT, Fingering, A-Level, DP, PSE, Party Girl, Face Sitting, Dirty Talk, Lady Services, WS Giving, WS Receiving, Rimming Giving, Rimming Receiving, Smoking Fetish, Roleplay, Filming Mask, Filming No Mask, Foot Fetish, Open Minded, Light Dom, Spanking Giving, Spanking Receiving, Duo, Bi Duo, Couples, MMF, Group, Massage, Prostate Massage, Professional Massage, B2B, Erotic Massage, Lomi Lomi, Nuru, Sensual Massage, Tantric, Striptease, Lapdancing, Belly Dance, Uniforms, Toys, Strap On, Poppers, Handcuffs, Domination, Fisting, Tie & Tease, Dinner Date.
 Only include services mentioned in the document. "enabled" = true if answer is Yes, false if No.
 For each service, check if there is an additional/extra price mentioned next to it (e.g. "A-level +£200", "GFE - extra £150", "Anal £200 extra"). Return extra_price as the numeric value in GBP, or null if no extra price is mentioned.
+For wardrobe, only include items explicitly mentioned (e.g. Schoolgirl, Nurse, Latex, Lingerie, Stockings, etc.). Return empty array if none mentioned.
 Return ONLY valid JSON.`
 
 async function parseDocumentWithAI(documentText: string): Promise<AIParsedProfile | null> {
@@ -408,15 +448,48 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         publicCode,
-        status: 'active',
+        status: 'published',
         visibility: 'public',
+
+        // Bio & Marketing
         notesInternal: aiParsed?.bio_text || null,
+        bio: aiParsed?.bio_text || null,
+        tagline: aiParsed?.tagline || null,
+        availability: aiParsed?.availability || 'Advanced Notice',
+        education: aiParsed?.education || null,
+        travel: aiParsed?.travel || null,
+        ethnicity: aiParsed?.ethnicity || null,
+        hairLength: aiParsed?.hair_length || null,
+        measurements: aiParsed?.measurements || null,
+        wardrobe: aiParsed?.wardrobe || [],
+
+        // Contact
+        phone: aiParsed?.phone || null,
+        phone2: aiParsed?.phone2 || null,
+        email: aiParsed?.email || null,
+        whatsapp: aiParsed?.whatsapp ?? false,
+        telegram: aiParsed?.telegram ?? false,
+        viber: aiParsed?.viber ?? false,
+        signal: aiParsed?.signal ?? false,
+
+        // Location (also stored in model_addresses below)
+        postcode: aiParsed?.postcode || regexParsed?.address?.postcode || null,
+        nearestStation: aiParsed?.tube_station || regexParsed?.address?.tubeStation || null,
+
+        // Work preferences
+        worksWithCouples: aiParsed?.works_with_couples ?? regexParsed?.worksWithCouples ?? false,
+        worksWithWomen: aiParsed?.serves_women ?? regexParsed?.servesWomen ?? false,
+        dinnerDates: aiParsed?.dinner_dates ?? false,
+        travelCompanion: aiParsed?.travel_companion ?? false,
+
+        // Stats
         stats: {
           create: {
             age: aiParsed?.age || regexParsed?.age || null,
             height: aiParsed?.height_cm || regexParsed?.heightCm || null,
             weight: aiParsed?.weight_kg || regexParsed?.weightKg || null,
             bustSize: aiParsed?.bust_size || regexParsed?.bustSize || null,
+            bustType: aiParsed?.bust_type || null,
             dressSize: aiParsed?.dress_size || regexParsed?.dressSize || null,
             feetSize: aiParsed?.shoe_size || regexParsed?.shoeSize || null,
             eyeColour: aiParsed?.eye_colour || regexParsed?.eyeColour || null,
@@ -425,6 +498,7 @@ export async function POST(request: NextRequest) {
             orientation: aiParsed?.orientation || regexParsed?.orientation || null,
             languages: aiParsed?.languages || regexParsed?.languages || [],
             smokingStatus: smokingVal,
+            tattooStatus: aiParsed?.tattoo || null,
             piercingStatus: aiParsed?.piercings || regexParsed?.piercings || null,
           },
         },
@@ -630,7 +704,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Revalidate frontend pages so new model appears immediately
+    revalidatePath('/companions')
+    revalidatePath('/')
+    if (model.slug) {
+      revalidatePath(`/companions/${model.slug}`)
+    }
+
     console.log('[quick-upload] === Quick Upload Complete ===')
+
+    // Build extracted field summary
+    const extractedFields: Record<string, unknown> = aiParsed ? { ...aiParsed } : {}
+    const fieldsFound = Object.entries(extractedFields)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))
+      .map(([k]) => k)
+    const fieldsEmpty = Object.entries(extractedFields)
+      .filter(([, v]) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0))
+      .map(([k]) => k)
 
     return NextResponse.json({
       success: true,
@@ -644,11 +734,21 @@ export async function POST(request: NextRequest) {
         rates: insertedRates,
         photos: uploadedPhotos,
         hasBio: !!aiParsed?.bio_text,
+        hasTagline: !!aiParsed?.tagline,
+        hasContact: !!(aiParsed?.phone || aiParsed?.email),
         hasAddress: !!(street || postcode),
         photosArrangedByAI: !!photoOrder,
         parsedByAI: !usedFallback && !!aiParsed,
         parsedByRegex: usedFallback,
       },
+      extracted: {
+        fieldsFound,
+        fieldsEmpty,
+        servicesLinked: linkedServices,
+        ratesCreated: insertedRates,
+        photosUploaded: uploadedPhotos,
+      },
+      redirectTo: `/admin/models/${model.id}`,
     })
   } catch (error: any) {
     console.error('[quick-upload] Fatal error:', error)

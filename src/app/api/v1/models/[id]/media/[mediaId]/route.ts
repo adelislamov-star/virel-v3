@@ -2,6 +2,7 @@
 // DELETE /api/v1/models/[id]/media/[mediaId]  — delete media
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { PrismaClient } from '@prisma/client';
 import { deleteMedia } from '@/lib/storage/r2';
 
@@ -32,6 +33,13 @@ export async function PATCH(
         ...(body.isPublic !== undefined && { isPublic: body.isPublic }),
       },
     });
+
+    // Revalidate frontend caches
+    try {
+      const m = await prisma.model.findUnique({ where: { id: params.id }, select: { slug: true } });
+      if (m?.slug) revalidatePath(`/companions/${m.slug}`);
+    } catch {}
+    revalidatePath('/companions');
 
     return NextResponse.json({ success: true, data: { media } });
   } catch (error: any) {
@@ -74,6 +82,13 @@ export async function DELETE(
 
     // Delete from DB
     await prisma.modelMedia.delete({ where: { id: params.mediaId } });
+
+    // Revalidate frontend caches
+    try {
+      const m = await prisma.model.findUnique({ where: { id: params.id }, select: { slug: true } });
+      if (m?.slug) revalidatePath(`/companions/${m.slug}`);
+    } catch {}
+    revalidatePath('/companions');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

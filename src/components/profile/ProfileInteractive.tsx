@@ -194,6 +194,8 @@ interface ServiceTag {
   slug: string
   displayTitle: string
   extraPrice?: number | null
+  isDoublePrice?: boolean
+  isPOA?: boolean
 }
 
 export function ServiceTagsCollapse({ tags }: { tags: ServiceTag[] }) {
@@ -207,7 +209,10 @@ export function ServiceTagsCollapse({ tags }: { tags: ServiceTag[] }) {
       {visible.map(s => (
         <a key={s.slug} href={`/services/${s.slug}`} className="service-tag">
           {s.displayTitle}
-          {s.extraPrice != null && s.extraPrice > 0 && (
+          {s.isPOA && (
+            <span style={{ color: '#b8965a', opacity: 0.7, marginLeft: 6, fontSize: 10 }}>POA</span>
+          )}
+          {!s.isPOA && s.extraPrice != null && s.extraPrice > 0 && (
             <span style={{ color: '#b8965a', opacity: 0.7, marginLeft: 6, fontSize: 10 }}>+£{s.extraPrice}</span>
           )}
         </a>

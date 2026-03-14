@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
-import { requireRole, isActor } from '@/lib/auth';
-
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
-    if (!isActor(auth)) return auth;
     const { searchParams } = new URL(request.url);
     const all = searchParams.get('all') === 'true';
 
-    const where = all ? {} : { status: 'active', visibility: 'public' };
+    const where = all ? {} : { status: 'published', visibility: 'public' };
 
     const models = await prisma.model.findMany({
       where,

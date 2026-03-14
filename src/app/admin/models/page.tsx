@@ -6,10 +6,11 @@ import Link from 'next/link';
 import QuickUploadModal from '@/components/models/QuickUploadModal';
 
 const statusStyles: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  draft: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
   published: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  suspended: 'bg-red-500/10 text-red-400 border-red-500/20',
+  draft: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  review: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  hidden: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  archived: 'bg-red-500/10 text-red-400 border-red-500/20',
 };
 
 export default function ModelsPage() {
@@ -134,6 +135,7 @@ export default function ModelsPage() {
       <QuickUploadModal
         open={quickUploadOpen}
         onClose={() => setQuickUploadOpen(false)}
+        onModelCreated={loadModels}
       />
     </div>
   );

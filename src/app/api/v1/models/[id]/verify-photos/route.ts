@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
-import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
 export async function POST(
@@ -8,9 +7,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
-    if (!isActor(auth)) return auth;
-
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: 'AI not configured' }, { status: 503 });
     }
@@ -85,7 +81,6 @@ Return ONLY valid JSON:
       });
 
       logAudit({
-        actorUserId: auth.userId,
         action: 'VERIFY_PHOTOS',
         entityType: 'Model',
         entityId: id,

@@ -3,6 +3,7 @@
 // PATCH  /api/v1/models/[id]/media  — reorder (sortOrder)
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { PrismaClient } from '@prisma/client';
 import { uploadMedia, generateThumbnail, buildKey } from '@/lib/storage/r2';
 import { randomUUID } from 'crypto';
@@ -118,6 +119,13 @@ export async function POST(
         sortOrder,
       },
     });
+
+    // Revalidate frontend caches
+    try {
+      const m = await prisma.model.findUnique({ where: { id: params.id }, select: { slug: true } });
+      if (m?.slug) revalidatePath(`/companions/${m.slug}`);
+    } catch {}
+    revalidatePath('/companions');
 
     return NextResponse.json({
       success: true,

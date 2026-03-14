@@ -5,6 +5,7 @@ import SectionCard from './SectionCard';
 
 const BUST_SIZES = ['28AA','28A','28B','28C','28D','30A','30B','30C','30D','30DD','32A','32B','32C','32D','32DD','32E','34A','34B','34C','34D','34DD','34E','34F','36A','36B','36C','36D','36DD','36E','36F','38B','38C','38D','38DD','40C','40D','40DD','42D','42DD'];
 const EYE_COLORS = ['Blue','Green','Brown','Hazel','Grey','Dark Brown','Black'];
+const HAIR_COLORS = ['Blonde','Brunette','Light Brown','Redhead','Black','Other'];
 const SMOKING_OPTS = ['Non-Smoker','Occasional','Regular'];
 const TATTOO_OPTS = ['None','Few (1-3)','Several (4-6)','Many (7+)','Full sleeves'];
 const PIERCING_OPTS = ['Ears','Belly','Nipples','Nose','Tongue','Eyebrow','Lip','Other'];
@@ -59,6 +60,7 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
   const [bustSize, setBustSize] = useState<string>((stats.bustSize as string) || '');
   const [bustType, setBustType] = useState<string>((stats.bustType as string) || '');
   const [eyeColor, setEyeColor] = useState<string>((stats.eyeColour as string) || '');
+  const [hairColor, setHairColor] = useState<string>((stats.hairColour as string) || '');
   const [measurements, setMeasurements] = useState<string>((model.measurements as string) || '');
   const [smokingStatus, setSmokingStatus] = useState<string>((stats.smokingStatus as string) || '');
   const [tattooStatus, setTattooStatus] = useState<string>((stats.tattooStatus as string) || '');
@@ -79,7 +81,7 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => { setDirty(true); }, [weight, bustSize, bustType, eyeColor, measurements, smokingStatus, tattooStatus, piercingDetails, orientation, languages, education, travel]);
+  useEffect(() => { setDirty(true); }, [weight, bustSize, bustType, eyeColor, hairColor, measurements, smokingStatus, tattooStatus, piercingDetails, orientation, languages, education, travel]);
   useEffect(() => { setDirty(false); }, []); // reset on mount
 
   const handleSave = useCallback(async () => {
@@ -89,8 +91,8 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stats: { weight, bustSize, bustType, eyeColour: eyeColor, smokingStatus, tattooStatus, orientation, languages },
-          profile: { measurements, piercingDetails: piercingDetails.join(', '), education, travel },
+          stats: { weight, bustSize, bustType, eyeColour: eyeColor, hairColour: hairColor, smokingStatus, tattooStatus, orientation, languages },
+          profile: { measurements, piercingDetails, education, travel },
         }),
       });
       const json = await res.json();
@@ -105,7 +107,7 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [modelId, weight, bustSize, bustType, eyeColor, measurements, smokingStatus, tattooStatus, piercingDetails, orientation, languages, education, travel, onToast]);
+  }, [modelId, weight, bustSize, bustType, eyeColor, hairColor, measurements, smokingStatus, tattooStatus, piercingDetails, orientation, languages, education, travel, onToast]);
 
   const sel = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200";
   const inp = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500";
@@ -142,6 +144,13 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
           <select value={eyeColor} onChange={(e) => setEyeColor(e.target.value)} className={sel}>
             <option value="">—</option>
             {EYE_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-400 mb-1">Hair Color</label>
+          <select value={hairColor} onChange={(e) => setHairColor(e.target.value)} className={sel}>
+            <option value="">—</option>
+            {HAIR_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>

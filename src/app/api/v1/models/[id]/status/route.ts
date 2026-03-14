@@ -2,6 +2,7 @@
 // PATCH /api/v1/models/[id]/status — change model profile status
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 import { ModelProfileStateMachine, type ModelProfileStatus } from '@/lib/state-machines/model-profile';
@@ -70,6 +71,11 @@ export async function PATCH(
 
       return updated;
     });
+
+    // Revalidate frontend caches — status change directly affects visibility
+    revalidatePath('/companions');
+    revalidatePath('/');
+    if (result.slug) revalidatePath(`/companions/${result.slug}`);
 
     return NextResponse.json({ data: { model: result } });
   } catch (error: unknown) {

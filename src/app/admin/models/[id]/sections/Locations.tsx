@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import SectionCard from './SectionCard';
 import type { DistrictOption, TransportHubOption, ModelLocationEntry } from '@/types/model';
 
@@ -19,6 +19,7 @@ export default function Locations({ modelId, onToast }: Props) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
+  const loaded = useRef(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -45,6 +46,8 @@ export default function Locations({ modelId, onToast }: Props) {
         onToast('Failed to load locations', 'error');
       } finally {
         setLoading(false);
+        // Mark loaded on next tick so dirty effect doesn't trigger from initial data
+        setTimeout(() => { loaded.current = true; }, 0);
       }
     })();
   }, [modelId, onToast]);
@@ -65,8 +68,7 @@ export default function Locations({ modelId, onToast }: Props) {
     else if (!selectedIds.includes(primaryId)) setPrimaryId(selectedIds[0]);
   }, [selectedIds, primaryId]);
 
-  useEffect(() => { setDirty(true); }, [selectedIds, primaryId, transportHubId, walkingMinutes]);
-  useEffect(() => { setDirty(false); }, []);
+  useEffect(() => { if (loaded.current) setDirty(true); }, [selectedIds, primaryId, transportHubId, walkingMinutes]);
 
   const toggleDistrict = (id: string) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);

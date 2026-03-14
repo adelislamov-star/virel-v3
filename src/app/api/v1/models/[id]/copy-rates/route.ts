@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
-import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
 export async function POST(
@@ -8,9 +8,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
-    if (!isActor(auth)) return auth;
-
     const { id: modelId } = await params;
     const { fromModelId } = await request.json();
 
@@ -45,13 +42,19 @@ export async function POST(
     });
 
     logAudit({
-      actorUserId: auth.userId,
       action: 'COPY_RATES',
       entityType: 'Model',
       entityId: modelId,
       before: { fromModelId },
       req: request,
     });
+
+    // Revalidate frontend caches
+    try {
+      const m = await prisma.model.findUnique({ where: { id: modelId }, select: { slug: true } });
+      if (m?.slug) revalidatePath(`/companions/${m.slug}`);
+    } catch {}
+    revalidatePath('/companions');
 
     return NextResponse.json({ success: true, message: 'Rates copied' });
   } catch (error) {

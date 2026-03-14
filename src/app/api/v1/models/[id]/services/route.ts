@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
-import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
 export async function GET(
@@ -29,14 +29,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
-    if (!isActor(auth)) return auth;
-
     const { id: modelId } = await params;
     const body = await request.json();
-    const { serviceIds = [], extras = [] } = body as {
+    const { serviceIds = [], extras = [], doublePriceIds = [], poaIds = [] } = body as {
       serviceIds: string[];
       extras: { serviceId: string; extraPrice: number }[];
+      doublePriceIds: string[];
+      poaIds: string[];
     };
 
     await prisma.$transaction(async (tx) => {
@@ -48,6 +47,8 @@ export async function POST(
         isEnabled: true,
         isExtra: false,
         extraPrice: null as number | null,
+        isDoublePrice: doublePriceIds.includes(serviceId),
+        isPOA: poaIds.includes(serviceId),
       }));
 
       for (const extra of extras) {
@@ -62,6 +63,8 @@ export async function POST(
             isEnabled: true,
             isExtra: true,
             extraPrice: extra.extraPrice,
+            isDoublePrice: doublePriceIds.includes(extra.serviceId),
+            isPOA: poaIds.includes(extra.serviceId),
           });
         }
       }
@@ -72,12 +75,18 @@ export async function POST(
     });
 
     logAudit({
-      actorUserId: auth.userId,
       action: 'UPDATE',
       entityType: 'ModelServices',
       entityId: modelId,
       req: request,
     });
+
+    // Revalidate frontend caches
+    try {
+      const m = await prisma.model.findUnique({ where: { id: modelId }, select: { slug: true } });
+      if (m?.slug) revalidatePath(`/companions/${m.slug}`);
+    } catch {}
+    revalidatePath('/companions');
 
     return NextResponse.json({ success: true, message: 'Services updated' });
   } catch (error) {

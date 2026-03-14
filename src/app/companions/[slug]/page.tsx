@@ -176,6 +176,14 @@ export default async function ModelProfilePage({ params }: Props) {
       price: Number(ms.extraPrice),
     }))
 
+  const doublePriceServices = model.services
+    .filter((ms: any) => ms.isDoublePrice)
+    .map((ms: any) => SERVICE_REMAP[ms.service.title] || ms.service.publicName || ms.service.title)
+
+  const poaServices = model.services
+    .filter((ms: any) => ms.isPOA)
+    .map((ms: any) => SERVICE_REMAP[ms.service.title] || ms.service.publicName || ms.service.title)
+
   // DUO partners
   let duoPartners: any[] = []
   if (model.duoPartnerIds?.length) {
@@ -466,13 +474,23 @@ export default async function ModelProfilePage({ params }: Props) {
           )}
 
           {/* EXTRAS */}
-          {extras.length > 0 && (
+          {(extras.length > 0 || doublePriceServices.length > 0 || poaServices.length > 0) && (
             <>
               <p className="section-label">Extras</p>
               <div className="extras-list">
                 {extras.map(e => (
                   <span key={e.name} className="extra-item">
                     {e.name}<span className="extra-price">+£{e.price}</span>
+                  </span>
+                ))}
+                {doublePriceServices.map((name: string) => (
+                  <span key={name} className="extra-item">
+                    {name}<span className="extra-price">{lowestPrice ? `From £${lowestPrice * 2}` : 'Double rate'}</span>
+                  </span>
+                ))}
+                {poaServices.map((name: string) => (
+                  <span key={name} className="extra-item">
+                    {name}<span className="extra-price">POA</span>
                   </span>
                 ))}
               </div>

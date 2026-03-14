@@ -70,14 +70,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const usedBy = await prisma.modelService.count({ where: { serviceId: id } });
-    if (usedBy > 0) {
-      return NextResponse.json(
-        { success: false, error: { code: 'CONFLICT', message: 'Service is in use by models' } },
-        { status: 409 },
-      );
-    }
-
+    await prisma.modelService.deleteMany({ where: { serviceId: id } });
     await prisma.service.delete({ where: { id } });
 
     logAudit({

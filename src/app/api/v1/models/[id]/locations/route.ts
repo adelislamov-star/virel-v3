@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
-import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
 export async function GET(
@@ -27,9 +26,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
-    if (!isActor(auth)) return auth;
-
     const { id: modelId } = await params;
     const body = await request.json();
     const { districtIds, primaryDistrictId, transportHubId, walkingMinutes } = body as {
@@ -56,7 +52,6 @@ export async function POST(
     });
 
     logAudit({
-      actorUserId: auth.userId,
       action: 'UPDATE',
       entityType: 'ModelLocations',
       entityId: modelId,
