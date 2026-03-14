@@ -68,7 +68,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const auth = await requireRole(request, ['OWNER']);
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
     if (!isActor(auth)) return auth;
 
     const { id } = await params;

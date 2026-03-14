@@ -25,9 +25,17 @@ interface ServiceCategory {
 }
 
 const CATEGORY_OPTIONS = [
-  'Connection', 'Oral', 'Intimate', 'Group',
-  'Touch & Wellness', 'Fetish', 'Domination', 'Other',
+  'signature', 'intimate', 'wellness', 'fetish', 'bespoke', 'Other',
 ];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  signature: 'Signature',
+  intimate: 'Intimate',
+  wellness: 'Wellness',
+  fetish: 'Fetish',
+  bespoke: 'Bespoke',
+  Other: 'Other',
+};
 
 export default function AdminServicesPage() {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -37,7 +45,7 @@ export default function AdminServicesPage() {
   // New service form
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('Other');
+  const [newCategory, setNewCategory] = useState('signature');
   const [newDescription, setNewDescription] = useState('');
   const [newExtraPrice, setNewExtraPrice] = useState('');
   const [saving, setSaving] = useState(false);
@@ -97,7 +105,7 @@ export default function AdminServicesPage() {
       if (data.success) {
         setShowAdd(false);
         setNewTitle('');
-        setNewCategory('Other');
+        setNewCategory('signature');
         setNewDescription('');
         setNewExtraPrice('');
         await loadServices();
@@ -117,7 +125,7 @@ export default function AdminServicesPage() {
       const res = await fetch(`/api/v1/services/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) await loadServices();
-      else alert(data.error?.message || 'Failed to delete');
+      else alert(data.error?.message || data.error || 'Failed to delete');
     } catch {
       alert('Failed to delete service');
     }
@@ -227,7 +235,7 @@ export default function AdminServicesPage() {
                 className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 {CATEGORY_OPTIONS.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>
                 ))}
               </select>
               <Input
@@ -257,7 +265,7 @@ export default function AdminServicesPage() {
         <Card key={category.id} className="mb-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              {category.name}
+              {CATEGORY_LABELS[category.name] || category.name}
               <Badge variant="secondary" className="text-xs font-normal">
                 {category.services.length}
               </Badge>
