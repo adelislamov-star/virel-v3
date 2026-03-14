@@ -45,10 +45,17 @@ export default function Services({ modelId, onToast }: Props) {
         ]);
 
         if (svcRes.success) {
-          const cats: ServiceCategory[] = svcRes.data.categories.map((c: { name: string; services: ServiceItem[] }) => ({
-            name: c.name,
-            services: c.services,
-          }));
+          // Group flat services array by category
+          const allServices: ServiceItem[] = svcRes.services || [];
+          const catMap = new Map<string, ServiceItem[]>();
+          for (const s of allServices) {
+            const cat = s.category || 'Other';
+            if (!catMap.has(cat)) catMap.set(cat, []);
+            catMap.get(cat)!.push(s);
+          }
+          const cats: ServiceCategory[] = Array.from(catMap.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([name, services]) => ({ name, services }));
           setCategories(cats);
           if (cats.length > 0 && !activeCategory) setActiveCategory(cats[0].name);
         }

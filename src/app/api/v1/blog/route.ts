@@ -6,9 +6,6 @@ import { toSlug } from '@/lib/slug';
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
-    if (!isActor(auth)) return auth;
-
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const isPublished = searchParams.get('isPublished');
