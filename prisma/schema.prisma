@@ -151,6 +151,30 @@ model Model {
   dataCompletenessScore  Int      @default(0)   // 0-100
   modelRiskIndex         String   @default("green") // green, yellow, red
 
+  // Phase 2 — Physical (extras beyond ModelStats)
+  measurements     String?      // "32D-25-33"
+  piercingDetails  String[]     // ["Belly", "Nipples"]
+  education        String?      // "Graduate", "Masters"
+  travel           String?      // "London only" | "UK & Europe" | "Worldwide"
+
+  // Phase 2 — Marketing & Presentation
+  tagline          String?      // "Slender Russian Blonde"
+  isExclusive      Boolean      @default(false)
+  isVerified       Boolean      @default(false)
+  availability     String?      // Available Now | Advanced Notice | Away | On Holiday
+  duoPartnerIds    String[]     // IDs моделей для DUO
+  wardrobe         String[]     // ["Schoolgirl", "Nurse", "Latex"]
+  publicTags       String[]     // ["GFE", "Open-minded", "Massage Specialist"]
+
+  // Phase 2 — Trust & Safety
+  verificationNote String?
+  lastActiveAt     DateTime?
+  responseTimeMin  Int?
+
+  // Phase 2 — SEO
+  seoTitle         String?
+  seoDescription   String?
+
   // Relations
   stats           ModelStats?
   media           ModelMedia[]
@@ -172,6 +196,8 @@ model Model {
   offeredOffers      AlternativeOffer[]  @relation("OfferedModel")
   complaintPatterns  ReviewComplaintPattern[]
   payments           Payment[]
+  modelRates         ModelRate[]
+  modelLocations     ModelLocation[]
 
   // Soft delete
   deletedAt       DateTime? @map("deleted_at")
@@ -236,6 +262,7 @@ model ModelService {
   modelId     String
   serviceId   String
   isEnabled   Boolean  @default(true)
+  isExtra     Boolean  @default(false)
   extraPrice  Float?
 
   model       Model    @relation(fields: [modelId], references: [id])
@@ -280,6 +307,18 @@ model Service {
   defaultExtraPrice Float?
   status           String   @default("active")
   isPopular        Boolean  @default(false)
+
+  // Phase 2 — public site fields
+  name             String?   @unique
+  publicName       String?
+  introText        String?   @db.Text
+  fullDescription  String?   @db.Text
+  seoTitle         String?
+  seoDescription   String?
+  seoKeywords      String?
+  isPublic         Boolean   @default(true)
+  isActive         Boolean   @default(true)
+  sortOrder        Int       @default(0)
 
   // Relations
   models      ModelService[]
@@ -406,6 +445,19 @@ model Client {
   refundCount      Int      @default(0)  @map("refund_count")
   cancellationRate Decimal  @default(0)  @db.Decimal(5,2) @map("cancellation_rate")
   notes            String?  @db.Text
+
+  // Phase 2 — Client preferences & tiers
+  preferredLanguage  String?       // en | ru | ar
+  preferredCurrency  String?       // GBP | EUR | USD | AED
+  tier               String?       // standard | premium | vip
+  totalSpend         Float?
+  lastBookingAt      DateTime?
+  internalNotes      String?       @db.Text
+  wishlistModelIds   String[]
+  preferredDistricts String[]
+  marketingOptIn     Boolean       @default(false)
+  telegramId         String?
+  telegramUsername   String?
 
   // VIP & Merge
   vipStatus          String?   @map("vip_status")
@@ -611,12 +663,20 @@ model AvailabilitySlot {
   status      String   @default("available") // available, unavailable, tentative
   source      String   @default("manual") // manual, automation, sync
   confidence  Float    @default(1.0)
-  
+
+  // Phase 2 — simple slot fields
+  date        DateTime?
+  timeFrom    String?    // "10:00"
+  timeTo      String?    // "22:00"
+  type        String?    // available | busy | away | tentative
+  note        String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([modelId, startAt])
   @@index([status, startAt])
+  @@index([modelId, date])
   @@map("availability_slots")
 }
 
@@ -2062,4 +2122,206 @@ model CronLog {
   @@index([cronPath])
   @@index([executedAt])
   @@map("cron_logs")
+}
+
+// ============================================
+// PHASE 2 — CALL RATES & MODEL PRICING
+// ============================================
+
+model CallRateMaster {
+  id          String      @id @default(cuid())
+  label       String      // "30 min", "1 Hour", "Overnight (9 hrs)"
+  durationMin Int         // 30, 60, 90, 120, 180, 540...
+  sortOrder   Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  modelRates  ModelRate[]
+
+  @@map("call_rate_masters")
+}
+
+model ModelRate {
+  id               String         @id @default(cuid())
+  modelId          String
+  callRateMasterId String
+  incallPrice      Float?
+  outcallPrice     Float?
+  model            Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  callRateMaster   CallRateMaster @relation(fields: [callRateMasterId], references: [id])
+
+  @@unique([modelId, callRateMasterId])
+  @@map("model_rates")
+}
+
+// ============================================
+// PHASE 2 — DISTRICTS & TRANSPORT (SEO GEO)
+// ============================================
+
+model District {
+  id             String          @id @default(cuid())
+  name           String          @unique  // "Mayfair"
+  slug           String          @unique  // "mayfair"
+  tier           Int             @default(1)  // 1=top, 2=high, 3=medium
+  description    String?         @db.Text
+  hotels         String[]
+  restaurants    String[]
+  landmarks      String[]
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  isActive       Boolean         @default(true)
+  isPopular      Boolean         @default(false)
+  sortOrder      Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  transportHubs  TransportHub[]
+  modelLocations ModelLocation[]
+
+  @@map("districts")
+}
+
+model TransportHub {
+  id             String   @id @default(cuid())
+  name           String   @unique  // "Bond Street"
+  slug           String   @unique  // "bond-street"
+  districtId     String
+  walkingMinutes Int      @default(5)
+  description    String?  @db.Text
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  district       District @relation(fields: [districtId], references: [id])
+
+  @@map("transport_hubs")
+}
+
+model ModelLocation {
+  id             String   @id @default(cuid())
+  modelId        String
+  districtId     String
+  isPrimary      Boolean  @default(false)
+  transportHubId String?
+  walkingMinutes Int?
+  model          Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  district       District @relation(fields: [districtId], references: [id])
+
+  @@unique([modelId, districtId])
+  @@map("model_locations")
+}
+
+// ============================================
+// PHASE 2 — BOOKING REQUESTS (PUBLIC SITE)
+// ============================================
+
+model BookingRequest {
+  id               String    @id @default(cuid())
+  // Client info
+  clientName       String
+  clientEmail      String
+  clientPhone      String
+  clientTelegramId String?
+  preferredContact String    // whatsapp | telegram | phone | email
+  // Booking details
+  modelId          String?
+  model2Id         String?   // для DUO бронирования
+  districtId       String?
+  callType         String    // incall | outcall
+  date             DateTime
+  duration         Int       // минуты
+  address          String?   // для outcall
+  hotelName        String?
+  roomNumber       String?
+  // Pricing
+  basePrice        Float
+  extrasTotal      Float     @default(0)
+  grandTotal       Float
+  currency         String    @default("GBP")
+  selectedExtras   Json      // [{serviceId, name, price}]
+  // Extras
+  specialRequests  String?   @db.Text
+  occasion         String?   // birthday | anniversary | business | leisure
+  restaurantNeeded Boolean   @default(false)
+  transportNeeded  Boolean   @default(false)
+  // Status
+  status           String    @default("pending")  // pending | confirmed | cancelled
+  confirmedAt      DateTime?
+  confirmedBy      String?
+  internalNotes    String?   @db.Text
+  source           String    @default("website")  // website | phone | whatsapp
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+  @@index([modelId])
+  @@index([createdAt])
+  @@map("booking_requests")
+}
+
+// ============================================
+// PHASE 2 — SMART MATCH (AI QUIZ)
+// ============================================
+
+model SmartMatchSession {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  answers   Json
+  resultIds String[]
+  converted Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("smart_match_sessions")
+}
+
+// ============================================
+// PHASE 2 — CONCIERGE PARTNERS
+// ============================================
+
+model ConciergePartner {
+  id          String   @id @default(cuid())
+  type        String   // restaurant | hotel | chauffeur | flowers | gifts
+  name        String
+  districtId  String?
+  address     String?
+  website     String?
+  phone       String?
+  description String?  @db.Text
+  priceRange  String?  // "££££"
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+  @@index([districtId])
+  @@map("concierge_partners")
+}
+
+// ============================================
+// PHASE 2 — BLOG / EDITORIAL
+// ============================================
+
+model BlogPost {
+  id               String    @id @default(cuid())
+  title            String
+  slug             String    @unique
+  excerpt          String?   @db.Text
+  content          String    @db.Text
+  coverImage       String?
+  category         String    // guide | lifestyle | london | news
+  tags             String[]
+  seoTitle         String?
+  seoDescription   String?
+  publishedAt      DateTime?
+  isPublished      Boolean   @default(false)
+  authorName       String?
+  relatedDistricts String[]
+  relatedServices  String[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+  @@map("blog_posts")
 }
