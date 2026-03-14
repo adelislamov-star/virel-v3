@@ -197,6 +197,7 @@ function ErrorText({ text }: { text?: string }) {
 export default function NewModelPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]))
   const [form, setForm] = useState<FormData>({ ...defaultFormData })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -278,11 +279,21 @@ export default function NewModelPage() {
   }
 
   function goNext() {
-    if (validateStep(step)) setStep(s => Math.min(s + 1, 3))
+    if (validateStep(step)) {
+      const next = Math.min(step + 1, 3)
+      setVisitedSteps(prev => new Set([...prev, next]))
+      setStep(next)
+    }
   }
 
   function goBack() {
     setStep(s => Math.max(s - 1, 0))
+  }
+
+  function goToStep(s: number) {
+    setVisitedSteps(prev => new Set([...prev, s]))
+    setErrors({})
+    setStep(s)
   }
 
   /* ─── Photo handling ─── */
@@ -449,26 +460,39 @@ export default function NewModelPage() {
         {/* Progress Bar */}
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">
-            {STEPS.map((label, i) => (
-              <div key={label} className="flex items-center gap-2 flex-1">
-                <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 transition-colors
-                  ${i < step ? 'bg-amber-500 text-zinc-900' : ''}
-                  ${i === step ? 'bg-amber-500 text-zinc-900 ring-2 ring-amber-400/50 ring-offset-2 ring-offset-zinc-950' : ''}
-                  ${i > step ? 'bg-zinc-800 text-zinc-500' : ''}
-                `}>
-                  {i < step ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                  ) : i + 1}
+            {STEPS.map((label, i) => {
+              const isVisited = visitedSteps.has(i)
+              const isPast = i < step
+              const isCurrent = i === step
+              return (
+                <div key={label} className="flex items-center gap-2 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => goToStep(i)}
+                    className={`
+                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 transition-colors cursor-pointer
+                      ${isPast ? 'bg-emerald-500 text-white' : ''}
+                      ${isCurrent ? 'bg-amber-500 text-zinc-900 ring-2 ring-amber-400/50 ring-offset-2 ring-offset-zinc-950' : ''}
+                      ${!isPast && !isCurrent ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300' : ''}
+                    `}
+                  >
+                    {isPast && isVisited ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    ) : i + 1}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(i)}
+                    className={`text-xs font-medium hidden sm:block cursor-pointer transition-colors ${isCurrent ? 'text-amber-400' : isPast ? 'text-zinc-200' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    {label}
+                  </button>
+                  {i < STEPS.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-2 rounded ${i < step ? 'bg-amber-500' : 'bg-zinc-800'}`} />
+                  )}
                 </div>
-                <span className={`text-xs font-medium hidden sm:block ${i <= step ? 'text-zinc-200' : 'text-zinc-500'}`}>
-                  {label}
-                </span>
-                {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-2 rounded ${i < step ? 'bg-amber-500' : 'bg-zinc-800'}`} />
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
