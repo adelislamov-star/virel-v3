@@ -16,7 +16,7 @@ Booking a companion in London should be a straightforward, comfortable experienc
 
 ### Step 1 — Browse Our Companions
 
-Visit our [companions page](/london-escorts) to browse verified profiles. Each companion has a detailed profile with authentic photos, personal stats, services offered, and full rate information for both incall and outcall.
+Visit our [companions page](/companions) to browse verified profiles. Each companion has a detailed profile with authentic photos, personal stats, services offered, and full rate information for both incall and outcall.
 
 Take your time. Look through a few profiles to find someone who matches your preferences in terms of personality, appearance, and availability.
 
@@ -100,7 +100,7 @@ If convenience is your priority and you're at a hotel, **outcall** is ideal. If 
 
 Either way, our companions deliver an exceptional experience. The service and quality are identical — only the logistics differ.
 
-Browse our [companions](/london-escorts) to see who offers incall and outcall in your preferred area.
+Browse our [companions](/companions) to see who offers incall and outcall in your preferred area.
 `,
   'best-hotels-mayfair-private-meetings': `
 ## Best Hotels in Mayfair for Private Meetings
@@ -171,7 +171,7 @@ For most clients — particularly those who value reliability, verification, and
 
 We've built Virel to combine agency reliability with a personal, boutique feel. You get the best of both worlds.
 
-Browse our [verified companions](/london-escorts).
+Browse our [verified companions](/companions).
 `,
   'most-exclusive-london-districts': `
 ## London's Most Exclusive Districts for Escort Services
@@ -420,7 +420,7 @@ export default function BlogPostPage({ params }: Props) {
           )}
 
           <div style={{ marginTop: 60, paddingTop: 40, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 16 }}>
-            <Link href="/london-escorts" style={{ padding: '14px 28px', background: '#c9a84c', color: '#080808', textDecoration: 'none', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 500 }}>
+            <Link href="/companions" style={{ padding: '14px 28px', background: '#c9a84c', color: '#080808', textDecoration: 'none', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 500 }}>
               Browse Companions
             </Link>
             <Link href="/blog" style={{ padding: '14px 28px', border: '1px solid rgba(255,255,255,0.1)', color: '#6b6560', textDecoration: 'none', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase' }}>

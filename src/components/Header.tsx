@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { PanicButton } from '@/components/public/PanicButton'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -33,13 +34,14 @@ export function Header() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 36 }} className="desktop-nav">
           {[
-            ['/london-escorts', 'Companions'],
+            ['/companions', 'Companions'],
             ['/about', 'About'],
             ['/contact', 'Contact'],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="h-link">{label}</Link>
           ))}
-          <Link href="/london-escorts" className="h-book">Book Now</Link>
+          <Link href="/companions" className="h-book">Book Now</Link>
+          <PanicButton />
         </div>
 
         <button
@@ -59,13 +61,13 @@ export function Header() {
       {mobileMenuOpen && (
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#080808', padding: '20px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
-            ['/london-escorts', 'Companions'],
+            ['/companions', 'Companions'],
             ['/about', 'About'],
             ['/contact', 'Contact'],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="h-link" onClick={() => setMobileMenuOpen(false)}>{label}</Link>
           ))}
-          <Link href="/london-escorts" className="h-book" onClick={() => setMobileMenuOpen(false)}>Book Now</Link>
+          <Link href="/companions" className="h-book" onClick={() => setMobileMenuOpen(false)}>Book Now</Link>
         </div>
       )}
     </header>

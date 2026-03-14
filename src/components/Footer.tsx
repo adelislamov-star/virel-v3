@@ -45,7 +45,7 @@ export function Footer() {
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Companions</p>
             <ul className="footer-district-list">
               {[
-                ['/london-escorts', 'London Escorts'],
+                ['/companions', 'London Escorts'],
                 ['/escorts-in/mayfair', 'Escorts in Mayfair'],
                 ['/escorts-in/kensington', 'Escorts in Kensington'],
                 ['/escorts-in/knightsbridge', 'Escorts in Knightsbridge'],
@@ -89,6 +89,11 @@ export function Footer() {
             </ul>
           </div>
         </div>
+
+        {/* Disclaimer */}
+        <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.04em', lineHeight: 1.8, textAlign: 'center', marginBottom: 24, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          All services are for companionship only. Any activities between consenting adults are a matter of personal choice.
+        </p>
 
         {/* Bottom */}
         <div className="footer-bottom">

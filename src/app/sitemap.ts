@@ -3,61 +3,33 @@ import { prisma } from '@/lib/db/client'
 
 const BASE = 'https://virel-v3.vercel.app'
 
-const DISTRICTS = [
-  'mayfair','kensington','knightsbridge','chelsea','belgravia','marylebone',
-  'westminster','soho','canary-wharf','notting-hill','paddington','victoria',
-  'south-kensington','marble-arch','gloucester-road',
-]
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Static pages
+  const [models, services, districts, hubs, posts] = await Promise.all([
+    prisma.model.findMany({ where: { status: 'published', deletedAt: null }, select: { slug: true, updatedAt: true } }),
+    prisma.service.findMany({ where: { isActive: true, isPublic: true }, select: { slug: true, updatedAt: true } }),
+    prisma.district.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
+    prisma.transportHub.findMany({ where: { isActive: true }, include: { district: { select: { slug: true } } } }),
+    prisma.blogPost.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }).catch(() => []),
+  ])
+
   const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
-    { url: `${BASE}/london-escorts`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: `${BASE}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/join`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
+    { url: BASE, changeFrequency: 'daily', priority: 1.0 },
+    { url: `${BASE}/companions`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE}/services`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/find-your-match`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/book`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/blog`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/about`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/contact`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/faq`, changeFrequency: 'monthly', priority: 0.5 },
   ]
 
-  // Geo pages
-  const geoPages: MetadataRoute.Sitemap = DISTRICTS.map(d => ({
-    url: `${BASE}/escorts-in/${d}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
-
-  // Model profiles
-  let modelPages: MetadataRoute.Sitemap = []
-  try {
-    const models = await prisma.model.findMany({
-      where: { status: 'active', visibility: 'public' },
-      select: { slug: true, updatedAt: true },
-    })
-    modelPages = models.map(m => ({
-      url: `${BASE}/companions/${m.slug}`,
-      lastModified: m.updatedAt,
-      changeFrequency: 'weekly' as const,
-      priority: 0.85,
-    }))
-  } catch (e) {}
-
-  // Service pages
-  let servicePages: MetadataRoute.Sitemap = []
-  try {
-    const services = await prisma.service.findMany({
-      select: { slug: true },
-    })
-    servicePages = [
-      { url: `${BASE}/services`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7 },
-      ...services.map(s => ({
-        url: `${BASE}/services/${s.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'monthly' as const,
-        priority: 0.6,
-      })),
-    ]
-  } catch (e) {}
-
-  return [...staticPages, ...geoPages, ...modelPages, ...servicePages]
+  return [
+    ...staticPages,
+    ...models.map(m => ({ url: `${BASE}/companions/${m.slug}`, lastModified: m.updatedAt, priority: 0.8 as const })),
+    ...services.map(s => ({ url: `${BASE}/services/${s.slug}`, lastModified: s.updatedAt, priority: 0.7 as const })),
+    ...districts.map(d => ({ url: `${BASE}/london/${d.slug}-escorts/`, lastModified: d.updatedAt, priority: 0.7 as const })),
+    ...hubs.map(h => ({ url: `${BASE}/london/${h.district.slug}-escorts/${h.slug}-station/`, priority: 0.5 as const })),
+    ...posts.map(p => ({ url: `${BASE}/blog/${(p as any).slug}`, lastModified: (p as any).updatedAt, priority: 0.6 as const })),
+  ]
 }

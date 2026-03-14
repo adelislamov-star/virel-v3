@@ -90,13 +90,14 @@ export default async function DistrictPage({ params }: Props) {
     .split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
   const location = await prisma.location.findFirst({
-    where: { slug: params.district, status: 'active' },
+    where: { slug: params.district, status: 'published' },
   })
 
   const models = await prisma.model.findMany({
     where: {
-      status: 'active',
+      status: 'published',
       visibility: 'public',
+      deletedAt: null,
       ...(location ? { primaryLocationId: location.id } : {}),
     },
     include: {
@@ -129,7 +130,7 @@ export default async function DistrictPage({ params }: Props) {
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
-          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: 'https://virel-v3.vercel.app/london-escorts' },
+          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: 'https://virel-v3.vercel.app/companions' },
           { '@type': 'ListItem', position: 3, name: info.h1, item: `https://virel-v3.vercel.app/escorts-in-${params.district}` },
         ],
       },
@@ -168,7 +169,7 @@ export default async function DistrictPage({ params }: Props) {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 40px', fontSize: 11, letterSpacing: '.1em', color: '#3a3530', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <Link href="/" style={{ color: '#3a3530', textDecoration: 'none' }}>HOME</Link>
           <span style={{ margin: '0 12px' }}>—</span>
-          <Link href="/london-escorts" style={{ color: '#3a3530', textDecoration: 'none' }}>COMPANIONS</Link>
+          <Link href="/companions" style={{ color: '#3a3530', textDecoration: 'none' }}>COMPANIONS</Link>
           <span style={{ margin: '0 12px' }}>—</span>
           <span style={{ color: '#c9a84c' }}>{districtName.toUpperCase()}</span>
         </div>
@@ -181,7 +182,7 @@ export default async function DistrictPage({ params }: Props) {
             <em style={{ fontStyle: 'italic', color: '#c9a84c' }}>Companions</em>
           </h1>
           <p style={{ fontSize: 15, color: '#6b6560', maxWidth: 560, lineHeight: 1.8, margin: '0 0 40px' }}>{info.description}</p>
-          <Link href="/london-escorts" className="book-btn">Browse All Companions</Link>
+          <Link href="/companions" className="book-btn">Browse All Companions</Link>
         </div>
 
         {/* Models grid */}
@@ -191,7 +192,7 @@ export default async function DistrictPage({ params }: Props) {
               <p style={{ fontSize: 10, letterSpacing: '.25em', color: '#c9a84c', textTransform: 'uppercase', margin: 0 }}>
                 Available in {districtName}
               </p>
-              <Link href="/london-escorts" style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', textDecoration: 'none', textTransform: 'uppercase' }}>View All →</Link>
+              <Link href="/companions" style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', textDecoration: 'none', textTransform: 'uppercase' }}>View All →</Link>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 2, background: 'rgba(255,255,255,0.03)' }}>
               {models.map((model: any) => {

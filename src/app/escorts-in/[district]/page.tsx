@@ -50,13 +50,14 @@ export default async function DistrictPage({ params }: Props) {
     .split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
   const location = await prisma.location.findFirst({
-    where: { slug: params.district, status: 'active' },
+    where: { slug: params.district, status: 'published' },
   }).catch(() => null)
 
   const models = await prisma.model.findMany({
     where: {
-      status: 'active',
+      status: 'published',
       visibility: 'public',
+      deletedAt: null,
       ...(location ? { primaryLocationId: location.id } : {}),
     },
     include: {
@@ -74,9 +75,9 @@ export default async function DistrictPage({ params }: Props) {
     const modelIds = models.map((m: any) => m.id)
     if (modelIds.length > 0) {
       const rates: any[] = await prisma.$queryRaw`
-        SELECT model_id, MIN(price) as min_price
+        SELECT model_id, MIN(LEAST(COALESCE(incall_price, 999999), COALESCE(outcall_price, 999999))) as min_price
         FROM model_rates
-        WHERE model_id = ANY(${modelIds}::text[]) AND is_active = true
+        WHERE model_id = ANY(${modelIds}::text[])
         GROUP BY model_id
       `
       for (const r of rates) {
@@ -99,7 +100,7 @@ export default async function DistrictPage({ params }: Props) {
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
-          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: 'https://virel-v3.vercel.app/london-escorts' },
+          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: 'https://virel-v3.vercel.app/companions' },
           { '@type': 'ListItem', position: 3, name: info.h1, item: `https://virel-v3.vercel.app/escorts-in/${params.district}` },
         ],
       },
@@ -163,7 +164,7 @@ export default async function DistrictPage({ params }: Props) {
         <div className="d-breadcrumb">
           <Link href="/">HOME</Link>
           <span className="d-sep">—</span>
-          <Link href="/london-escorts">COMPANIONS</Link>
+          <Link href="/companions">COMPANIONS</Link>
           <span className="d-sep">—</span>
           <span style={{ color: '#c9a84c' }}>{info.h1.toUpperCase()}</span>
         </div>
@@ -208,7 +209,7 @@ export default async function DistrictPage({ params }: Props) {
             </div>
             {models.length === 0 && (
               <div className="d-section" style={{ textAlign: 'center' }}>
-                <Link href="/london-escorts" style={{ fontSize: 12, letterSpacing: '.12em', color: '#c9a84c', textDecoration: 'none', textTransform: 'uppercase' }}>
+                <Link href="/companions" style={{ fontSize: 12, letterSpacing: '.12em', color: '#c9a84c', textDecoration: 'none', textTransform: 'uppercase' }}>
                   Browse All Companions →
                 </Link>
               </div>

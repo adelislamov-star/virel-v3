@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import '../styles/globals.css'
+import { CookieBanner } from '@/components/public/CookieBanner'
 
 const BASE_URL = 'https://virel-v3.vercel.app'
 
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <CookieBanner />
       </body>
     </html>
   )
