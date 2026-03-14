@@ -21,6 +21,14 @@ interface Service {
   seoKeywords: string | null;
   introText: string | null;
   fullDescription: string | null;
+  _count?: { models: number };
+}
+
+interface ServiceStats {
+  total: number;
+  public: number;
+  membersOnly: number;
+  active: number;
 }
 
 type ModalData = Partial<Service> & { _isNew?: boolean };
@@ -63,6 +71,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 
 export default function ServicesPage() {
   const [items, setItems] = useState<Service[]>([]);
+  const [stats, setStats] = useState<ServiceStats>({ total: 0, public: 0, membersOnly: 0, active: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -89,8 +98,8 @@ export default function ServicesPage() {
       const res = await fetch('/api/v1/services');
       const json = await res.json();
       if (json.success) {
-        const all: Service[] = json.data.services;
-        setItems(all);
+        setItems(json.services);
+        if (json.stats) setStats(json.stats);
       } else {
         setError(json.error?.message || 'Failed to load services');
       }
@@ -127,11 +136,11 @@ export default function ServicesPage() {
     return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
   });
 
-  // Stats
-  const totalCount = items.length;
-  const publicCount = items.filter((s) => s.isPublic).length;
-  const membersCount = items.filter((s) => !s.isPublic).length;
-  const activeCount = items.filter((s) => s.isActive).length;
+  // Stats from API
+  const totalCount = stats.total;
+  const publicCount = stats.public;
+  const membersCount = stats.membersOnly;
+  const activeCount = stats.active;
 
   // Categories for filter dropdown
   const categories = [...new Set(items.map((s) => s.category).filter(Boolean))].sort();
@@ -163,7 +172,7 @@ export default function ServicesPage() {
       const body: Record<string, unknown> = {
         title: modal.title?.trim(),
         slug: modal.slug || toSlug(modal.title || ''),
-        category: modal.category || 'Other',
+        category: modal.category || 'signature',
         description: modal.description || null,
         publicName: modal.publicName || null,
         name: modal.name || null,
@@ -280,7 +289,7 @@ export default function ServicesPage() {
       name: null,
       publicName: null,
       slug: '',
-      category: 'Other',
+      category: 'signature',
       description: null,
       isPublic: true,
       isPopular: false,
@@ -393,6 +402,7 @@ export default function ServicesPage() {
                 <th className="px-4 py-3 font-medium">Public Name</th>
                 <th className="px-4 py-3 font-medium">Category</th>
                 <th className="px-4 py-3 font-medium">Visibility</th>
+                <th className="px-4 py-3 font-medium w-16">Models</th>
                 <th className="px-4 py-3 font-medium w-12">Popular</th>
                 <th className="px-4 py-3 font-medium w-12">Sort</th>
                 <th className="px-4 py-3 font-medium w-16">Active</th>
@@ -401,10 +411,10 @@ export default function ServicesPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-zinc-500">Loading...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-zinc-500">Loading...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-zinc-500">No services found</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-zinc-500">No services found</td></tr>
               )}
               {!loading && filtered.map((item, idx) => (
                 <tr key={item.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors">
@@ -421,6 +431,7 @@ export default function ServicesPage() {
                       {item.isPublic ? 'Public' : 'Members Only'}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-zinc-400">{item._count?.models ?? 0}</td>
                   <td className="px-4 py-3 text-center">
                     {item.isPopular && <Star size={14} className="text-amber-400 fill-amber-400 inline" />}
                   </td>
@@ -523,12 +534,18 @@ export default function ServicesPage() {
                   <div>
                     <label className="block text-xs text-zinc-400 mb-1">Category *</label>
                     <select
-                      value={modal.category || 'Other'}
+                      value={modal.category || 'signature'}
                       onChange={(e) => updateModal('category', e.target.value)}
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
                     >
-                      {['Connection', 'Oral', 'Intimate', 'Group', 'Touch & Wellness', 'Fetish', 'Domination', 'Other'].map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                      {[
+                        { value: 'signature', label: 'Signature' },
+                        { value: 'intimate', label: 'Intimate' },
+                        { value: 'wellness', label: 'Wellness' },
+                        { value: 'fetish', label: 'Fetish' },
+                        { value: 'bespoke', label: 'Bespoke' },
+                      ].map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
                     </select>
                   </div>
