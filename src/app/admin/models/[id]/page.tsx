@@ -16,6 +16,8 @@ import Locations from './sections/Locations';
 import Services from './sections/Services';
 import Rates from './sections/Rates';
 import Availability from './sections/Availability';
+import Contact from './sections/Contact';
+import PaymentMethods from './sections/PaymentMethods';
 import AITools from './sections/AITools';
 
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error' | 'loading'; onClose: () => void }) {
@@ -167,6 +169,9 @@ export default function ModelEditPage() {
         </div>
       </div>
 
+      {/* Section: Contact */}
+      <Contact model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+
       {/* Section 1: Physical Stats */}
       <PhysicalStats model={model} modelId={modelId} onToast={showToast} />
 
@@ -184,6 +189,9 @@ export default function ModelEditPage() {
 
       {/* Section 6: Rates */}
       <Rates modelId={modelId} onToast={showToast} />
+
+      {/* Section: Payment Methods */}
+      <PaymentMethods model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
 
       {/* Section 7: Availability */}
       <Availability modelId={modelId} onToast={showToast} />

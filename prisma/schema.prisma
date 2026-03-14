@@ -156,6 +156,59 @@ model Model {
   piercingDetails  String[]     // ["Belly", "Nipples"]
   education        String?      // "Graduate", "Masters"
   travel           String?      // "London only" | "UK & Europe" | "Worldwide"
+  hairLength       String?      // Long | Medium | Short
+  ethnicity        String?      // White European | Latin | Asian | Mixed | etc.
+
+  // Contact & Logistics (internal)
+  phone            String?
+  phone2           String?
+  email            String?
+  whatsapp         Boolean      @default(false)
+  telegram         Boolean      @default(false)
+  viber            Boolean      @default(false)
+  signal           Boolean      @default(false)
+
+  // Incall address (internal)
+  postcode         String?
+  street           String?
+  houseNumber      String?
+  floor            String?
+  flatNumber       String?
+  nearestStation   String?
+
+  // Availability settings
+  availableAllDay  Boolean      @default(false)
+  availableDays    String[]     // ["Monday","Tuesday",...]
+
+  // Payment methods accepted
+  paymentCash          Boolean @default(false)
+  paymentTerminal      Boolean @default(false)
+  paymentBankTransfer  Boolean @default(false)
+  paymentMonese        Boolean @default(false)
+  paymentMonzo         Boolean @default(false)
+  paymentRevolut       Boolean @default(false)
+  paymentStarling      Boolean @default(false)
+  paymentBTC           Boolean @default(false)
+  paymentLTC           Boolean @default(false)
+  paymentUSDT          Boolean @default(false)
+
+  // Work preferences
+  worksWithCouples     Boolean @default(false)
+  worksWithWomen       Boolean @default(false)
+  willingDisabled      Boolean @default(false)
+  willingPrivatePlaces Boolean @default(false)
+  willingInternational Boolean @default(false)
+  willingLongDistance   Boolean @default(false)
+  hasFlatmates         Boolean @default(false)
+  dinnerDates          Boolean @default(false)
+  travelCompanion      Boolean @default(false)
+
+  // Personal
+  dateOfBirth      DateTime?
+  internalRating   Float?       // 0-5
+  workingName      String?      // public pseudonym
+  ageForWeb        Int?         // displayed age (may differ from real)
+  bio              String?      @db.Text
 
   // Phase 2 — Marketing & Presentation
   tagline          String?      // "Slender Russian Blonde"

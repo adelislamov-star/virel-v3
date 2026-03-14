@@ -143,6 +143,39 @@ export async function PATCH(
       });
     }
     
+    // Update contact info
+    if (body.contact) {
+      const c = body.contact;
+      const contactData: Record<string, unknown> = {};
+      if (c.phone !== undefined) contactData.phone = c.phone || null;
+      if (c.phone2 !== undefined) contactData.phone2 = c.phone2 || null;
+      if (c.email !== undefined) contactData.email = c.email || null;
+      if (c.whatsapp !== undefined) contactData.whatsapp = c.whatsapp;
+      if (c.telegram !== undefined) contactData.telegram = c.telegram;
+      if (c.viber !== undefined) contactData.viber = c.viber;
+      if (c.signal !== undefined) contactData.signal = c.signal;
+      if (Object.keys(contactData).length > 0) {
+        await prisma.model.update({
+          where: { id: params.id },
+          data: contactData,
+        });
+      }
+    }
+
+    // Update payment methods
+    if (body.payment) {
+      const paymentData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(body.payment)) {
+        if (typeof value === 'boolean') paymentData[key] = value;
+      }
+      if (Object.keys(paymentData).length > 0) {
+        await prisma.model.update({
+          where: { id: params.id },
+          data: paymentData,
+        });
+      }
+    }
+
     // Update work preferences
     if (body.workPreferences) {
       await prisma.$executeRawUnsafe(
