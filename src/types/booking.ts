@@ -1,0 +1,33 @@
+export interface BookingRequest {
+  id: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  clientTelegramId: string | null;
+  preferredContact: string;
+  modelId: string | null;
+  model2Id: string | null;
+  districtId: string | null;
+  callType: string;
+  date: string;
+  duration: number;
+  address: string | null;
+  hotelName: string | null;
+  roomNumber: string | null;
+  basePrice: number;
+  extrasTotal: number;
+  grandTotal: number;
+  currency: string;
+  selectedExtras: Array<{ serviceId: string; name?: string; price: number }>;
+  specialRequests: string | null;
+  occasion: string | null;
+  restaurantNeeded: boolean;
+  transportNeeded: boolean;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  confirmedAt: string | null;
+  confirmedBy: string | null;
+  internalNotes: string | null;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}

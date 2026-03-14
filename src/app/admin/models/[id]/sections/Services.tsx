@@ -1,0 +1,222 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import SectionCard from './SectionCard';
+
+interface ServiceItem {
+  id: string;
+  title: string;
+  name: string | null;
+  publicName: string | null;
+  category: string;
+  isPublic: boolean;
+  hasExtraPrice: boolean;
+}
+
+interface ServiceCategory {
+  name: string;
+  services: ServiceItem[];
+}
+
+interface ModelServiceState {
+  [serviceId: string]: { enabled: boolean; isExtra: boolean; extraPrice: string };
+}
+
+interface Props {
+  modelId: string;
+  onToast: (msg: string, type: 'success' | 'error') => void;
+}
+
+export default function Services({ modelId, onToast }: Props) {
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [activeCategory, setActiveCategory] = useState('');
+  const [state, setState] = useState<ModelServiceState>({});
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [svcRes, modelSvcRes] = await Promise.all([
+          fetch('/api/v1/services').then((r) => r.json()),
+          fetch(`/api/v1/models/${modelId}/services`).then((r) => r.json()),
+        ]);
+
+        if (svcRes.success) {
+          const cats: ServiceCategory[] = svcRes.data.categories.map((c: { name: string; services: ServiceItem[] }) => ({
+            name: c.name,
+            services: c.services,
+          }));
+          setCategories(cats);
+          if (cats.length > 0 && !activeCategory) setActiveCategory(cats[0].name);
+        }
+
+        if (modelSvcRes.success) {
+          const ms: ModelServiceState = {};
+          for (const s of modelSvcRes.data) {
+            ms[s.serviceId] = {
+              enabled: s.isEnabled !== false,
+              isExtra: s.isExtra || false,
+              extraPrice: s.extraPrice != null ? String(s.extraPrice) : '',
+            };
+          }
+          setState(ms);
+        }
+      } catch {
+        onToast('Failed to load services', 'error');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [modelId, onToast, activeCategory]);
+
+  const toggleService = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      [id]: prev[id]
+        ? { ...prev[id], enabled: !prev[id].enabled }
+        : { enabled: true, isExtra: false, extraPrice: '' },
+    }));
+    setDirty(true);
+  };
+
+  const toggleExtra = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], isExtra: !prev[id]?.isExtra },
+    }));
+    setDirty(true);
+  };
+
+  const setExtraPrice = (id: string, price: string) => {
+    setState((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], extraPrice: price },
+    }));
+    setDirty(true);
+  };
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      const serviceIds: string[] = [];
+      const extras: { serviceId: string; extraPrice: number }[] = [];
+
+      for (const [serviceId, s] of Object.entries(state)) {
+        if (s.enabled) {
+          serviceIds.push(serviceId);
+          if (s.isExtra && s.extraPrice && !isNaN(parseFloat(s.extraPrice))) {
+            extras.push({ serviceId, extraPrice: parseFloat(s.extraPrice) });
+          }
+        }
+      }
+
+      const res = await fetch(`/api/v1/models/${modelId}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceIds, extras }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        onToast('Services saved', 'success');
+        setDirty(false);
+      } else {
+        onToast(json.error?.message || 'Save failed', 'error');
+      }
+    } catch {
+      onToast('Something went wrong', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }, [modelId, state, onToast]);
+
+  const currentCategory = categories.find((c) => c.name === activeCategory);
+  const isIntimate = activeCategory.toLowerCase().includes('intimate');
+
+  if (loading) return <SectionCard title="Services"><p className="text-zinc-500 text-sm">Loading...</p></SectionCard>;
+
+  return (
+    <SectionCard title="Services" isDirty={dirty} saving={saving} onSave={handleSave}>
+      <div className="space-y-4">
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-2">
+          {categories.map((cat) => {
+            const enabledCount = cat.services.filter((s) => state[s.id]?.enabled).length;
+            return (
+              <button
+                key={cat.name}
+                onClick={() => setActiveCategory(cat.name)}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  activeCategory === cat.name ? 'bg-amber-500/20 text-amber-400 font-medium' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                }`}
+              >
+                {cat.name}
+                {enabledCount > 0 && <span className="ml-1 text-zinc-500">({enabledCount})</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Warning for intimate */}
+        {isIntimate && (
+          <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-400 text-xs">
+            <AlertTriangle size={14} />
+            Intimate services are only visible to verified Members
+          </div>
+        )}
+
+        {/* Service list */}
+        <div className="space-y-1">
+          {currentCategory?.services.map((svc) => {
+            const s = state[svc.id];
+            const isEnabled = s?.enabled || false;
+            const isExtra = s?.isExtra || false;
+            return (
+              <div key={svc.id} className="rounded-lg hover:bg-zinc-800/50 transition-colors">
+                <div className="flex items-center gap-3 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={() => toggleService(svc.id)}
+                    className="accent-amber-500"
+                  />
+                  <span className={`text-sm ${isEnabled ? 'text-zinc-200' : 'text-zinc-500'}`}>
+                    {svc.title}
+                    {svc.publicName && <span className="text-zinc-400"> — {svc.publicName}</span>}
+                  </span>
+                </div>
+                {isEnabled && (
+                  <div className="flex items-center gap-4 px-10 pb-2">
+                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isExtra}
+                        onChange={() => toggleExtra(svc.id)}
+                        className="accent-amber-500"
+                      />
+                      Extra service
+                    </label>
+                    {isExtra && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-zinc-400">Price: £</span>
+                        <input
+                          type="number"
+                          value={s?.extraPrice || ''}
+                          onChange={(e) => setExtraPrice(svc.id, e.target.value)}
+                          className="w-20 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-zinc-500"
+                          min={0}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}

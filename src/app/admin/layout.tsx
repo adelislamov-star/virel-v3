@@ -10,7 +10,9 @@ import {
   DollarSign, Crown, BarChart3, LineChart, TrendingUp,
   Timer, Database, Settings, CreditCard, RefreshCw,
   Bell, Briefcase, MapPin, UserCheck, Search,
-  Activity, PieChart, LogOut
+  Activity, PieChart, LogOut,
+  Layers, Tag, ListOrdered,
+  ClipboardList, ConciergeBell, BookOpen
 } from 'lucide-react';
 
 const sections = [
@@ -20,8 +22,24 @@ const sections = [
       { href: '/admin/action-center', label: 'Action Center', icon: Target },
       { href: '/admin/leads', label: 'Leads', icon: MessageSquare },
       { href: '/admin/clients', label: 'Clients', icon: Users },
+      { href: '/admin/booking-requests', label: 'Booking Requests', icon: ClipboardList },
       { href: '/admin/bookings', label: 'Bookings', icon: CalendarDays },
       { href: '/admin/models', label: 'Models', icon: UserCheck },
+    ]
+  },
+  {
+    label: 'Masters',
+    items: [
+      { href: '/admin/masters/services', label: 'Services', icon: Tag },
+      { href: '/admin/masters/call-rates', label: 'Call Rates', icon: ListOrdered },
+      { href: '/admin/masters/locations', label: 'Locations', icon: Layers },
+    ]
+  },
+  {
+    label: 'Content',
+    items: [
+      { href: '/admin/concierge', label: 'Concierge', icon: ConciergeBell },
+      { href: '/admin/blog', label: 'Blog', icon: BookOpen },
     ]
   },
   {

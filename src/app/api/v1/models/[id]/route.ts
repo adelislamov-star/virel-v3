@@ -108,6 +108,32 @@ export async function PATCH(
       });
     }
     
+    // Update model-level profile fields (Phase 2)
+    if (body.profile) {
+      const p = body.profile;
+      const profileData: Record<string, unknown> = {};
+      if (p.measurements !== undefined) profileData.measurements = p.measurements || null;
+      if (p.piercingDetails !== undefined) profileData.piercingDetails = p.piercingDetails || null;
+      if (p.education !== undefined) profileData.education = p.education || null;
+      if (p.travel !== undefined) profileData.travel = p.travel || null;
+      if (p.tagline !== undefined) profileData.tagline = p.tagline || null;
+      if (p.isExclusive !== undefined) profileData.isExclusive = p.isExclusive;
+      if (p.isVerified !== undefined) profileData.isVerified = p.isVerified;
+      if (p.availability !== undefined) profileData.availability = p.availability || null;
+      if (p.duoPartnerIds !== undefined) profileData.duoPartnerIds = p.duoPartnerIds;
+      if (p.wardrobe !== undefined) profileData.wardrobe = p.wardrobe;
+      if (p.publicTags !== undefined) profileData.publicTags = p.publicTags;
+      if (p.responseTimeMin !== undefined) profileData.responseTimeMin = p.responseTimeMin;
+      if (p.seoTitle !== undefined) profileData.seoTitle = p.seoTitle || null;
+      if (p.seoDescription !== undefined) profileData.seoDescription = p.seoDescription || null;
+      if (Object.keys(profileData).length > 0) {
+        await prisma.model.update({
+          where: { id: params.id },
+          data: profileData,
+        });
+      }
+    }
+
     // Update stats
     if (body.stats) {
       await prisma.modelStats.upsert({
