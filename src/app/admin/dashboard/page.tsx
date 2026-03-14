@@ -4,12 +4,58 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+type PendingRequest = {
+  id: string;
+  clientName: string;
+  date: string;
+  grandTotal: number;
+  createdAt: string;
+};
+
+type TopModel = {
+  id: string;
+  name: string;
+  slug: string;
+  viewsToday: number;
+  viewsTotal: number;
+};
+
+type ConfirmationNeeded = {
+  id: string;
+  shortId: string | null;
+  startAt: string;
+  status: string;
+  clientName: string;
+  modelName: string;
+};
+
 type DashboardData = {
   revenue: { total: number; commission: number; avgBookingValue: number; mrr: number };
   operations: { activeBookings: number; cancellationRate: number; openIncidents: number; pendingReviews: number };
   models: { published: number; avgCompleteness: number; riskDistribution: { green: number; yellow: number; red: number } };
   quickLinks: { pendingReviews: number; openIncidents: number; fraudAlerts: number };
+  pendingBookingRequests: PendingRequest[];
+  topViewedModels: TopModel[];
+  confirmationsNeeded: ConfirmationNeeded[];
+  weeklyRevenue: { thisWeek: number; lastWeek: number };
 };
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+
+function formatTime(d: string) {
+  return new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function timeAgo(d: string) {
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -52,8 +98,16 @@ export default function DashboardPage() {
     revenue: { total: 0, commission: 0, avgBookingValue: 0, mrr: 0 },
     operations: { activeBookings: 0, cancellationRate: 0, openIncidents: 0, pendingReviews: 0 },
     models: { published: 0, avgCompleteness: 0, riskDistribution: { green: 0, yellow: 0, red: 0 } },
-    quickLinks: { pendingReviews: 0, openIncidents: 0, fraudAlerts: 0 }
+    quickLinks: { pendingReviews: 0, openIncidents: 0, fraudAlerts: 0 },
+    pendingBookingRequests: [],
+    topViewedModels: [],
+    confirmationsNeeded: [],
+    weeklyRevenue: { thisWeek: 0, lastWeek: 0 },
   };
+
+  const weeklyDelta = d.weeklyRevenue.lastWeek > 0
+    ? Math.round(((d.weeklyRevenue.thisWeek - d.weeklyRevenue.lastWeek) / d.weeklyRevenue.lastWeek) * 100)
+    : d.weeklyRevenue.thisWeek > 0 ? 100 : 0;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -62,6 +116,88 @@ export default function DashboardPage() {
         <p className="text-sm text-zinc-500 mt-1">Operations overview</p>
       </div>
 
+      {/* ═══ RECEPTION OVERVIEW ═══ */}
+      <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Reception</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Widget 1: Pending Booking Requests */}
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Pending Requests</p>
+            <span className={`text-lg font-semibold ${d.pendingBookingRequests.length > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
+              {d.pendingBookingRequests.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {d.pendingBookingRequests.length === 0 && (
+              <p className="text-xs text-zinc-600">No pending requests</p>
+            )}
+            {d.pendingBookingRequests.map((r) => (
+              <Link key={r.id} href={`/admin/booking-requests/${r.id}`}>
+                <div className="flex items-center justify-between text-xs hover:bg-zinc-800/50 rounded px-2 py-1.5 transition-colors">
+                  <span className="text-zinc-300 truncate">{r.clientName}</span>
+                  <span className="text-zinc-500 flex-shrink-0 ml-2">{timeAgo(r.createdAt)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Widget 2: Top Viewed Models Today */}
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Top Viewed Today</p>
+          <div className="space-y-2">
+            {d.topViewedModels.length === 0 && (
+              <p className="text-xs text-zinc-600">No views yet today</p>
+            )}
+            {d.topViewedModels.map((m, i) => (
+              <div key={m.id} className="flex items-center justify-between text-xs">
+                <span className="text-zinc-300">
+                  <span className="text-zinc-600 mr-1.5">{i + 1}.</span>
+                  {m.name}
+                </span>
+                <span className="text-emerald-400 font-medium">{m.viewsToday}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Widget 3: Confirmations Needed */}
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Confirm (24h)</p>
+            <span className={`text-lg font-semibold ${d.confirmationsNeeded.length > 0 ? 'text-red-400' : 'text-zinc-400'}`}>
+              {d.confirmationsNeeded.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {d.confirmationsNeeded.length === 0 && (
+              <p className="text-xs text-zinc-600">All confirmed</p>
+            )}
+            {d.confirmationsNeeded.slice(0, 5).map((b) => (
+              <Link key={b.id} href={`/admin/bookings/${b.id}`}>
+                <div className="flex items-center justify-between text-xs hover:bg-zinc-800/50 rounded px-2 py-1.5 transition-colors">
+                  <span className="text-zinc-300 truncate">{b.shortId || b.modelName}</span>
+                  <span className="text-red-400 flex-shrink-0 ml-2">{formatTime(b.startAt)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Widget 4: Weekly Revenue Comparison */}
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Weekly Revenue</p>
+          <p className="text-2xl font-semibold text-zinc-100">£{d.weeklyRevenue.thisWeek.toFixed(0)}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className={`text-xs font-medium ${weeklyDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {weeklyDelta >= 0 ? '+' : ''}{weeklyDelta}%
+            </span>
+            <span className="text-xs text-zinc-600">vs last week (£{d.weeklyRevenue.lastWeek.toFixed(0)})</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ REVENUE ═══ */}
       <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Revenue</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
@@ -82,6 +218,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ═══ OPERATIONS ═══ */}
       <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Operations</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
@@ -108,6 +245,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ═══ MODELS ═══ */}
       <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Models</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
@@ -130,6 +268,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ═══ BOTTOM PANELS ═══ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
           <h3 className="text-sm font-semibold text-zinc-300 mb-4">Quick Actions</h3>

@@ -547,13 +547,13 @@ function BookingContent() {
               </div>
             </div>
 
-            <p style={{ fontSize: 12, color: '#4a4540', lineHeight: 1.7 }}>
-              All services are for companionship only. Any activities between consenting adults are a matter of personal choice.
-            </p>
+            <div style={{ fontSize: 12, color: '#4a4540', lineHeight: 1.7, border: '1px solid rgba(255,255,255,0.08)', padding: 16 }}>
+              All services are for companionship only. Any activities between consenting adults are a matter of personal choice. By submitting this request you confirm you are 18 years of age or older.
+            </div>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#ddd5c8', cursor: 'pointer' }}>
-              <input type="checkbox" checked={ageConfirmed} onChange={e => setAgeConfirmed(e.target.checked)} style={{ accentColor: '#C5A572' }} />
-              I confirm I am 18 years or older
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: '#ddd5c8', cursor: 'pointer' }}>
+              <input type="checkbox" checked={ageConfirmed} onChange={e => setAgeConfirmed(e.target.checked)} style={{ accentColor: '#C5A572', marginTop: 3 }} />
+              <span style={{ fontSize: 13, color: '#9a9189' }}>I confirm I am 18 years of age or older and agree to the terms of service.</span>
             </label>
 
             <div style={{ display: 'flex', gap: 12 }}>

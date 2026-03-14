@@ -9,6 +9,13 @@ export async function GET() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfLastWeek = new Date(startOfWeek);
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+    const in24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const [
       revenueAgg,
       activeBookings,
@@ -21,7 +28,13 @@ export async function GET() {
       greenModels,
       yellowModels,
       redModels,
-      fraudAlerts
+      fraudAlerts,
+      // New widgets
+      pendingBookingRequests,
+      topViewedModels,
+      confirmationsNeeded,
+      weeklyRevenueAgg,
+      lastWeekRevenueAgg,
     ] = await Promise.all([
       prisma.payment.aggregate({
         where: { status: 'succeeded', createdAt: { gte: startOfMonth } },
@@ -46,7 +59,41 @@ export async function GET() {
       prisma.model.count({ where: { modelRiskIndex: 'red' } }),
       prisma.fraudSignal.count({
         where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }
-      })
+      }),
+      // Widget 1: Pending Booking Requests (last 5)
+      prisma.bookingRequest.findMany({
+        where: { status: 'pending' },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, clientName: true, date: true, grandTotal: true, createdAt: true },
+      }),
+      // Widget 2: Top Viewed Models Today
+      prisma.model.findMany({
+        where: { status: 'published', viewsToday: { gt: 0 } },
+        orderBy: { viewsToday: 'desc' },
+        take: 5,
+        select: { id: true, name: true, slug: true, viewsToday: true, viewsTotal: true },
+      }),
+      // Widget 3: Confirmations Needed (bookings starting within 24h that are not confirmed)
+      prisma.booking.findMany({
+        where: {
+          status: { in: ['pending', 'deposit_required'] },
+          startAt: { lte: in24h, gte: now },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 10,
+        select: { id: true, shortId: true, startAt: true, status: true, client: { select: { firstName: true, lastName: true } }, model: { select: { name: true } } },
+      }),
+      // Widget 4a: This week revenue
+      prisma.payment.aggregate({
+        where: { status: 'succeeded', createdAt: { gte: startOfWeek } },
+        _sum: { amount: true },
+      }),
+      // Widget 4b: Last week revenue
+      prisma.payment.aggregate({
+        where: { status: 'succeeded', createdAt: { gte: startOfLastWeek, lt: startOfWeek } },
+        _sum: { amount: true },
+      }),
     ]);
 
     const totalRevenue = revenueAgg._sum.amount ? revenueAgg._sum.amount.toNumber() : 0;
@@ -81,7 +128,22 @@ export async function GET() {
           pendingReviews,
           openIncidents,
           fraudAlerts
-        }
+        },
+        // New reception widgets
+        pendingBookingRequests,
+        topViewedModels,
+        confirmationsNeeded: confirmationsNeeded.map(b => ({
+          id: b.id,
+          shortId: b.shortId,
+          startAt: b.startAt,
+          status: b.status,
+          clientName: [b.client?.firstName, b.client?.lastName].filter(Boolean).join(' ') || 'Unknown',
+          modelName: b.model?.name || '—',
+        })),
+        weeklyRevenue: {
+          thisWeek: weeklyRevenueAgg._sum.amount ? weeklyRevenueAgg._sum.amount.toNumber() : 0,
+          lastWeek: lastWeekRevenueAgg._sum.amount ? lastWeekRevenueAgg._sum.amount.toNumber() : 0,
+        },
       }
     });
   } catch (error: unknown) {

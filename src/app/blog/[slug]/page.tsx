@@ -1,4 +1,6 @@
 // @ts-nocheck
+export const revalidate = 86400
+
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -362,6 +364,7 @@ export default function BlogPostPage({ params }: Props) {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
+    author: { '@type': 'Organization', name: 'Virel' },
     publisher: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
     url: `https://virel-v3.vercel.app/blog/${post.slug}`,
   }

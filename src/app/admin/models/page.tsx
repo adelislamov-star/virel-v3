@@ -85,12 +85,35 @@ export default function ModelsPage() {
                 </span>
               </div>
               
+              {/* Performance Stats */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-zinc-800/50 rounded-lg py-2">
+                  <div className="text-xs text-zinc-500">Views</div>
+                  <div className="text-sm font-semibold text-zinc-200">{model.viewsTotal ?? 0}</div>
+                  {(model.viewsToday ?? 0) > 0 && (
+                    <div className="text-[10px] text-emerald-400">+{model.viewsToday} today</div>
+                  )}
+                </div>
+                <div className="bg-zinc-800/50 rounded-lg py-2">
+                  <div className="text-xs text-zinc-500">Bookings</div>
+                  <div className="text-sm font-semibold text-zinc-200">{model.bookingsTotal ?? model._count?.bookings ?? 0}</div>
+                </div>
+                <div className="bg-zinc-800/50 rounded-lg py-2">
+                  <div className="text-xs text-zinc-500">Conv.</div>
+                  <div className="text-sm font-semibold text-zinc-200">
+                    {(model.viewsTotal ?? 0) > 0 && (model.bookingsCompleted ?? 0) > 0
+                      ? `${Math.round(((model.bookingsCompleted ?? 0) / (model.viewsTotal ?? 1)) * 100)}%`
+                      : '—'}
+                  </div>
+                </div>
+              </div>
+
               {model.ratingInternal && (
                 <div className="text-sm text-zinc-400">
                   Internal Rating: <span className="font-semibold text-zinc-200">{model.ratingInternal}/5</span>
                 </div>
               )}
-              
+
               <button
                 onClick={() => window.location.href = `/admin/models/${model.id}`}
                 className="w-full px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"

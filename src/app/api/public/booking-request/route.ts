@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
-import { sendEmail } from '@/lib/email';
-import { sendTelegramNotification } from '@/lib/telegram';
+import { sendBookingReceived } from '@/lib/email';
+import { notifyReception } from '@/lib/telegram';
+import { newBookingRequestMessage } from '@/lib/telegram-messages';
+import { format } from 'date-fns';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +31,16 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Lookup model name if modelId provided
+    const model = body.modelId
+      ? await prisma.model.findUnique({ where: { id: body.modelId }, select: { name: true } })
+      : null;
+
+    // Lookup district name if districtId provided
+    const district = body.districtId
+      ? await prisma.district.findUnique({ where: { id: body.districtId }, select: { name: true } })
+      : null;
 
     const booking = await prisma.bookingRequest.create({
       data: {
@@ -60,22 +72,45 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Email to client (graceful)
-    sendEmail({
-      to: body.clientEmail,
-      template: 'booking_confirmation',
-      data: {
-        clientName: body.clientName,
-        date: new Date(body.date).toISOString().split('T')[0],
-        duration: `${body.duration} min`,
-        reference: booking.id,
-      },
-    }).catch(() => {});
+    const formattedDate = format(new Date(body.date), "EEEE, d MMMM yyyy 'at' HH:mm");
+    const durationLabel = `${body.duration} min`;
 
-    // Telegram notification (graceful)
-    sendTelegramNotification(
-      `🆕 New booking request\nClient: ${body.clientName}\nPhone: ${body.clientPhone}\nDate: ${new Date(body.date).toISOString().split('T')[0]}\nTotal: £${body.grandTotal}`,
-    ).catch(() => {});
+    // Send notifications (graceful — don't block client response)
+    Promise.all([
+      sendBookingReceived({
+        to: body.clientEmail,
+        clientName: body.clientName,
+        modelName: model?.name ?? null,
+        formattedDate,
+        durationLabel,
+        callType: body.callType ?? 'incall',
+        grandTotal: body.grandTotal ?? 0,
+        currency: body.currency ?? 'GBP',
+        preferredContact: body.preferredContact ?? 'phone',
+        requestId: booking.id,
+      }),
+      notifyReception(
+        newBookingRequestMessage({
+          clientName: body.clientName,
+          clientPhone: body.clientPhone,
+          preferredContact: body.preferredContact ?? 'phone',
+          clientTelegramId: body.clientTelegramId ?? null,
+          modelName: model?.name ?? null,
+          formattedDate: format(new Date(body.date), 'd MMM yyyy HH:mm'),
+          durationLabel,
+          callType: body.callType ?? 'incall',
+          hotelName: body.hotelName ?? null,
+          roomNumber: body.roomNumber ?? null,
+          districtName: district?.name ?? null,
+          grandTotal: body.grandTotal ?? 0,
+          selectedExtras: body.selectedExtras ?? [],
+          specialRequests: body.specialRequests ?? null,
+          restaurantNeeded: body.restaurantNeeded ?? false,
+          transportNeeded: body.transportNeeded ?? false,
+          requestId: booking.id,
+        }),
+      ),
+    ]).catch(err => console.error('[NOTIFICATIONS] Failed:', err));
 
     return NextResponse.json({ success: true, requestId: booking.id });
   } catch (error) {

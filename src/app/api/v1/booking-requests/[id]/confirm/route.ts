@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { sendEmail } from '@/lib/email';
-import { sendTelegramNotification } from '@/lib/telegram';
+import { sendBookingConfirmed } from '@/lib/email';
+import { notifyReception } from '@/lib/telegram';
+import { bookingConfirmedMessage } from '@/lib/telegram-messages';
+import { format } from 'date-fns';
 
 export async function POST(
   request: NextRequest,
@@ -31,6 +33,11 @@ export async function POST(
 
     const body = await request.json().catch(() => ({}));
 
+    // Lookup model name
+    const model = booking.modelId
+      ? await prisma.model.findUnique({ where: { id: booking.modelId }, select: { name: true } })
+      : null;
+
     const updated = await prisma.bookingRequest.update({
       where: { id },
       data: {
@@ -41,22 +48,43 @@ export async function POST(
       },
     });
 
-    // Send email (graceful — won't throw)
-    sendEmail({
-      to: booking.clientEmail,
-      template: 'booking_confirmation',
-      data: {
-        clientName: booking.clientName,
-        date: booking.date.toISOString().split('T')[0],
-        duration: `${booking.duration} min`,
-        reference: booking.id,
-      },
-    }).catch(() => {});
+    const formattedDate = format(new Date(booking.date), "EEEE, d MMMM yyyy 'at' HH:mm");
+    const durationLabel = `${booking.duration} min`;
+    const location = booking.hotelName ?? booking.address ?? null;
 
-    // Telegram notification (graceful)
-    sendTelegramNotification(
-      `✅ Booking confirmed\nClient: ${booking.clientName}\nDate: ${booking.date.toISOString().split('T')[0]}\nTotal: £${booking.grandTotal}`,
-    ).catch(() => {});
+    // Lookup confirmer name
+    const confirmer = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { name: true },
+    });
+
+    // Send notifications (graceful)
+    Promise.all([
+      sendBookingConfirmed({
+        to: booking.clientEmail,
+        clientName: booking.clientName,
+        modelName: model?.name ?? null,
+        formattedDate,
+        durationLabel,
+        callType: booking.callType,
+        location,
+        grandTotal: booking.grandTotal,
+        currency: booking.currency,
+        requestId: booking.id,
+      }),
+      notifyReception(
+        bookingConfirmedMessage({
+          clientName: booking.clientName,
+          clientPhone: booking.clientPhone,
+          modelName: model?.name ?? null,
+          formattedDate: format(new Date(booking.date), 'd MMM yyyy HH:mm'),
+          durationLabel,
+          grandTotal: booking.grandTotal,
+          confirmedByName: confirmer?.name ?? 'Reception',
+          requestId: booking.id,
+        }),
+      ),
+    ]).catch(err => console.error('[NOTIFICATIONS] Confirm failed:', err));
 
     logAudit({
       actorUserId: auth.userId,

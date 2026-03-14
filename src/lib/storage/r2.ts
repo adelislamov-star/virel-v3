@@ -8,6 +8,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import sharp from 'sharp';
+import { applyWatermark } from '@/lib/watermark';
 // R2 client (S3-compatible)
 export const r2 = new S3Client({
   region: 'auto',
@@ -55,9 +56,17 @@ export async function uploadMedia(
   let width: number | undefined;
   let height: number | undefined;
 
-  // Process images with sharp (convert to WebP)
+  // Process images with sharp (watermark + convert to WebP)
   if (mimeType.startsWith('image/') && mimeType !== 'image/gif') {
-    const image = sharp(buffer);
+    // Apply watermark before resize
+    let watermarkedBuffer = buffer;
+    try {
+      watermarkedBuffer = await applyWatermark(buffer, { text: 'VIREL', opacity: 0.35 });
+    } catch (err) {
+      console.error('[WATERMARK] Failed, uploading original:', err);
+    }
+
+    const image = sharp(watermarkedBuffer);
     const meta = await image.metadata();
     width = meta.width;
     height = meta.height;
@@ -94,7 +103,15 @@ export async function generateThumbnail(
 ): Promise<{ key: string; url: string }> {
   const thumbKey = baseKey.replace(/(\.[^.]+)$/, '_thumb.webp');
 
-  const thumbBuffer = await sharp(buffer)
+  // Apply watermark before thumbnail resize
+  let watermarkedBuffer = buffer;
+  try {
+    watermarkedBuffer = await applyWatermark(buffer, { text: 'VIREL', opacity: 0.35 });
+  } catch (err) {
+    console.error('[WATERMARK] Thumbnail failed, using original:', err);
+  }
+
+  const thumbBuffer = await sharp(watermarkedBuffer)
     .resize({ width: 400, height: 500, fit: 'cover' })
     .webp({ quality: 75 })
     .toBuffer();

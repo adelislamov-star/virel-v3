@@ -5,6 +5,8 @@
     { "path": "/api/cron/data-quality", "schedule": "0 0 * * *" },
     { "path": "/api/cron/dispatch-notifications", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/fraud-scan", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/booking-reminder", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/booking-reminder-30", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/lost-revenue-detect", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/operations-feed-cleanup", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/demand-stats", "schedule": "0 * * * *" },
@@ -12,6 +14,7 @@
     { "path": "/api/cron/retention-scan", "schedule": "0 2 * * *" },
     { "path": "/api/cron/staff-snapshots", "schedule": "0 3 * * *" },
     { "path": "/api/cron/analytics-rebuild", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/expire-offers", "schedule": "0 * * * *" }
+    { "path": "/api/cron/expire-offers", "schedule": "0 * * * *" },
+    { "path": "/api/cron/reset-daily-views", "schedule": "0 0 * * *" }
   ]
 }

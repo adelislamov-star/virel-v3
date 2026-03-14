@@ -1,4 +1,6 @@
 // @ts-nocheck
+export const revalidate = 86400
+
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Header } from '@/components/Header'

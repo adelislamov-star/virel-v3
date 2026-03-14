@@ -13,12 +13,24 @@ interface BookingWidgetProps {
   availability: string | null
   isVerified: boolean
   isExclusive: boolean
+  lastActiveAt: string | null
   rates: Rate[]
+}
+
+function isActiveToday(lastActiveAt: string | null): boolean {
+  if (!lastActiveAt) return false
+  const today = new Date()
+  const last = new Date(lastActiveAt)
+  return (
+    last.getDate() === today.getDate() &&
+    last.getMonth() === today.getMonth() &&
+    last.getFullYear() === today.getFullYear()
+  )
 }
 
 export function BookingWidget({
   modelName, modelSlug, availability,
-  isVerified, isExclusive, rates,
+  isVerified, isExclusive, lastActiveAt, rates,
 }: BookingWidgetProps) {
   const incallRates = rates.filter(r => r.incallPrice != null && r.incallPrice > 0)
   const outcallRates = rates.filter(r => r.outcallPrice != null && r.outcallPrice > 0)
@@ -40,6 +52,10 @@ export function BookingWidget({
         .bw-badge { font-size:9px; letter-spacing:.14em; text-transform:uppercase; padding:4px 10px; }
         .bw-badge-v { border:1px solid rgba(74,222,128,.3); color:#4ade80; }
         .bw-badge-e { border:1px solid rgba(197,165,114,.4); color:#C5A572; }
+        .bw-badge-g { border:1px solid rgba(255,255,255,.15); color:#808080; }
+        .bw-badge-active { border:1px solid rgba(74,222,128,.3); color:#4ade80; display:flex; align-items:center; gap:4px; }
+        .bw-active-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:bw-pulse 2s infinite; }
+        @keyframes bw-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .bw-section-label { font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#808080; margin:24px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.07); }
         .bw-rate-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
         .bw-rate-label { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:300; color:rgba(232,224,212,.8); }
@@ -55,12 +71,14 @@ export function BookingWidget({
       `}</style>
       <div className="bw-root">
         <h2 className="bw-name">{modelName}</h2>
-        {(isVerified || isExclusive) && (
-          <div className="bw-badges">
-            {isExclusive && <span className="bw-badge bw-badge-e">★ Exclusive</span>}
-            {isVerified && <span className="bw-badge bw-badge-v">✓ Verified</span>}
-          </div>
-        )}
+        <div className="bw-badges">
+          {isExclusive && <span className="bw-badge bw-badge-e">★ Exclusive</span>}
+          {isVerified && <span className="bw-badge bw-badge-v">✓ Verified Photos</span>}
+          <span className="bw-badge bw-badge-g">✓ Genuine Photos</span>
+          {isActiveToday(lastActiveAt) && (
+            <span className="bw-badge bw-badge-active"><span className="bw-active-dot" /> Active Today</span>
+          )}
+        </div>
 
         {hasAnyPrice ? (
           <>
@@ -106,6 +124,9 @@ export function BookingWidget({
           <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="bw-btn bw-btn-secondary">
             ✈ Telegram
           </a>
+          <p style={{ fontSize: 11, color: '#5a5450', textAlign: 'center', marginTop: 12, letterSpacing: '.04em' }}>
+            Our team typically responds within 15 minutes
+          </p>
         </div>
       </div>
     </>

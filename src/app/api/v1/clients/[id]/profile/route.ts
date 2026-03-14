@@ -106,6 +106,23 @@ export async function GET(
     const totalSpent = spentAgg._sum.priceTotal ?? 0;
     const avgBookingValue = completedCount > 0 ? Number(totalSpent) / completedCount : 0;
 
+    // Preferred models — group confirmed bookings by model
+    const confirmedBookings = await prisma.booking.findMany({
+      where: { clientId: params.id, status: { in: ['completed', 'confirmed'] }, deletedAt: null },
+      select: { modelId: true, model: { select: { id: true, name: true, slug: true } } },
+    });
+    const modelCountMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
+    for (const b of confirmedBookings) {
+      const key = b.modelId;
+      const existing = modelCountMap.get(key);
+      if (existing) {
+        existing.count++;
+      } else {
+        modelCountMap.set(key, { id: b.model.id, name: b.model.name, slug: b.model.slug, count: 1 });
+      }
+    }
+    const preferredModels = Array.from(modelCountMap.values()).sort((a, b) => b.count - a.count).slice(0, 5);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -118,6 +135,7 @@ export async function GET(
         activeMembership,
         openIncidents,
         fraudSignals,
+        preferredModels,
         stats: {
           totalBookings,
           completedBookings: completedCount,

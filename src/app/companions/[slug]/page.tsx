@@ -9,6 +9,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { CompanionGallery } from '@/components/public/CompanionGallery'
 import { BookingWidget } from '@/components/public/BookingWidget'
+import { ViewTracker } from '@/components/public/ViewTracker'
 import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
 
@@ -348,6 +349,7 @@ export default async function ModelProfilePage({ params }: Props) {
       `}</style>
 
       <div className="profile-root">
+        <ViewTracker slug={params.slug} />
         <Header />
 
         {/* Breadcrumb */}
@@ -375,6 +377,7 @@ export default async function ModelProfilePage({ params }: Props) {
               availability={model.availability}
               isVerified={model.isVerified}
               isExclusive={model.isExclusive}
+              lastActiveAt={model.lastActiveAt?.toISOString() ?? null}
               rates={widgetRates.length > 0 ? widgetRates : ratesTable.map((r, i) => ({
                 label: r.label,
                 durationMin: (i + 1) * 60,

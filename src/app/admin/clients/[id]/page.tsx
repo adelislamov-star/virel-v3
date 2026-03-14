@@ -4,6 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 // ── Types ──────────────────────────────────────────────────────
+type PreferredModel = {
+  id: string;
+  name: string;
+  slug: string;
+  count: number;
+};
+
 type ClientProfile = {
   client: any;
   identities: any[];
@@ -14,6 +21,7 @@ type ClientProfile = {
   activeMembership: any;
   openIncidents: any[];
   fraudSignals: any[];
+  preferredModels: PreferredModel[];
   stats: {
     totalBookings: number;
     completedBookings: number;
@@ -111,6 +119,9 @@ export default function ClientProfilePage() {
   const [showMergeConfirm, setShowMergeConfirm] = useState<MergeCandidate | null>(null);
   const [riskForm, setRiskForm] = useState({ riskStatus: '', reasonCode: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
 
   // ── Load profile ───────────────────────────────────
   const loadProfile = useCallback(async () => {
@@ -120,6 +131,7 @@ export default function ClientProfilePage() {
       const json = await res.json();
       if (json.success) {
         setProfile(json.data);
+        setNotes(json.data.client?.internalNotes || '');
       } else {
         setError(json.error?.message || 'Failed to load client');
       }
@@ -208,6 +220,21 @@ export default function ClientProfilePage() {
       }
     } catch {}
     setSubmitting(false);
+  };
+
+  // ── Save internal notes ───────────────────────────
+  const handleSaveNotes = async () => {
+    setNotesSaving(true);
+    try {
+      await fetch(`/api/v1/clients/${clientId}/notes`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internalNotes: notes }),
+      });
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    } catch {}
+    setNotesSaving(false);
   };
 
   if (loading) {
@@ -300,6 +327,52 @@ export default function ClientProfilePage() {
               <div className="text-xs text-zinc-500 mt-1">Expires: {formatDate(activeMembership.expiresAt)}</div>
             </div>
           )}
+
+          {/* Preferred Models */}
+          {(profile.preferredModels ?? []).length > 0 && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-zinc-400 mb-3">Preferred Models</h3>
+              <div className="space-y-2">
+                {profile.preferredModels.map((pm) => (
+                  <div key={pm.id} className="flex items-center justify-between text-sm">
+                    <button
+                      onClick={() => router.push(`/admin/models/${pm.id}`)}
+                      className="text-zinc-200 hover:text-amber-400 transition-colors text-left"
+                    >
+                      {pm.name}
+                    </button>
+                    <span className="text-xs text-zinc-500">{pm.count} booking{pm.count !== 1 ? 's' : ''}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Quick Re-Book with most booked model */}
+              <button
+                onClick={() => router.push(`/admin/bookings/new?clientId=${clientId}&modelId=${profile.preferredModels[0].id}`)}
+                className="w-full mt-3 px-3 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg text-xs font-medium hover:bg-amber-500/20 transition-colors"
+              >
+                Quick Re-Book ({profile.preferredModels[0].name})
+              </button>
+            </div>
+          )}
+
+          {/* Internal Notes */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-zinc-400 mb-3">Internal Notes</h3>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add internal notes about this client..."
+              rows={4}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 resize-y"
+            />
+            <button
+              onClick={handleSaveNotes}
+              disabled={notesSaving}
+              className="mt-2 w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+            >
+              {notesSaving ? 'Saving...' : notesSaved ? 'Saved!' : 'Save Notes'}
+            </button>
+          </div>
 
           {/* Merge Button */}
           <button

@@ -228,6 +228,11 @@ model Model {
   seoTitle         String?
   seoDescription   String?
 
+  // Phase 3 — Analytics: View tracking
+  viewsTotal       Int       @default(0)
+  viewsToday       Int       @default(0)
+  lastViewedAt     DateTime?
+
   // Relations
   stats           ModelStats?
   media           ModelMedia[]

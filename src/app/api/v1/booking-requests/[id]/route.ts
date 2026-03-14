@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { sendBookingCancelled } from '@/lib/email';
+import { format } from 'date-fns';
 
 export async function GET(
   request: NextRequest,
@@ -51,6 +53,16 @@ export async function PUT(
     if (body.confirmedBy !== undefined) allowedFields.confirmedBy = body.confirmedBy;
 
     const booking = await prisma.bookingRequest.update({ where: { id }, data: allowedFields });
+
+    // Send cancellation email if status changed to cancelled
+    if (allowedFields.status === 'cancelled' && before.status !== 'cancelled') {
+      sendBookingCancelled({
+        to: before.clientEmail,
+        clientName: before.clientName,
+        formattedDate: format(new Date(before.date), 'EEEE, d MMMM yyyy'),
+        requestId: before.id,
+      }).catch(err => console.error('[NOTIFICATIONS] Cancel email failed:', err));
+    }
 
     logAudit({
       actorUserId: auth.userId,
