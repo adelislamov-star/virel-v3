@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/client';
+import { requireRole, isActor } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const services = await prisma.modelService.findMany({
+      where: { modelId: id },
+      include: {
+        service: {
+          select: { id: true, title: true, name: true, publicName: true, category: true, isPublic: true },
+        },
+      },
+    });
+    return NextResponse.json({ success: true, data: services });
+  } catch (error) {
+    console.error('[models/[id]/services GET]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
+
+    const { id: modelId } = await params;
+    const body = await request.json();
+    const { serviceIds = [], extras = [] } = body as {
+      serviceIds: string[];
+      extras: { serviceId: string; extraPrice: number }[];
+    };
+
+    await prisma.$transaction(async (tx) => {
+      await tx.modelService.deleteMany({ where: { modelId } });
+
+      const records = serviceIds.map((serviceId: string) => ({
+        modelId,
+        serviceId,
+        isEnabled: true,
+        isExtra: false,
+        extraPrice: null as number | null,
+      }));
+
+      for (const extra of extras) {
+        const existing = records.find((r) => r.serviceId === extra.serviceId);
+        if (existing) {
+          existing.isExtra = true;
+          existing.extraPrice = extra.extraPrice;
+        } else {
+          records.push({
+            modelId,
+            serviceId: extra.serviceId,
+            isEnabled: true,
+            isExtra: true,
+            extraPrice: extra.extraPrice,
+          });
+        }
+      }
+
+      if (records.length > 0) {
+        await tx.modelService.createMany({ data: records });
+      }
+    });
+
+    logAudit({
+      actorUserId: auth.userId,
+      action: 'UPDATE',
+      entityType: 'ModelServices',
+      entityId: modelId,
+      req: request,
+    });
+
+    return NextResponse.json({ success: true, message: 'Services updated' });
+  } catch (error) {
+    console.error('[models/[id]/services POST]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
