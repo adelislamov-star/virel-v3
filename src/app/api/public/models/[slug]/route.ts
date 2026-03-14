@@ -22,7 +22,6 @@ export async function GET(
         education: true,
         travel: true,
         wardrobe: true,
-        notesInternal: false,
         seoTitle: true,
         seoDescription: true,
         status: true,

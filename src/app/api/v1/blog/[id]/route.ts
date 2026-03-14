@@ -78,6 +78,13 @@ export async function DELETE(
     if (!isActor(auth)) return auth;
 
     const { id } = await params;
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Post not found' } },
+        { status: 404 },
+      );
+    }
     await prisma.blogPost.delete({ where: { id } });
 
     logAudit({

@@ -12,6 +12,13 @@ export async function PUT(
     if (!isActor(auth)) return auth;
 
     const { id } = await params;
+    const existing = await prisma.conciergePartner.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Partner not found' } },
+        { status: 404 },
+      );
+    }
     const body = await request.json();
     const partner = await prisma.conciergePartner.update({ where: { id }, data: body });
 
@@ -39,6 +46,13 @@ export async function DELETE(
     if (!isActor(auth)) return auth;
 
     const { id } = await params;
+    const existing = await prisma.conciergePartner.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Partner not found' } },
+        { status: 404 },
+      );
+    }
     await prisma.conciergePartner.delete({ where: { id } });
 
     logAudit({

@@ -7,7 +7,26 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const post = await prisma.blogPost.findUnique({ where: { slug } });
+    const post = await prisma.blogPost.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        content: true,
+        coverImage: true,
+        category: true,
+        tags: true,
+        seoTitle: true,
+        seoDescription: true,
+        publishedAt: true,
+        isPublished: true,
+        authorName: true,
+        relatedDistricts: true,
+        relatedServices: true,
+      },
+    });
 
     if (!post || !post.isPublished) {
       return NextResponse.json(

@@ -12,6 +12,13 @@ export async function PUT(
     if (!isActor(auth)) return auth;
 
     const { id } = await params;
+    const existing = await prisma.callRateMaster.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Rate not found' } },
+        { status: 404 },
+      );
+    }
     const body = await request.json();
     const rate = await prisma.callRateMaster.update({ where: { id }, data: body });
 

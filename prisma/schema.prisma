@@ -265,7 +265,7 @@ model ModelService {
   isExtra     Boolean  @default(false)
   extraPrice  Float?
 
-  model       Model    @relation(fields: [modelId], references: [id])
+  model       Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
   service     Service  @relation(fields: [serviceId], references: [id])
 
   @@id([modelId, serviceId])
@@ -656,8 +656,8 @@ model AvailabilityRule {
 model AvailabilitySlot {
   id          String   @id @default(cuid())
   modelId     String
-  model       Model    @relation(fields: [modelId], references: [id])
-  
+  model       Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
   startAt     DateTime
   endAt       DateTime
   status      String   @default("available") // available, unavailable, tentative
