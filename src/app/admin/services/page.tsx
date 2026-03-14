@@ -56,7 +56,21 @@ export default function AdminServicesPage() {
       const res = await fetch('/api/v1/services');
       const data = await res.json();
       if (data.success) {
-        setCategories(data.data.categories || []);
+        // API returns flat array — group by category
+        const services = data.services || [];
+        const grouped: Record<string, Service[]> = {};
+        for (const s of services) {
+          const cat = s.category || 'Other';
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push(s);
+        }
+        setCategories(
+          Object.entries(grouped).map(([name, svcs]) => ({
+            id: name,
+            name,
+            services: svcs,
+          }))
+        );
       }
     } catch (e) {
       console.error('Failed to load services', e);
@@ -100,7 +114,7 @@ export default function AdminServicesPage() {
   async function deleteService(id: string, title: string) {
     if (!confirm(`Delete "${title}"? This removes it from all model profiles.`)) return;
     try {
-      const res = await fetch(`/api/v1/services?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/v1/services/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) await loadServices();
       else alert(data.error?.message || 'Failed to delete');
@@ -121,15 +135,14 @@ export default function AdminServicesPage() {
     if (!editId || !editTitle.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/v1/services', {
-        method: 'PATCH',
+      const res = await fetch(`/api/v1/services/${editId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: editId,
           title: editTitle.trim(),
           category: editCategory,
           description: editDescription.trim() || null,
-          defaultExtraPrice: editExtraPrice || null,
+          defaultExtraPrice: editExtraPrice ? parseFloat(editExtraPrice) : null,
         }),
       });
       const data = await res.json();

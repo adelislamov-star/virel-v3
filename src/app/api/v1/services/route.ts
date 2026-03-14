@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { Prisma } from '@prisma/client';
 
@@ -125,6 +126,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    revalidatePath('/admin/services');
+    revalidatePath('/services');
     return NextResponse.json({ success: true, data: { service } });
   } catch (error: unknown) {
     console.error('Create service error:', error);

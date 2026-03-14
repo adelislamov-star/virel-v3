@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
@@ -53,6 +54,8 @@ export async function PUT(
       req: request,
     });
 
+    revalidatePath('/admin/services');
+    revalidatePath('/services');
     return NextResponse.json({ success: true, data: service });
   } catch (error) {
     console.error('[services/[id] PUT]', error);
@@ -81,6 +84,8 @@ export async function DELETE(
       req: request,
     });
 
+    revalidatePath('/admin/services');
+    revalidatePath('/services');
     return NextResponse.json({ success: true, message: 'Service deleted' });
   } catch (error) {
     console.error('[services/[id] DELETE]', error);
