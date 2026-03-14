@@ -3,9 +3,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
+import { requireRole, isActor } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
+    if (!isActor(auth)) return auth;
     const url = request.nextUrl;
     const search = url.searchParams.get('search') ?? '';
     const riskStatus = url.searchParams.get('riskStatus') ?? '';
