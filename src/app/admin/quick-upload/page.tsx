@@ -1,3 +1,4 @@
+// v2 - anketa file fix
 'use client'
 import { useState, useRef } from 'react'
 import Link from 'next/link'
