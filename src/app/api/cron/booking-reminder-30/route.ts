@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db/client';
 import { notifyReception } from '@/lib/telegram';
 import { bookingReminder30Message } from '@/lib/telegram-messages';
 
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
   if (authError) return authError;

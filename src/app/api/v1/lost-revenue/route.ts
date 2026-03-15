@@ -8,6 +8,8 @@ import { prisma } from '@/lib/db/client';
 import { createEntry } from '@/services/lostRevenueService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 // ─── GET ─────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {

@@ -11,6 +11,8 @@ import {
   getLeaderboard,
 } from '@/services/staffAnalyticsService';
 
+export const runtime = 'nodejs';
+
 const BuildSchema = z.object({
   periodStart: z.string().transform(s => new Date(s)),
   periodEnd: z.string().transform(s => new Date(s)),

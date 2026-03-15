@@ -7,6 +7,8 @@ import { notifyReception } from '@/lib/telegram';
 import { bookingConfirmedMessage } from '@/lib/telegram-messages';
 import { format } from 'date-fns';
 
+export const runtime = 'nodejs';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

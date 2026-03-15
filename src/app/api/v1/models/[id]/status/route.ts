@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { ModelProfileStateMachine, type ModelProfileStatus } from '@/lib/state-machines/model-profile';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const StatusChangeSchema = z.object({
   newStatus: z.enum(['draft', 'active', 'vacation', 'archived']),
   reason: z.string().optional()

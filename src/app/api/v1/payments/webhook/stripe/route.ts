@@ -4,6 +4,8 @@ import { PrismaClient } from '@prisma/client';
 import { constructWebhookEvent } from '@/lib/stripe/client';
 import NotificationService from '@/lib/notifications/service';
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {

@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { markOfferShown, markOfferAccepted, markOfferRejected } from '@/services/alternativeOfferService';
 
+export const runtime = 'nodejs';
+
 const StatusSchema = z.object({
   status: z.enum(['shown', 'accepted', 'rejected']),
   bookingId: z.string().optional(),

@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { resolveEntry, waiveEntry } from '@/services/lostRevenueService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const StatusSchema = z.object({
   status: z.enum(['resolved', 'waived']),
   reasonCode: z.string().min(1, 'reasonCode is required'),

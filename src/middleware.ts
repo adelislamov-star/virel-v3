@@ -22,8 +22,9 @@ export function middleware(request: NextRequest) {
 
   // API v1 routes: reject if no token (auth routes are excluded)
   if (isApiV1 && !isApiAuth && !token) {
+    console.error('[middleware] No virel-token cookie for:', pathname);
     return NextResponse.json(
-      { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+      { success: false, error: { code: 'UNAUTHORIZED', message: 'No auth token. Please log in.' } },
       { status: 401 },
     );
   }

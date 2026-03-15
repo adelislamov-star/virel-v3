@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db/client';
 import { sendBookingReminder } from '@/lib/email';
 import { format } from 'date-fns';
 
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
   if (authError) return authError;

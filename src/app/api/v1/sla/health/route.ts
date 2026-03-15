@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
   if (!isActor(auth)) return auth;

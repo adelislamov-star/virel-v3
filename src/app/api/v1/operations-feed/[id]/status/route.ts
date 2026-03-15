@@ -12,6 +12,8 @@ import {
 } from '@/services/operationsFeedService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const StatusSchema = z.object({
   status: z.enum(['acknowledged', 'in_progress', 'resolved', 'dismissed']),
   note: z.string().optional(),

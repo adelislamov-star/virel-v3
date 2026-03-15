@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { PrismaClient } from '@prisma/client'
 import { divaBot, keshaBot } from '@/lib/telegram/bots'
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient()
 
 // Validation schema

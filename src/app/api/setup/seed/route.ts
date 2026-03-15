@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import bcrypt from 'bcryptjs';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const SETUP_SECRET = 'virel-setup-2024';
 
 const ROLES = [
@@ -54,12 +57,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (existingUser) {
+      // Ensure status is active and password is up to date
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { status: 'active', passwordHash },
+      });
       await prisma.userRole.upsert({
         where: { userId_roleId: { userId: existingUser.id, roleId: ownerRole.id } },
         update: {},
         create: { userId: existingUser.id, roleId: ownerRole.id },
       });
-      log.push(`Owner exists: ${ownerEmail} — OWNER role ensured`);
+      log.push(`Owner exists: ${ownerEmail} — status=active, password reset, OWNER role ensured`);
     } else {
       const user = await prisma.user.create({
         data: {

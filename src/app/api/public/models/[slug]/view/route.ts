@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 
+export const runtime = 'nodejs';
+
 export async function POST(
   _req: Request,
   { params }: { params: { slug: string } },

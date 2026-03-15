@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 // GET - List tasks (for Action Center)

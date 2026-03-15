@@ -7,6 +7,8 @@ import { renderTemplate, dispatchNotification } from '@/services/notificationSer
 import { prisma } from '@/lib/db/client';
 import { randomUUID } from 'crypto';
 
+export const runtime = 'nodejs';
+
 const TestSchema = z.object({
   templateId: z.string(),
   recipientAddress: z.string(),

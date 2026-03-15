@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const plans = await prisma.membershipPlan.findMany({

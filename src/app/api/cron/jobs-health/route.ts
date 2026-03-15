@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequest } from '@/lib/cronAuth';
 import { prisma } from '@/lib/db/client';
 
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
   if (authError) return authError;

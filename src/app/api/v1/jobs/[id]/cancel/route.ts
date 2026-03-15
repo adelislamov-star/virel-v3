@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { cancelJob } from '@/services/jobService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const CancelSchema = z.object({
   reasonCode: z.string().min(1, 'reasonCode is required'),
 });

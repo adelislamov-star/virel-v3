@@ -5,6 +5,8 @@ import { logAudit } from '@/lib/audit';
 import { sendBookingCancelled } from '@/lib/email';
 import { format } from 'date-fns';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { calculateDynamicPrice } from '@/lib/pricing/engine';
 import { prisma } from '@/lib/db/client';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

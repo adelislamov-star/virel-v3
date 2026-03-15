@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { assignItem } from '@/services/operationsFeedService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const AssignSchema = z.object({
   userId: z.string().min(1),
 });

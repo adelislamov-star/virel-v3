@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/client'
 
+export const runtime = 'nodejs';
+
 // Validation schema — mapped to SEOPage model fields
 const seoPageSchema = z.object({
   pageType: z.string(), // model_profile, geo_page, blog_post, service_page

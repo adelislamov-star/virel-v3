@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { Prisma } from '@prisma/client';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

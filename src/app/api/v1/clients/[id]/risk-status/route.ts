@@ -7,6 +7,8 @@ import { prisma } from '@/lib/db/client';
 import { recordClientEvent } from '@/services/clientEventService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const RiskStatusSchema = z.object({
   riskStatus: z.enum(['normal', 'monitoring', 'restricted', 'blocked']),
   reasonCode: z.string().min(1, 'reasonCode is required'),

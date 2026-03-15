@@ -7,6 +7,8 @@ import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 import { changeClientRiskStatus } from '@/services/fraudService';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

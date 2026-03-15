@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
 
+export const runtime = 'nodejs';
+
 const DEFAULT_RULES = [
   { metricKey: 'conversionRate', label: 'Conversion Rate', weight: 30, description: 'Percentage of inquiries converted to bookings' },
   { metricKey: 'bookingsCompleted', label: 'Bookings Completed', weight: 25, description: 'Number of bookings completed in period' },

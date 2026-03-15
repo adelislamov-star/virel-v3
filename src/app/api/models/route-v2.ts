@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/client'
 
+export const runtime = 'nodejs';
+
 // Validation schema
 const modelSchema = z.object({
   name: z.string().min(2).max(50),

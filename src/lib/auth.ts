@@ -19,7 +19,10 @@ export async function getActorFromRequest(
   request: NextRequest,
 ): Promise<Actor | null> {
   const token = request.cookies.get('virel-token')?.value;
-  if (!token) return null;
+  if (!token) {
+    console.error('[auth] no virel-token cookie found. URL:', request.url);
+    return null;
+  }
 
   try {
     const user = await prisma.user.findUnique({
@@ -27,7 +30,14 @@ export async function getActorFromRequest(
       include: { roles: { include: { role: true } } },
     });
 
-    if (!user || user.status !== 'active') return null;
+    if (!user) {
+      console.error('[auth] user not found for token:', token);
+      return null;
+    }
+    if (user.status !== 'active') {
+      console.error('[auth] user status is not active:', user.status, 'userId:', user.id, 'email:', user.email);
+      return null;
+    }
 
     const roles = user.roles.map((ur) => ur.role.code as RoleCode);
 

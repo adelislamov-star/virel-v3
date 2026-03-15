@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cancelRetentionAction } from '@/services/retentionService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } },

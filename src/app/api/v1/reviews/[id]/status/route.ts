@@ -6,6 +6,8 @@ import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 import { ReviewStateMachine, type ReviewStatus } from '@/lib/state-machines/review';
 
+export const runtime = 'nodejs';
+
 const StatusChangeSchema = z.object({
   newStatus: z.enum(['pending', 'approved', 'rejected', 'flagged', 'escalated']),
   reason: z.string().optional()

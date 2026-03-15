@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 
+export const runtime = 'nodejs';
+
 // GET - List all models with filters
 export async function GET(request: NextRequest) {
   try {

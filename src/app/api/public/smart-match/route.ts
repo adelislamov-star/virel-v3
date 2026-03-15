@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/client';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {

@@ -6,6 +6,8 @@ import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 import { IncidentStateMachine, type IncidentStatus } from '@/lib/state-machines/incident';
 
+export const runtime = 'nodejs';
+
 const StatusChangeSchema = z.object({
   newStatus: z.enum(['reported', 'investigating', 'resolved', 'closed']),
   resolutionDetails: z.string().optional(),

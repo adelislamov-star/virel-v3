@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const ReplySchema = z.object({
   replyType: z.enum(['model', 'manager']),
   text: z.string().min(1)

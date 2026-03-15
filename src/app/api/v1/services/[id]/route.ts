@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

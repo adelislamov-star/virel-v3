@@ -7,6 +7,8 @@ import { prisma } from '@/lib/db/client';
 import { recordClientEvent } from '@/services/clientEventService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const MergeSchema = z.object({
   primaryClientId: z.string().min(1),
   duplicateClientId: z.string().min(1),

@@ -7,6 +7,8 @@ import { prisma } from '@/lib/db/client';
 import { deleteMedia } from '@/lib/storage/r2';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 // -----------------------------------------------
 // PATCH — update media (isPrimary, isPublic)
 // -----------------------------------------------

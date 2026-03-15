@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { Resend } from 'resend'
 
+export const runtime = 'nodejs';
+
 const MANAGER_EMAIL = process.env.MANAGER_EMAIL || 'manager@virel.com'
 
 function getResend() {

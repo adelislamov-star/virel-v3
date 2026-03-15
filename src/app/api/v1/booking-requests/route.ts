@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);

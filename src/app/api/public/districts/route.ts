@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const districts = await prisma.district.findMany({

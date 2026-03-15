@@ -7,6 +7,8 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 const CreateBookingSchema = z.object({

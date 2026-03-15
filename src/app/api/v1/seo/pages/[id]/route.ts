@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const UpdateSEOPageSchema = z.object({
   title: z.string().optional(),
   metaDescription: z.string().optional(),

@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { retryJob } from '@/services/jobService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const RetrySchema = z.object({
   reasonCode: z.string().min(1, 'reasonCode is required'),
 });

@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
 import { applyBenefit } from '@/services/membershipService';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },

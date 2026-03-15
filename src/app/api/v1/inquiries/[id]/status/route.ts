@@ -6,6 +6,8 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import InquiryStateMachine, { InquiryStatus } from '@/lib/state-machines/inquiry';
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 const StatusChangeSchema = z.object({

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/client';
 import { logAudit } from '@/lib/audit';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

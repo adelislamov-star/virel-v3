@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/client'
 import { randomUUID } from 'crypto'
 import { ensureExtensionTables } from '@/lib/db/ensure-tables'
 
+export const runtime = 'nodejs';
+
 function slugify(name: string) {
   return name.toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')

@@ -9,6 +9,8 @@ import { uploadMedia, generateThumbnail, buildKey } from '@/lib/storage/r2';
 import { randomUUID } from 'crypto';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 // -----------------------------------------------
 // GET — list media for model
 // -----------------------------------------------

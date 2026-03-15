@@ -7,6 +7,8 @@ import { ensureExtensionTables } from '@/lib/db/ensure-tables';
 import { logAudit } from '@/lib/audit';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

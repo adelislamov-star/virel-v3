@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 const CreateSlotSchema = z.object({

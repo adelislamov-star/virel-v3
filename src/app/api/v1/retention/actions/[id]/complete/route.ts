@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { completeRetentionAction } from '@/services/retentionService';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const CompleteSchema = z.object({
   result: z.string().min(1, 'result is required'),
 });

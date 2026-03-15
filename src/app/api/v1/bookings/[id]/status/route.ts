@@ -8,6 +8,8 @@ import BookingStateMachine, { BookingStatus } from '@/lib/state-machines/booking
 import { createBookingSlot, removeBookingSlot } from '@/services/availabilityService';
 import { recordClientEvent, ClientEventType } from '@/services/clientEventService';
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 const StatusChangeSchema = z.object({

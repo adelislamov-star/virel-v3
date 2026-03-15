@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No password set' }, { status: 401 });
     }
 
+    if (user.status !== 'active') {
+      return NextResponse.json({ error: 'Account is not active' }, { status: 403 });
+    }
+
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
@@ -70,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('virel-token', user.id, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',

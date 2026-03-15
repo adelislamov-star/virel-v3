@@ -5,6 +5,8 @@ import { notifyReception } from '@/lib/telegram';
 import { newBookingRequestMessage } from '@/lib/telegram-messages';
 import { format } from 'date-fns';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

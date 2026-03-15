@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const rates = await prisma.callRateMaster.findMany({

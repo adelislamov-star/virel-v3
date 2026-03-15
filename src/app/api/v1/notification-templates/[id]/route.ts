@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db/client';
 import { requireRole, isActor } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

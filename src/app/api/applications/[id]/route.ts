@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 
+export const runtime = 'nodejs';
+
 const VALID_STATUSES = ['new', 'reviewing', 'approved', 'rejected']
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
