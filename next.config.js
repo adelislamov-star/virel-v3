@@ -12,7 +12,7 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'pub-5deecadad4ab46f9bf12b2691c52ec6d.r2.dev' },
-      { protocol: 'https', hostname: 'pub-2df895cf47a14d359a7341e0cda3efaf.r2.dev' },
+      { protocol: 'https', hostname: 'pub-7f32296778704801a71de1ffa1b9ca8d.r2.dev' },
       { protocol: 'https', hostname: 'cdn.virel.co.uk' },
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: '**.railway.app' },
