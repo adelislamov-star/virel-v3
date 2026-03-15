@@ -152,34 +152,36 @@ export default function QuickUploadPage() {
 
     try {
       log('📝 Creating profile...')
-      const modelRes = await fetch('/api/admin/models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...parsedForm, name: finalName })
-      })
-      const modelData = await modelRes.json()
-      if (!modelData.success) throw new Error(modelData.error || 'Failed to create model')
-      const modelId = modelData.modelId
-      log(`✅ Profile created`)
 
-      if (sortedPhotos.length > 0) {
-        log(`📤 Uploading ${sortedPhotos.length} photos (server-side with watermark)...`)
-        const formData = new FormData()
-        formData.append('modelId', modelId)
-        sortedPhotos.forEach((photo, i) => {
-          formData.append(`photo_${i}`, photo.file)
-          formData.append(`sortOrder_${i}`, String(photo.sortOrder))
-          formData.append(`isPrimary_${i}`, String(photo.isPrimary))
-        })
-        const uploadRes = await fetch('/api/admin/quick-upload', { method: 'POST', body: formData })
-        const uploadData = await uploadRes.json()
-        if (!uploadData.success) throw new Error(uploadData.error || `Upload failed (${uploadRes.status})`)
-        log(`✅ Uploaded ${uploadData.count}/${uploadData.total} photos`)
-        if (uploadData.errors) uploadData.errors.forEach((e: string) => log(`⚠️ ${e}`))
+      const formData = new FormData()
+      // Add all photo files
+      sortedPhotos.forEach((photo) => {
+        formData.append('files', photo.file)
+      })
+
+      // If no anketa document was provided, add a text file with the name
+      // so the unified endpoint can use it for the profile name
+      if (!anketaText && sortedPhotos.length > 0) {
+        const nameBlob = new Blob([`Name: ${finalName}`], { type: 'text/plain' })
+        formData.append('files', new File([nameBlob], 'profile.txt', { type: 'text/plain' }))
       }
 
+      log(`📤 Uploading ${sortedPhotos.length} photos (server-side with watermark)...`)
+
+      const res = await fetch('/api/v1/models/quick-upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (!data.success) {
+        throw new Error(data.error || `Upload failed (${res.status})`)
+      }
+
+      log(`✅ Uploaded ${data.summary?.photos || 0} photos`)
       log('🎉 Done!')
-      setDoneUrl(`/admin/models/${modelId}`)
+      setDoneUrl(`/admin/models/${data.modelId}`)
       setStage('done')
     } catch (e: any) {
       log(`❌ ${e.message}`)
