@@ -48,7 +48,7 @@ export default function ModelsPage() {
 
   async function loadModels() {
     try {
-      const res = await fetch('/api/v1/models?all=true');
+      const res = await fetch('/api/v1/models?all=true', { credentials: 'include' });
       if (!res.ok) {
         console.error('Models API returned', res.status);
         setLoadError(res.status === 401 ? 'Not authenticated. Please log in.' : `API error ${res.status}`);
@@ -119,6 +119,7 @@ export default function ModelsPage() {
         await fetch(`/api/v1/models/${id}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ newStatus: bulkAction }),
         });
       } catch {}
