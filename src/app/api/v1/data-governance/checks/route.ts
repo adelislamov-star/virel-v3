@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     // Avg completeness
     const completenessAgg = await prisma.model.aggregate({
       _avg: { dataCompletenessScore: true },
-      where: { status: 'published' }
+      where: { status: 'active' }
     });
 
     return NextResponse.json({

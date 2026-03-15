@@ -51,7 +51,7 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
 
   const models = modelIds.length > 0
     ? await prisma.model.findMany({
-        where: { id: { in: modelIds }, status: 'published', deletedAt: null },
+        where: { id: { in: modelIds }, status: 'active', deletedAt: null },
         include: {
           media: { where: { isPublic: true, isPrimary: true }, select: { url: true }, take: 1 },
           stats: { select: { nationality: true } },

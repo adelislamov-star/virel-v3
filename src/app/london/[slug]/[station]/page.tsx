@@ -51,7 +51,7 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
   // Models in the parent district
   const models = await prisma.model.findMany({
     where: {
-      status: 'published',
+      status: 'active',
       deletedAt: null,
       modelLocations: { some: { district: { slug: districtSlug } } },
     },

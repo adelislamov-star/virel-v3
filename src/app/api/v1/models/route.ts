@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const all = searchParams.get('all') === 'true';
 
-    const where = all ? {} : { status: 'published', visibility: 'public' };
+    const where = all ? {} : { status: 'active' };
 
     const models = await prisma.model.findMany({
       where,

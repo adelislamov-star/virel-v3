@@ -11,7 +11,7 @@ export async function GET(
       where: { slug },
       include: {
         models: {
-          where: { model: { status: 'published', deletedAt: null } },
+          where: { model: { status: 'active', deletedAt: null } },
           include: {
             model: {
               select: {

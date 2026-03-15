@@ -15,7 +15,7 @@ export async function GET(
         transportHubs: true,
         modelLocations: {
           include: { model: { select: { id: true, name: true, slug: true, status: true } } },
-          where: { model: { status: 'published', deletedAt: null } },
+          where: { model: { status: 'active', deletedAt: null } },
         },
       },
     });

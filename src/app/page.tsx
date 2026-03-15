@@ -25,7 +25,7 @@ export const metadata = {
 export default async function HomePage() {
   const [featuredModels, districts, services] = await Promise.all([
     prisma.model.findMany({
-      where: { status: 'published', visibility: 'public', deletedAt: null },
+      where: { status: 'active', deletedAt: null },
       orderBy: [{ isExclusive: 'desc' }, { isVerified: 'desc' }, { createdAt: 'desc' }],
       take: 6,
       include: {

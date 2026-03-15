@@ -107,7 +107,7 @@ export async function PATCH(
           publicCode: body.basicInfo.publicCode,
           primaryLocationId: body.basicInfo.primaryLocationId,
           status: body.basicInfo.status,
-          visibility: body.basicInfo.visibility,
+          
           ratingInternal: body.basicInfo.ratingInternal,
           notesInternal: body.basicInfo.notesInternal
         }

@@ -65,7 +65,7 @@ export async function GET(
       },
     });
 
-    if (!model || model.status !== 'published' || model.deletedAt) {
+    if (!model || model.status !== 'active' || model.deletedAt) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Model not found' } },
         { status: 404 },

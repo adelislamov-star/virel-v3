@@ -74,7 +74,7 @@ export async function rebuildDemandStats(periodStart: Date, periodEnd: Date) {
   // Count available models per location
   const modelCounts = await prisma.model.groupBy({
     by: ['primaryLocationId'],
-    where: { status: 'published', deletedAt: null },
+    where: { status: 'active', deletedAt: null },
     _count: true,
   });
   const modelCountMap = new Map<string, number>();

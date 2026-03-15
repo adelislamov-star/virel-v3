@@ -45,7 +45,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
     }),
     prisma.model.findMany({
       where: {
-        status: 'published',
+        status: 'active',
         deletedAt: null,
         modelLocations: { some: { district: { slug: districtSlug } } },
       },

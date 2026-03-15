@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db/client'
 
 export async function FeaturedModels() {
   const models = await prisma.model.findMany({
-    where: { status: 'published', visibility: 'public', deletedAt: null },
+    where: { status: 'active', deletedAt: null },
     include: {
       stats: true,
       media: { where: { isPrimary: true, isPublic: true }, take: 1 },

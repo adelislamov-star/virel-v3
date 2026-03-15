@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const ageMax = searchParams.get('ageMax');
 
     const where: Prisma.ModelWhereInput = {
-      status: 'published',
+      status: 'active',
       deletedAt: null,
     };
 

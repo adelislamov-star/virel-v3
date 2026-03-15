@@ -50,13 +50,13 @@ export default async function DistrictPage({ params }: Props) {
     .split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
   const location = await prisma.location.findFirst({
-    where: { slug: params.district, status: 'published' },
+    where: { slug: params.district, status: 'active' },
   }).catch(() => null)
 
   const models = await prisma.model.findMany({
     where: {
-      status: 'published',
-      visibility: 'public',
+      status: 'active',
+      
       deletedAt: null,
       ...(location ? { primaryLocationId: location.id } : {}),
     },

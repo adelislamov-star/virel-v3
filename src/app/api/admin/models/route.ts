@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         slug,
         publicCode,
         status: body.status || 'active',
-        visibility: body.visibility || 'public',
+        
         notesInternal: body.notesInternal || body.internalNotes || null,
         primaryLocationId,
         // New fields

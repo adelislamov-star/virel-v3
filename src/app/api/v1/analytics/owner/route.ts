@@ -78,9 +78,9 @@ export async function GET(request: NextRequest) {
     const avgModelRating = ratingAgg._avg.rating ?? 0;
 
     // Risk distribution
-    const greenModels = await prisma.model.count({ where: { status: 'published', modelRiskIndex: 'green' } });
-    const yellowModels = await prisma.model.count({ where: { status: 'published', modelRiskIndex: 'yellow' } });
-    const redModels = await prisma.model.count({ where: { status: 'published', modelRiskIndex: 'red' } });
+    const greenModels = await prisma.model.count({ where: { status: 'active', modelRiskIndex: 'green' } });
+    const yellowModels = await prisma.model.count({ where: { status: 'active', modelRiskIndex: 'yellow' } });
+    const redModels = await prisma.model.count({ where: { status: 'active', modelRiskIndex: 'red' } });
 
     // Lead source ROI (placeholder)
     const sourceROI: Record<string, number> = {};
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     // Data quality — avg completeness
     const completenessAgg = await prisma.model.aggregate({
       _avg: { dataCompletenessScore: true },
-      where: { status: 'published' }
+      where: { status: 'active' }
     });
     const avgCompletenessScore = completenessAgg._avg.dataCompletenessScore ?? 0;
 

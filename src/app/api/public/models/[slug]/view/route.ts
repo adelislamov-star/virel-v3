@@ -8,7 +8,7 @@ export async function POST(
 ) {
   try {
     await prisma.model.updateMany({
-      where: { slug: params.slug, status: 'published', deletedAt: null },
+      where: { slug: params.slug, status: 'active', deletedAt: null },
       data: {
         viewsTotal: { increment: 1 },
         viewsToday: { increment: 1 },

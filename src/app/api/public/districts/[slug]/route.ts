@@ -12,7 +12,7 @@ export async function GET(
       include: {
         transportHubs: { where: { isActive: true } },
         modelLocations: {
-          where: { model: { status: 'published', deletedAt: null } },
+          where: { model: { status: 'active', deletedAt: null } },
           include: {
             model: {
               select: {

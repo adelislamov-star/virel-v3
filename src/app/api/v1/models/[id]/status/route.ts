@@ -9,7 +9,7 @@ import { ModelProfileStateMachine, type ModelProfileStatus } from '@/lib/state-m
 import { requireRole, isActor } from '@/lib/auth';
 
 const StatusChangeSchema = z.object({
-  newStatus: z.enum(['draft', 'review', 'published', 'hidden', 'archived']),
+  newStatus: z.enum(['draft', 'active', 'vacation', 'archived']),
   reason: z.string().optional()
 });
 

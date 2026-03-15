@@ -49,9 +49,9 @@ export async function GET() {
         where: { status: { not: 'closed' } }
       }),
       prisma.review.count({ where: { status: 'pending' } }),
-      prisma.model.count({ where: { status: 'published' } }),
+      prisma.model.count({ where: { status: 'active' } }),
       prisma.model.aggregate({
-        where: { status: 'published' },
+        where: { status: 'active' },
         _avg: { dataCompletenessScore: true }
       }),
       prisma.model.count({ where: { modelRiskIndex: 'green' } }),
@@ -69,7 +69,7 @@ export async function GET() {
       }),
       // Widget 2: Top Viewed Models Today
       prisma.model.findMany({
-        where: { status: 'published', viewsToday: { gt: 0 } },
+        where: { status: 'active', viewsToday: { gt: 0 } },
         orderBy: { viewsToday: 'desc' },
         take: 5,
         select: { id: true, name: true, slug: true, viewsToday: true, viewsTotal: true },

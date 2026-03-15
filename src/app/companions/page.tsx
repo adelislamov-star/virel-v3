@@ -44,8 +44,8 @@ export default async function CompanionsPage({
 
   // Build where clause
   const where: any = {
-    status: 'published',
-    visibility: 'public',
+    status: 'active',
+    
     deletedAt: null,
     ...(hairColor && hairColor !== 'any' && {
       stats: { hairColour: { contains: hairColor, mode: 'insensitive' } },

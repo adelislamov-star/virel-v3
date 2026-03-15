@@ -6,7 +6,7 @@ export async function runDataQualityChecks(): Promise<{ newChecks: number; exist
   let existing = 0;
 
   const models = await prisma.model.findMany({
-    where: { status: 'published' },
+    where: { status: 'active' },
     include: { media: true }
   });
 

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Build filters
     const where: Prisma.ModelWhereInput = {
-      status: 'published',
+      status: 'active',
       deletedAt: null,
     };
 

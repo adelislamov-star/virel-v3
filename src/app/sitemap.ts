@@ -5,7 +5,7 @@ const BASE = 'https://virel-v3.vercel.app'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [models, services, districts, hubs, posts] = await Promise.all([
-    prisma.model.findMany({ where: { status: 'published', deletedAt: null }, select: { slug: true, updatedAt: true } }),
+    prisma.model.findMany({ where: { status: 'active', deletedAt: null }, select: { slug: true, updatedAt: true } }),
     prisma.service.findMany({ where: { isActive: true, isPublic: true }, select: { slug: true, updatedAt: true } }),
     prisma.district.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
     prisma.transportHub.findMany({ where: { isActive: true }, include: { district: { select: { slug: true } } } }),

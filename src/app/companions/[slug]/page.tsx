@@ -17,7 +17,7 @@ interface Props { params: { slug: string } }
 
 export async function generateStaticParams() {
   const models = await prisma.model.findMany({
-    where: { status: 'published', deletedAt: null },
+    where: { status: 'active', deletedAt: null },
     select: { slug: true },
   })
   return models.map(m => ({ slug: m.slug }))
@@ -76,7 +76,7 @@ const SERVICE_REMAP: Record<string, string> = {
 
 export default async function ModelProfilePage({ params }: Props) {
   const model = await prisma.model.findUnique({
-    where: { slug: params.slug, status: 'published', visibility: 'public', deletedAt: null },
+    where: { slug: params.slug, status: 'active', deletedAt: null },
     include: {
       stats: true,
       media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
@@ -189,7 +189,7 @@ export default async function ModelProfilePage({ params }: Props) {
   if (model.duoPartnerIds?.length) {
     try {
       duoPartners = await prisma.model.findMany({
-        where: { id: { in: model.duoPartnerIds }, status: 'published', deletedAt: null },
+        where: { id: { in: model.duoPartnerIds }, status: 'active', deletedAt: null },
         select: { name: true, slug: true, tagline: true },
       })
     } catch {}
@@ -200,7 +200,7 @@ export default async function ModelProfilePage({ params }: Props) {
   try {
     similarModels = await prisma.model.findMany({
       where: {
-        status: 'published', visibility: 'public', deletedAt: null, id: { not: model.id },
+        status: 'active', deletedAt: null, id: { not: model.id },
         ...(stats?.nationality ? { stats: { nationality: stats.nationality } } : {}),
       },
       include: {
@@ -214,7 +214,7 @@ export default async function ModelProfilePage({ params }: Props) {
     if (similarModels.length < 3) {
       const existing = [model.id, ...similarModels.map((m: any) => m.id)]
       const more = await prisma.model.findMany({
-        where: { status: 'published', visibility: 'public', deletedAt: null, id: { notIn: existing } },
+        where: { status: 'active', deletedAt: null, id: { notIn: existing } },
         include: {
           stats: true,
           media: { where: { isPrimary: true, isPublic: true }, take: 1 },

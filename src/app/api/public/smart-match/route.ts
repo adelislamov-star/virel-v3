@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const { experience, appearance, nationality, budget, district, duration, occasion } = body;
 
     const where: Prisma.ModelWhereInput = {
-      status: 'published',
+      status: 'active',
       deletedAt: null,
     };
 
