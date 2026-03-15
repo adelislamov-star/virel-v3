@@ -37,7 +37,8 @@ export async function getActorFromRequest(
       name: user.name,
       roles,
     };
-  } catch {
+  } catch (err) {
+    console.error('[auth] getActorFromRequest failed:', err);
     return null;
   }
 }

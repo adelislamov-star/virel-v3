@@ -13,6 +13,7 @@ import { ensureExtensionTables } from '@/lib/db/ensure-tables'
 import { ensureServices } from '@/lib/db/ensure-services'
 import { parseProfileDocument } from '@/lib/parsing/parse-profile-document'
 import { randomUUID, createHash } from 'crypto'
+import { requireRole, isActor } from '@/lib/auth'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const runtime = 'nodejs'
@@ -345,6 +346,9 @@ function mapRatesToRows(rates: Record<string, { incall: number | null; outcall: 
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER'])
+    if (!isActor(auth)) return auth
+
     console.log('[quick-upload] === Starting Quick Upload ===')
     await ensureExtensionTables()
     await ensureServices()
