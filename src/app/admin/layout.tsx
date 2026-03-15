@@ -21,6 +21,7 @@ const sections = [
     items: [
       { href: '/admin/action-center', label: 'Action Center', icon: Target },
       { href: '/admin/leads', label: 'Leads', icon: MessageSquare },
+      { href: '/admin/inquiries', label: 'Inquiries', icon: FileText },
       { href: '/admin/clients', label: 'Clients', icon: Users },
       { href: '/admin/booking-requests', label: 'Booking Requests', icon: ClipboardList },
       { href: '/admin/bookings', label: 'Bookings', icon: CalendarDays },
@@ -51,6 +52,7 @@ const sections = [
       { href: '/admin/fraud', label: 'Fraud Monitor', icon: Shield },
       { href: '/admin/lost-revenue', label: 'Lost Revenue', icon: TrendingUp },
       { href: '/admin/applications', label: 'Applications', icon: AppWindow },
+      { href: '/admin/alternative-offers', label: 'Alternative Offers', icon: RefreshCw },
     ]
   },
   {
@@ -79,7 +81,7 @@ const sections = [
     label: 'System',
     items: [
       { href: '/admin/sla', label: 'SLA Monitor', icon: Timer },
-      { href: '/admin/data-quality', label: 'Data Quality', icon: Database },
+      { href: '/admin/data-governance', label: 'Data Quality', icon: Database },
       { href: '/admin/audit-log', label: 'Audit Log', icon: Search },
       { href: '/admin/notifications', label: 'Notifications', icon: Bell },
       { href: '/admin/jobs', label: 'Jobs', icon: Briefcase },

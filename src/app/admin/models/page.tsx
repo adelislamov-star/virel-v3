@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import QuickUploadModal from '@/components/models/QuickUploadModal';
+import { useRouter } from 'next/navigation';
 
 const statusStyles: Record<string, string> = {
   draft: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
@@ -35,9 +35,9 @@ function mapFilterToStatus(filter: StatusFilter): string | null {
 }
 
 export default function ModelsPage() {
+  const router = useRouter();
   const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [quickUploadOpen, setQuickUploadOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [sortBy, setSortBy] = useState<SortField>('name');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -139,7 +139,7 @@ export default function ModelsPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setQuickUploadOpen(true)}
+            onClick={() => router.push('/admin/quick-upload')}
             className="px-4 py-2 rounded-lg border border-zinc-700 hover:border-zinc-600 text-zinc-300 hover:text-zinc-100 text-sm font-medium transition-colors duration-150"
           >
             Quick Upload
@@ -308,11 +308,6 @@ export default function ModelsPage() {
         )}
       </div>
 
-      <QuickUploadModal
-        open={quickUploadOpen}
-        onClose={() => setQuickUploadOpen(false)}
-        onModelCreated={loadModels}
-      />
     </div>
   );
 }
