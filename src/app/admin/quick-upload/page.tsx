@@ -51,6 +51,7 @@ export default function QuickUploadPage() {
   const [photos, setPhotos] = useState<PhotoFile[]>([])
   const [sortedPhotos, setSortedPhotos] = useState<SortedPhoto[]>([])
   const [anketaText, setAnketaText] = useState('')
+  const [anketaFileRef, setAnketaFileRef] = useState<File | null>(null)
   const [parsedForm, setParsedForm] = useState<Record<string, any>>({})
   const [manualName, setManualName] = useState('')
   const [dragOver, setDragOver] = useState(false)
@@ -76,6 +77,7 @@ export default function QuickUploadPage() {
       } else if (isAnketaFile(f)) {
         try {
           setAnketaText(f.name)
+          setAnketaFileRef(f)
           setAiParsing(true)
           setParseError(null)
           setStage('preview')
@@ -159,9 +161,11 @@ export default function QuickUploadPage() {
         formData.append('files', photo.file)
       })
 
-      // If no anketa document was provided, add a text file with the name
-      // so the unified endpoint can use it for the profile name
-      if (!anketaText && sortedPhotos.length > 0) {
+      // Send the original anketa file so the server can parse it,
+      // or fall back to a text stub with just the name
+      if (anketaFileRef) {
+        formData.append('files', anketaFileRef)
+      } else {
         const nameBlob = new Blob([`Name: ${finalName}`], { type: 'text/plain' })
         formData.append('files', new File([nameBlob], 'profile.txt', { type: 'text/plain' }))
       }
@@ -359,7 +363,7 @@ export default function QuickUploadPage() {
               View Profile →
             </a>
             <button
-              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null) }}
+              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null) }}
               style={{ border: '1px solid #444', background: '#1e1e2e', color: '#ccc', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
             >
               Add Another

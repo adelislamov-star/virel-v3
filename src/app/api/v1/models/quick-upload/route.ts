@@ -111,6 +111,7 @@ interface AIParsedProfile {
   wardrobe: string[] | null
   rates: Record<string, { incall: number | null; outcall: number | null }> | null
   services: Array<{ name: string; enabled: boolean; extra_price: number | null }> | null
+  payment_methods: string[] | null
 }
 
 // ─── Few-Shot Learning ───
@@ -182,6 +183,7 @@ Return this exact JSON structure:
   "telegram": boolean,
   "viber": boolean,
   "signal": boolean,
+  "payment_methods": ["cash", "revolut", "bank transfer", "terminal", "monzo", "starling", "bitcoin", "usdt"],
   "address": "string"|null,
   "postcode": "string - UK postcode"|null,
   "tube_station": "string - nearest tube/train station name"|null,
@@ -203,6 +205,7 @@ Height conversion: 1.70m=170, 1,70=170, 5ft7=170, 5'7"=170.
 Rates in GBP numbers only, no symbols. If only one rate given for a duration without specifying incall/outcall, assume it is incall. Outcall is usually £50 more + taxi.
 Use null for anything not found in the document. Use false for boolean fields if not mentioned.
 For services, use standard names: GFE, OWO, OWC, DFK, FK, 69, CIM, CIF, COB, Swallow, Snowballing, DT, Fingering, A-Level, DP, PSE, Party Girl, Face Sitting, Dirty Talk, Lady Services, WS Giving, WS Receiving, Rimming Giving, Rimming Receiving, Smoking Fetish, Roleplay, Filming Mask, Filming No Mask, Foot Fetish, Open Minded, Light Dom, Spanking Giving, Spanking Receiving, Duo, Bi Duo, Couples, MMF, Group, Massage, Prostate Massage, Professional Massage, B2B, Erotic Massage, Lomi Lomi, Nuru, Sensual Massage, Tantric, Striptease, Lapdancing, Belly Dance, Uniforms, Toys, Strap On, Poppers, Handcuffs, Domination, Fisting, Tie & Tease, Dinner Date.
+payment_methods: list payment methods accepted. Use lowercase values: cash, revolut, bank transfer, terminal, card, monzo, starling, monese, bitcoin, btc, usdt, ltc. Empty array if not mentioned.
 Only include services mentioned in the document. "enabled" = true if answer is Yes, false if No.
 For each service, check if there is an additional/extra price mentioned next to it (e.g. "A-level +£200", "GFE - extra £150", "Anal £200 extra"). Return extra_price as the numeric value in GBP, or null if no extra price is mentioned.
 For wardrobe, only include items explicitly mentioned (e.g. Schoolgirl, Nurse, Latex, Lingerie, Stockings, etc.). Return empty array if none mentioned.
@@ -452,7 +455,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         publicCode,
-        status: 'draft',
+        status: 'active',
 
         // Bio & Marketing
         notesInternal: aiParsed?.bio_text || null,
@@ -461,6 +464,7 @@ export async function POST(request: NextRequest) {
         availability: aiParsed?.availability || 'Advanced Notice',
         education: aiParsed?.education || null,
         travel: aiParsed?.travel || null,
+        ageForWeb: aiParsed?.age || regexParsed?.age || null,
         ethnicity: aiParsed?.ethnicity || null,
         hairLength: aiParsed?.hair_length || null,
         measurements: aiParsed?.measurements || null,
@@ -474,6 +478,18 @@ export async function POST(request: NextRequest) {
         telegram: aiParsed?.telegram ?? false,
         viber: aiParsed?.viber ?? false,
         signal: aiParsed?.signal ?? false,
+
+        // Payment methods
+        paymentCash: aiParsed?.payment_methods?.some(m => m === 'cash') ?? false,
+        paymentRevolut: aiParsed?.payment_methods?.some(m => m === 'revolut') ?? false,
+        paymentBankTransfer: aiParsed?.payment_methods?.some(m => ['bank transfer', 'bank'].includes(m)) ?? false,
+        paymentTerminal: aiParsed?.payment_methods?.some(m => ['terminal', 'card'].includes(m)) ?? false,
+        paymentMonzo: aiParsed?.payment_methods?.some(m => m === 'monzo') ?? false,
+        paymentStarling: aiParsed?.payment_methods?.some(m => m === 'starling') ?? false,
+        paymentMonese: aiParsed?.payment_methods?.some(m => m === 'monese') ?? false,
+        paymentBTC: aiParsed?.payment_methods?.some(m => ['bitcoin', 'btc'].includes(m)) ?? false,
+        paymentUSDT: aiParsed?.payment_methods?.some(m => m === 'usdt') ?? false,
+        paymentLTC: aiParsed?.payment_methods?.some(m => m === 'ltc') ?? false,
 
         // Location (also stored in model_addresses below)
         postcode: aiParsed?.postcode || regexParsed?.address?.postcode || null,
