@@ -53,15 +53,21 @@ export default function ModelEditPage() {
     setToast({ message, type });
   }, []);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadModel = useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/models/${modelId}`);
       const data = await res.json();
       if (data.success) {
         setModel(data.data.model);
+        setLoadError(null);
+      } else {
+        setLoadError(data.error?.message || `Failed to load model (${res.status})`);
       }
     } catch (error) {
       console.error('Failed to load model:', error);
+      setLoadError('Network error loading model');
     } finally {
       setLoading(false);
     }
@@ -123,7 +129,16 @@ export default function ModelEditPage() {
   }
 
   if (!model) {
-    return <div className="p-6 text-zinc-400">Model not found</div>;
+    return (
+      <div className="p-6 text-zinc-400">
+        {loadError || 'Model not found'}
+        {loadError && (
+          <button onClick={() => { setLoading(true); loadModel(); }} className="ml-4 text-blue-400 underline">
+            Retry
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (

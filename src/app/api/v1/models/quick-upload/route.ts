@@ -568,9 +568,36 @@ export async function POST(request: NextRequest) {
 
     const rateMasters = await prisma.callRateMaster.findMany({
       where: { isActive: true },
-      select: { id: true, label: true },
+      select: { id: true, label: true, durationMin: true },
     })
-    const masterByLabel = new Map(rateMasters.map(m => [m.label.toLowerCase(), m.id]))
+    // Build lookup map with multiple key variants for each master
+    // AI returns: "30min", "1hour", "2hours", "overnight", "extra_hour"
+    // DB labels:  "30 min", "1 Hour", "2 Hours", "Overnight (9 hrs)", "Extra Hour"
+    const masterByLabel = new Map<string, string>()
+    const aiKeyAliases: Record<number, string[]> = {
+      30: ['30min', '30 min', '30 minutes'],
+      45: ['45min', '45 min', '45 minutes'],
+      60: ['1hour', '1 hour', '60min', '60 min'],
+      90: ['90min', '90 min', '90 minutes', '1.5hours'],
+      120: ['2hours', '2 hours', '120min'],
+      180: ['3hours', '3 hours', '180min'],
+      540: ['overnight', 'overnight (9 hrs)', 'overnight (9hrs)'],
+    }
+    for (const m of rateMasters) {
+      // Exact label match
+      masterByLabel.set(m.label.toLowerCase(), m.id)
+      // Duration-based aliases
+      const aliases = aiKeyAliases[m.durationMin] || []
+      for (const alias of aliases) {
+        masterByLabel.set(alias, m.id)
+      }
+      // "Extra Hour" special case
+      if (m.label.toLowerCase().includes('extra')) {
+        masterByLabel.set('extra_hour', m.id)
+        masterByLabel.set('extra hour', m.id)
+        masterByLabel.set('extra', m.id)
+      }
+    }
 
     const aiRates = aiParsed?.rates
     if (aiRates) {
@@ -676,8 +703,14 @@ export async function POST(request: NextRequest) {
         })
         uploadedPhotos++
         console.log(`[quick-upload] Step 6: Uploaded photo ${i + 1}/${imageBuffers.length}`)
-      } catch (e) {
-        console.error(`[quick-upload] Step 6: Failed to upload photo ${i} (skipping):`, e)
+      } catch (e: any) {
+        console.error(`[quick-upload] Step 6 FULL ERROR:`, JSON.stringify({
+          photo: i,
+          name: fileName,
+          message: e?.message,
+          code: e?.code || e?.$metadata?.httpStatusCode,
+          stack: e?.stack?.split('\n').slice(0, 3).join(' | '),
+        }))
       }
     }
     console.log(`[quick-upload] Step 6: Uploaded ${uploadedPhotos}/${imageBuffers.length} photos`)
