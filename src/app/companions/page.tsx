@@ -1,5 +1,5 @@
 // @ts-nocheck
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 import { Metadata } from 'next'
 import Link from 'next/link'

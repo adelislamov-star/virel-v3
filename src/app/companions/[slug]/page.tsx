@@ -1,5 +1,5 @@
 // @ts-nocheck
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
