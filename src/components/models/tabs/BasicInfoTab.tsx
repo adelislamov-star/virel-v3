@@ -10,7 +10,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
     name: model.name || '',
     publicCode: model.publicCode || '',
     status: model.status || 'active',
-    visibility: model.visibility || 'public',
+    
     ratingInternal: model.ratingInternal || 0,
     notesInternal: model.notesInternal || '',
     workWithCouples: model.workPreferences?.work_with_couples || false,
@@ -26,7 +26,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
         name: form.name,
         publicCode: form.publicCode,
         status: form.status,
-        visibility: form.visibility,
+        
         ratingInternal: parseFloat(form.ratingInternal as any) || 0,
         notesInternal: form.notesInternal,
       },
@@ -72,33 +72,19 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
             />
           </div>
           
-          {/* Status & Visibility */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-background"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Visibility</label>
-              <select
-                value={form.visibility}
-                onChange={(e) => setForm({ ...form, visibility: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-background"
-              >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-                <option value="unlisted">Unlisted</option>
-              </select>
-            </div>
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md bg-background"
+            >
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="vacation">Vacation</option>
+              <option value="archived">Archived</option>
+            </select>
           </div>
           
           {/* Internal Rating */}

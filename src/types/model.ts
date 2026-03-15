@@ -114,6 +114,5 @@ export interface ModelBasic {
   slug: string;
   publicCode: string;
   status: string;
-  visibility: string;
   coverPhotoUrl?: string | null;
 }

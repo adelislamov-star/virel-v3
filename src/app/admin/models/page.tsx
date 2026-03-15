@@ -6,10 +6,9 @@ import Link from 'next/link';
 import QuickUploadModal from '@/components/models/QuickUploadModal';
 
 const statusStyles: Record<string, string> = {
-  published: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   draft: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
-  review: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  hidden: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  vacation: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   archived: 'bg-red-500/10 text-red-400 border-red-500/20',
 };
 
@@ -28,8 +27,8 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
 function mapFilterToStatus(filter: StatusFilter): string | null {
   switch (filter) {
     case 'All': return null;
-    case 'Active': return 'published';
-    case 'Vacation': return 'hidden';
+    case 'Active': return 'active';
+    case 'Vacation': return 'vacation';
     case 'Archived': return 'archived';
     case 'Draft': return 'draft';
   }
@@ -197,8 +196,8 @@ export default function ModelsPage() {
             className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
           >
             <option value="">Change status to...</option>
-            <option value="published">Active</option>
-            <option value="hidden">Vacation</option>
+            <option value="active">Active</option>
+            <option value="vacation">Vacation</option>
             <option value="archived">Archived</option>
             <option value="draft">Draft</option>
           </select>
@@ -256,9 +255,6 @@ export default function ModelsPage() {
               <div className="flex gap-2">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${statusStyles[model.status] || statusStyles.draft}`}>
                   {model.status}
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-zinc-700/50 text-zinc-500">
-                  {model.visibility}
                 </span>
               </div>
 

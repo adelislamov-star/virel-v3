@@ -3,18 +3,15 @@
 
 export type ModelProfileStatus =
   | 'draft'
-  | 'review'
-  | 'published'
-  | 'hidden'
+  | 'active'
+  | 'vacation'
   | 'archived';
 
 const MODEL_PROFILE_TRANSITIONS: Record<ModelProfileStatus, ModelProfileStatus[]> = {
-  draft: ['review'],
-  review: ['published', 'draft'],
-  published: ['hidden', 'archived'],
-  hidden: ['published', 'archived'],
-  // Terminal states:
-  archived: []
+  draft: ['active'],
+  active: ['vacation', 'archived'],
+  vacation: ['active', 'archived'],
+  archived: ['draft'],
 };
 
 const REQUIRES_REASON: ModelProfileStatus[] = ['archived'];
@@ -39,10 +36,9 @@ export class ModelProfileStateMachine {
   static getStatusLabel(status: ModelProfileStatus): string {
     const labels: Record<ModelProfileStatus, string> = {
       draft: 'Draft',
-      review: 'Under Review',
-      published: 'Published',
-      hidden: 'Hidden',
-      archived: 'Archived'
+      active: 'Active',
+      vacation: 'Vacation',
+      archived: 'Archived',
     };
     return labels[status];
   }
@@ -50,10 +46,9 @@ export class ModelProfileStateMachine {
   static getStatusColor(status: ModelProfileStatus): string {
     const colors: Record<ModelProfileStatus, string> = {
       draft: 'gray',
-      review: 'yellow',
-      published: 'green',
-      hidden: 'orange',
-      archived: 'red'
+      active: 'green',
+      vacation: 'yellow',
+      archived: 'red',
     };
     return colors[status];
   }

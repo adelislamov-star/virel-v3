@@ -11,7 +11,7 @@ import {
   BUST_SIZES, BUST_TYPES, EYE_COLORS, HAIR_COLORS, HAIR_LENGTHS,
   SMOKING, TATTOOS, PIERCINGS, ORIENTATIONS, TRAVEL_OPTIONS,
   AVAILABILITY_DAYS, WARDROBE_OPTIONS, PAYMENT_METHODS,
-  PREFERENCE_FIELDS, MODEL_STATUSES, MODEL_VISIBILITY,
+  PREFERENCE_FIELDS, MODEL_STATUSES,
 } from '@/constants/model-form'
 
 /* ─── Types ─── */
@@ -21,7 +21,7 @@ interface FormData {
   // Step 1 — Identity & Profile
   name: string; workingName: string; dateOfBirth: string; ageForWeb: string;
   nationality: string; ethnicity: string;
-  internalRating: number; status: string; visibility: string;
+  internalRating: number; status: string;
   tagline: string; bio: string; internalNotes: string;
   // Step 2 — Physical Stats
   height: string; weight: string; dressSize: string; footSize: string;
@@ -62,7 +62,7 @@ const STEPS = [
 const defaultFormData: FormData = {
   name: '', workingName: '', dateOfBirth: '', ageForWeb: '',
   nationality: '', ethnicity: '',
-  internalRating: 0, status: 'draft', visibility: 'private',
+  internalRating: 0, status: 'draft',
   tagline: '', bio: '', internalNotes: '',
   height: '', weight: '', dressSize: '', footSize: '',
   bustSize: '', bustType: '', eyeColor: '', hairColor: '',
@@ -461,7 +461,7 @@ Return ONLY valid JSON: {"bio": "...", "tagline": "..."}`
         bio: form.bio || undefined,
         internalRating: form.internalRating,
         status: asDraft ? 'draft' : form.status,
-        visibility: asDraft ? 'private' : form.visibility,
+        
         offersIncall: form.offersIncall,
         offersOutcall: form.offersOutcall,
         rates: form.rates,
@@ -636,10 +636,6 @@ Return ONLY valid JSON: {"bio": "...", "tagline": "..."}`
               <div>
                 <FieldLabel>Status</FieldLabel>
                 <SelectInput value={form.status} onChange={v => set('status', v)} options={MODEL_STATUSES} />
-              </div>
-              <div>
-                <FieldLabel>Visibility</FieldLabel>
-                <SelectInput value={form.visibility} onChange={v => set('visibility', v)} options={MODEL_VISIBILITY} />
               </div>
               <div>
                 <FieldLabel>Tagline</FieldLabel>
@@ -1163,10 +1159,6 @@ Return ONLY valid JSON: {"bio": "...", "tagline": "..."}`
               <div>
                 <FieldLabel>Status</FieldLabel>
                 <SelectInput value={form.status} onChange={v => set('status', v)} options={MODEL_STATUSES} />
-              </div>
-              <div>
-                <FieldLabel>Visibility</FieldLabel>
-                <SelectInput value={form.visibility} onChange={v => set('visibility', v)} options={MODEL_VISIBILITY} />
               </div>
             </div>
 

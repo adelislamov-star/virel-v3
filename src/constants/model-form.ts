@@ -164,14 +164,7 @@ export const PREFERENCE_FIELDS = [
 
 export const MODEL_STATUSES = [
   { value: 'draft', label: 'Draft' },
-  { value: 'review', label: 'Under Review' },
-  { value: 'published', label: 'Active' },
-  { value: 'hidden', label: 'Hidden' },
+  { value: 'active', label: 'Active' },
+  { value: 'vacation', label: 'Vacation' },
   { value: 'archived', label: 'Archived' },
-]
-
-export const MODEL_VISIBILITY = [
-  { value: 'public', label: 'Public' },
-  { value: 'private', label: 'Private' },
-  { value: 'unlisted', label: 'Unlisted' },
 ]

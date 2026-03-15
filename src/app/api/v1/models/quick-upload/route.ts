@@ -448,8 +448,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         publicCode,
-        status: 'published',
-        visibility: 'public',
+        status: 'draft',
 
         // Bio & Marketing
         notesInternal: aiParsed?.bio_text || null,

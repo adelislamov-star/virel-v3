@@ -136,10 +136,9 @@ export default function ModelEditPage() {
           <h1 className="text-2xl font-bold text-white">{model.name}</h1>
           <div className="flex items-center gap-2 mt-2">
             <Badge>{model.publicCode}</Badge>
-            <Badge variant={model.status === 'active' || model.status === 'published' ? 'default' : 'secondary'}>
+            <Badge variant={model.status === 'active' ? 'default' : 'secondary'}>
               {model.status}
             </Badge>
-            <Badge variant="outline">{model.visibility}</Badge>
           </div>
         </div>
         <div className="flex gap-3">
