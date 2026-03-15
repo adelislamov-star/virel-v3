@@ -163,35 +163,19 @@ export default function QuickUploadPage() {
       log(`✅ Profile created`)
 
       if (sortedPhotos.length > 0) {
-        log(`🔗 Getting upload URLs...`)
-        const presignRes = await fetch('/api/admin/quick-upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'presign', modelId, files: sortedPhotos.map(p => ({ name: p.file.name, mimeType: p.file.type || 'image/jpeg' })) })
+        log(`📤 Uploading ${sortedPhotos.length} photos (server-side with watermark)...`)
+        const formData = new FormData()
+        formData.append('modelId', modelId)
+        sortedPhotos.forEach((photo, i) => {
+          formData.append(`photo_${i}`, photo.file)
+          formData.append(`sortOrder_${i}`, String(photo.sortOrder))
+          formData.append(`isPrimary_${i}`, String(photo.isPrimary))
         })
-        const presignData = await presignRes.json()
-        if (!presignData.success) throw new Error(`Presign failed: ${presignData.error || presignRes.status}`)
-
-        log(`📤 Uploading ${sortedPhotos.length} photos...`)
-        const results = await Promise.allSettled(
-          sortedPhotos.map(async (photo, i) => {
-            const { presignedUrl, key, finalUrl } = presignData.files[i]
-            const r = await fetch(presignedUrl, { method: 'PUT', body: await photo.file.arrayBuffer(), headers: { 'Content-Type': photo.file.type || 'image/jpeg' } })
-            if (!r.ok) throw new Error(`R2 error ${r.status}`)
-            return { key, finalUrl, sortOrder: photo.sortOrder, isPrimary: photo.isPrimary }
-          })
-        )
-        const succeeded = results.filter(r => r.status === 'fulfilled').map(r => (r as any).value)
-        const failed = results.filter(r => r.status === 'rejected')
-        if (failed.length > 0) log(`⚠️ ${failed.length} photos failed: ${(failed[0] as any).reason?.message}`)
-        log(`✅ Uploaded ${succeeded.length}/${sortedPhotos.length} photos`)
-
-        log('💾 Saving media...')
-        await fetch('/api/admin/quick-upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save_media', modelId, photos: succeeded })
-        })
+        const uploadRes = await fetch('/api/admin/quick-upload', { method: 'POST', body: formData })
+        const uploadData = await uploadRes.json()
+        if (!uploadData.success) throw new Error(uploadData.error || `Upload failed (${uploadRes.status})`)
+        log(`✅ Uploaded ${uploadData.count}/${uploadData.total} photos`)
+        if (uploadData.errors) uploadData.errors.forEach((e: string) => log(`⚠️ ${e}`))
       }
 
       log('🎉 Done!')

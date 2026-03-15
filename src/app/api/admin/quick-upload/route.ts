@@ -1,46 +1,101 @@
 // POST /api/admin/quick-upload
-// Returns presigned R2 URLs for direct browser→R2 upload + saves media records after
+// Server-side photo upload with watermarking + WebP + thumbnails
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
-import { getPresignedUploadUrl, buildKey, buildUrl } from '@/lib/storage/r2'
-import { randomUUID } from 'crypto'
+import { uploadMedia, generateThumbnail, buildKey } from '@/lib/storage/r2'
 
-// GET presigned URLs for a batch of files
+export const runtime = 'nodejs'
+export const maxDuration = 120
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const contentType = req.headers.get('content-type') || ''
 
-    // --- Phase 1: get presigned URLs ---
-    if (body.action === 'presign') {
-      const { modelId, files } = body
-      // files: [{ name, mimeType, size }]
-      const results = await Promise.all(
-        files.map(async (f: { name: string; mimeType: string }) => {
-          const ext = f.name.split('.').pop()?.toLowerCase() || 'jpg'
-          const fileId = randomUUID()
-          const key = buildKey(modelId, `${fileId}.${ext}`)
-          const url = await getPresignedUploadUrl(key, f.mimeType, 600)
-          const finalUrl = buildUrl(key)
-          return { key, presignedUrl: url, finalUrl, originalName: f.name }
-        })
-      )
-      return NextResponse.json({ success: true, files: results })
-    }
+    // --- Server-side upload via FormData ---
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData()
+      const modelId = formData.get('modelId') as string
+      if (!modelId) return NextResponse.json({ success: false, error: 'modelId required' }, { status: 400 })
 
-    // --- Phase 2: save media records after upload ---
-    if (body.action === 'save_media') {
-      const { modelId, photos } = body
-      // photos: [{ key, finalUrl, sortOrder, isPrimary }]
+      // Collect all photo files + metadata
+      const files: File[] = []
+      const sortOrders: number[] = []
+      const isPrimaryFlags: boolean[] = []
 
-      // Clear existing primary if needed
-      if (photos.some((p: any) => p.isPrimary)) {
+      let i = 0
+      while (formData.has(`photo_${i}`)) {
+        const file = formData.get(`photo_${i}`) as File
+        if (file) {
+          files.push(file)
+          sortOrders.push(Number(formData.get(`sortOrder_${i}`) || i))
+          isPrimaryFlags.push(formData.get(`isPrimary_${i}`) === 'true')
+        }
+        i++
+      }
+
+      if (files.length === 0) {
+        return NextResponse.json({ success: false, error: 'No photos provided' }, { status: 400 })
+      }
+
+      // Clear existing primary if any new photo is primary
+      if (isPrimaryFlags.some(Boolean)) {
         await prisma.modelMedia.updateMany({
           where: { modelId },
           data: { isPrimary: false }
         })
       }
 
+      let uploaded = 0
+      const errors: string[] = []
+
+      for (let j = 0; j < files.length; j++) {
+        const file = files[j]
+        const buffer = Buffer.from(await file.arrayBuffer())
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const key = buildKey(modelId, `${j}-${Date.now()}.${ext}`)
+
+        try {
+          const result = await uploadMedia(buffer, key, file.type || 'image/jpeg')
+          await generateThumbnail(buffer, result.key)
+
+          await prisma.modelMedia.create({
+            data: {
+              modelId,
+              type: 'photo',
+              storageKey: result.key,
+              url: result.url,
+              isPrimary: isPrimaryFlags[j] ?? false,
+              isPublic: true,
+              sortOrder: sortOrders[j] ?? j,
+            }
+          })
+          uploaded++
+        } catch (e: any) {
+          console.error(`[admin/quick-upload] Photo ${j} upload failed:`, e.message)
+          errors.push(`Photo ${j}: ${e.message}`)
+        }
+      }
+
+      return NextResponse.json({
+        success: uploaded > 0,
+        count: uploaded,
+        total: files.length,
+        errors: errors.length > 0 ? errors : undefined,
+      })
+    }
+
+    // --- Legacy JSON actions (presign + save_media) ---
+    const body = await req.json()
+
+    if (body.action === 'save_media') {
+      const { modelId, photos } = body
+      if (photos.some((p: any) => p.isPrimary)) {
+        await prisma.modelMedia.updateMany({
+          where: { modelId },
+          data: { isPrimary: false }
+        })
+      }
       const created = await Promise.all(
         photos.map((p: any) =>
           prisma.modelMedia.create({
@@ -57,7 +112,6 @@ export async function POST(req: NextRequest) {
           })
         )
       )
-
       return NextResponse.json({ success: true, count: created.length })
     }
 

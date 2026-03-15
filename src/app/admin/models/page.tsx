@@ -38,6 +38,7 @@ export default function ModelsPage() {
   const router = useRouter();
   const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [sortBy, setSortBy] = useState<SortField>('name');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -48,11 +49,23 @@ export default function ModelsPage() {
   async function loadModels() {
     try {
       const res = await fetch('/api/v1/models?all=true');
+      if (!res.ok) {
+        console.error('Models API returned', res.status);
+        setLoadError(res.status === 401 ? 'Not authenticated. Please log in.' : `API error ${res.status}`);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
+      if (!data.success) {
+        setLoadError(data.error?.message || 'Failed to load models');
+        setLoading(false);
+        return;
+      }
       setModels(data.data?.models || []);
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load models:', error);
+      setLoadError(error.message || 'Network error');
       setLoading(false);
     }
   }
@@ -125,6 +138,22 @@ export default function ModelsPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
           {[...Array(6)].map((_, i) => <div key={i} className="h-40 bg-zinc-800/30 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Models</h1>
+        </div>
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-8 text-center">
+          <p className="text-red-400 font-medium mb-2">{loadError}</p>
+          <button onClick={() => { setLoadError(null); setLoading(true); loadModels(); }} className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm">
+            Retry
+          </button>
         </div>
       </div>
     );

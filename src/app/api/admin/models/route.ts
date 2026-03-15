@@ -152,31 +152,57 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Rates — use model_id (snake_case) matching the actual table column
-    const rateMap = [
-      { duration_type: '30min',      call_type: 'incall',  price: body.rate30min },
-      { duration_type: '45min',      call_type: 'incall',  price: body.rate45min },
-      { duration_type: '1hour',      call_type: 'incall',  price: body.rate1hIn },
-      { duration_type: '1hour',      call_type: 'outcall', price: body.rate1hOut },
-      { duration_type: '90min',      call_type: 'incall',  price: body.rate90minIn },
-      { duration_type: '90min',      call_type: 'outcall', price: body.rate90minOut },
-      { duration_type: '2hours',     call_type: 'incall',  price: body.rate2hIn },
-      { duration_type: '2hours',     call_type: 'outcall', price: body.rate2hOut },
-      { duration_type: 'extra_hour', call_type: 'incall',  price: body.rateExtraHour },
-      { duration_type: 'overnight',  call_type: 'incall',  price: body.rateOvernight },
-    ].filter(r => r.price)
+    // Rates — map parsed rate fields to CallRateMaster records via Prisma
+    const rateMasters = await prisma.callRateMaster.findMany({
+      where: { isActive: true },
+      select: { id: true, label: true, durationMin: true },
+    })
+    const aiKeyAliases: Record<number, string[]> = {
+      30: ['30min', '30 min'],
+      45: ['45min', '45 min'],
+      60: ['1hour', '1 hour', '60min'],
+      90: ['90min', '90 min'],
+      120: ['2hours', '2 hours'],
+      180: ['3hours', '3 hours'],
+      540: ['overnight', 'overnight (9 hrs)'],
+    }
+    const masterByAlias = new Map<string, string>()
+    for (const m of rateMasters) {
+      masterByAlias.set(m.label.toLowerCase(), m.id)
+      const aliases = aiKeyAliases[m.durationMin] || []
+      for (const alias of aliases) masterByAlias.set(alias, m.id)
+      if (m.label.toLowerCase().includes('extra')) {
+        masterByAlias.set('extra_hour', m.id)
+        masterByAlias.set('extra hour', m.id)
+      }
+    }
 
-    for (const rate of rateMap) {
+    // Map from parse-anketa field names to duration keys + incall/outcall
+    const rateFields: { key: string; incallField: string; outcallField?: string }[] = [
+      { key: '30min',       incallField: 'rate30min' },
+      { key: '45min',       incallField: 'rate45min' },
+      { key: '1hour',       incallField: 'rate1hIn',       outcallField: 'rate1hOut' },
+      { key: '90min',       incallField: 'rate90minIn',    outcallField: 'rate90minOut' },
+      { key: '2hours',      incallField: 'rate2hIn',       outcallField: 'rate2hOut' },
+      { key: 'extra_hour',  incallField: 'rateExtraHour' },
+      { key: 'overnight',   incallField: 'rateOvernight' },
+    ]
+
+    for (const rf of rateFields) {
+      const incall = body[rf.incallField] ? Number(body[rf.incallField]) : null
+      const outcall = rf.outcallField && body[rf.outcallField] ? Number(body[rf.outcallField]) : null
+      if (!incall && !outcall) continue
+      const masterId = masterByAlias.get(rf.key)
+      if (!masterId) continue
       try {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'GBP', true)`,
-          model.id,
-          rate.duration_type,
-          rate.call_type,
-          Number(rate.price)
-        )
-      } catch {}
+        await prisma.modelRate.upsert({
+          where: { modelId_callRateMasterId: { modelId: model.id, callRateMasterId: masterId } },
+          update: { incallPrice: incall, outcallPrice: outcall },
+          create: { modelId: model.id, callRateMasterId: masterId, incallPrice: incall, outcallPrice: outcall },
+        })
+      } catch (e) {
+        console.error('[admin/models] Rate upsert failed for', rf.key, e)
+      }
     }
 
     // Address — insert into model_addresses
