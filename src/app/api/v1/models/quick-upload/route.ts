@@ -719,6 +719,15 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[quick-upload] Step 6: Uploaded ${uploadedPhotos}/${imageBuffers.length} photos`)
 
+    if (imageBuffers.length > 0 && uploadedPhotos === 0) {
+      // All photo uploads failed — delete the model and report error
+      await prisma.model.delete({ where: { id: model.id } }).catch(() => {})
+      return NextResponse.json({
+        success: false,
+        error: `All ${imageBuffers.length} photo uploads to R2 failed. Check R2 credentials and bucket configuration.`,
+      }, { status: 502 })
+    }
+
     // Step 7: Save learning example
     if (aiParsed && documentText.trim()) {
       console.log('[quick-upload] Step 7: Saving AI parse example for learning...')
