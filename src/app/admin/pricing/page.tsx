@@ -54,7 +54,7 @@ export default function PricingPage() {
 
   async function loadModels() {
     try {
-      const res = await fetch('/api/v1/models?status=published&limit=100');
+      const res = await fetch('/api/v1/models?status=active&limit=100');
       const data = await res.json();
       setModels((data.data?.models || []).map((m: any) => ({ id: m.id, name: m.name })));
     } catch (e) { /* ignore */ }

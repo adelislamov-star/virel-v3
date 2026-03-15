@@ -27,7 +27,6 @@ type Model = {
 
 const statusStyles: Record<string, string> = {
   active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  published: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   vacation: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   archived: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
   draft: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
@@ -95,7 +94,7 @@ export default function ModelPerformancePage() {
         list.sort((a, b) => (b.dataCompletenessScore ?? 0) - (a.dataCompletenessScore ?? 0));
 
         // Compute stats from full list
-        const activeCount = list.filter((m) => m.status === 'active' || m.status === 'published').length;
+        const activeCount = list.filter((m) => m.status === 'active' || m.status === 'active').length;
         const scores = list.map((m) => m.dataCompletenessScore ?? 0);
         const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
         const redCount = list.filter((m) => m.modelRiskIndex === 'red').length;
