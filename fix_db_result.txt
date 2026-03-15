@@ -1,0 +1,73 @@
+OK: ALTER TABLE services ADD COLUMN IF NOT EXISTS description TE
+OK: ALTER TABLE services ADD COLUMN IF NOT EXISTS category_id TE
+OK: ALTER TABLE services ADD COLUMN IF NOT EXISTS has_extra_pric
+OK: ALTER TABLE services ADD COLUMN IF NOT EXISTS requires_equip
+OK: ALTER TABLE services ADD COLUMN IF NOT EXISTS sort_order INT
+OK: ALTER TABLE model_services ADD COLUMN IF NOT EXISTS notes TE
+OK: ALTER TABLE model_services ADD COLUMN IF NOT EXISTS sort_ord
+OK: ALTER TABLE model_services ADD COLUMN IF NOT EXISTS created_
+OK: ALTER TABLE model_services ADD COLUMN IF NOT EXISTS updated_
+
+=== SERVICES IN DB (59) ===
+dinner-date | Dinner Date
+69 | 69
+fk | FK (French kissing without tongue)
+dfk | DFK (Deep French kissing with tongue)
+gfe | GFE
+pse | PSE (Porn Star Experience)
+fingering | Fingering
+face-sitting | Face Sitting
+dirty-talk | Dirty Talk
+party-girl | Party Girl
+open-minded | Open Minded
+owo | OWO (Blow job without condom)
+owc | OWC (Blow job with condom)
+cob | COB (Cum on body)
+cif | CIF (Cum in face)
+cim | CIM (Cum in mouth)
+swallow | Swallow
+snowballing | Snowballing (game with sperm)
+dt | DT (Deep throat)
+a-level | A-Level (Anal sex)
+dp | DP (Double penetration)
+ws-giving | WS Giving (erotic-peeing on client)
+ws-receiving | WS Receiving (erotic-peeing on lady)
+rimming-giving | Rimming Giving (licking anal hole of client)
+rimming-receiving | Rimming Receiving (licking anal hole of lady)
+filming-mask | Filming with mask
+filming-no-mask | Filming without mask
+bi-duo | Bi DUO (lesbian show)
+couples | Couples (includes BI services)
+mmf | MMF for double price (Male-Male-Female)
+group | Group for extra
+massage | Massage
+prostate | Prostate Massage
+professional-massage | Professional Massage (certificate required)
+b2b | Body to Body Massage
+erotic-massage | Erotic Massage
+lomilomi | Lomilomi Massage
+nuru | Nuru Massage
+sensual | Sensual Massage
+tantric | Tantric Massage
+striptease | Striptease
+lapdancing | Lapdancing
+belly-dance | Belly Dance
+roleplay | Roleplay
+foot-fetish | Foot Fetish
+smoking-fetish | Smoking Fetish
+light-dom | Light Domination
+domination | Domination
+spanking-giving | Spanking Giving
+spanking-soft-receiving | Soft Spanking Receiving
+tie-and-tease | Tie and Tease
+fisting-giving | Fisting Giving
+uniforms | Uniforms
+toys | Toys
+strap-on | Strap-on
+poppers | Poppers
+handcuffs | Handcuffs
+duo | DUO (ladies serve client)
+lady-services | Lady's Services
+
+=== model_rates: Do not know how to serialize a BigInt
+model_addresses: EXISTS

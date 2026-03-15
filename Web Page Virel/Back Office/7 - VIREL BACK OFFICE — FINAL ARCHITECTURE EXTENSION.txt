@@ -1,0 +1,2740 @@
+# Финальное ТЗ на доработку VIREL Back Office до уровня полноценной операционной платформы
+
+## 0. Статус документа
+
+Это финальная рабочая версия ТЗ для разработки.
+Документ описывает, что именно нужно реализовать поверх уже существующей системы Virel v3 и как это должно работать в продакшне.
+
+База для этого ТЗ уже существует:
+
+* архитектурная спецификация Back Office AuraEscort с 21 модулем, моделью данных, state machines, API, метриками, нефункциональными требованиями, MVP и Phase 2 
+* rebuild plan для Virel v3 с анализом текущего состояния, gap analysis и фазами внедрения 
+* детальные phase-документы по Phase 1, Phase 2, Phase 3, Phase 4 и design refresh, где уже зафиксированы направления по Prisma schema, UI, RBAC, audit, pricing, membership, SLA, data quality и другим модулям
+
+Этот документ не отменяет текущую рабочую систему. Он задаёт, как её нужно расширить, не ломая уже работающее ядро.
+
+---
+
+# 1. Цель проекта
+
+## 1.1. Главная цель
+
+Доработать Virel v3 так, чтобы система перестала быть просто административной панелью и стала полноценным back office, который управляет:
+
+* лидами
+* клиентами
+* бронированиями
+* оплатами
+* моделями
+* доступностью
+* потерями выручки
+* инцидентами
+* рисками
+* membership
+* удержанием клиентов
+* альтернативными предложениями
+* уведомлениями
+* фоновыми задачами
+* аналитикой владельца
+* дисциплиной и эффективностью персонала
+
+## 1.2. Что должна уметь система после завершения работ
+
+После реализации система должна позволять владельцу и операционной команде отвечать на вопросы:
+
+* кто этот клиент и какая у него полная история
+* сколько денег этот клиент уже принёс
+* сколько лидов теряется и почему
+* где деньги утекают из-за ресепшена, модели, клиента или системы
+* почему не подтвердился конкретный booking
+* кто из сотрудников реально приносит выручку, а кто создаёт потери
+* какие клиенты нужно срочно удерживать
+* какие альтернативы надо предлагать, если модель недоступна
+* какие операции требуют срочного вмешательства прямо сейчас
+* какие уведомления не ушли
+* какие фоновые процессы зависли
+* где высокий риск фрода
+* где перегруз по спросу и нехватка моделей
+
+## 1.3. Что нельзя допустить
+
+Нельзя строить новую логику поверх хаоса.
+Нельзя добавлять сущности без понятных связей.
+Нельзя описывать бизнес-логику словами без статусов, полей, правил и API.
+Нельзя оставлять места, где разработчик будет трактовать ТЗ по-своему.
+
+---
+
+# 2. Исходное состояние системы
+
+## 2.1. Что уже есть и должно быть сохранено
+
+По rebuild plan и phase-документам в системе уже есть рабочее ядро: Lead Management, Booking Management, базовый Payment & Finance, Model Control, RBAC, Audit Trail, Integrations Hub, частичный SEO, частичный Onboarding и базовый SLA/Tasks. Также уже зафиксировано, что существующие state machines в Virel местами детальнее базовой спеки и их нельзя упрощать ради формального совпадения.
+
+## 2.2. Что не ломать
+
+Существующие рабочие процессы нельзя переписывать с нуля.
+
+Правило:
+все изменения аддитивные.
+
+Это означает:
+
+* новые поля добавляются с default values или nullable
+* новые таблицы не ломают существующие связи
+* существующие записи в базе остаются валидными после миграции
+* state machines расширяются, а не упрощаются
+* audit trail сохраняется
+* RBAC расширяется, а не выкидывается
+
+---
+
+# 3. Архитектурный принцип системы
+
+## 3.1. Итоговая доменная модель
+
+Система делится на 5 больших слоёв.
+
+### Core Operations
+
+Это ежедневная операционная работа.
+
+Сюда входят:
+
+* Leads
+* Clients
+* Bookings
+* Models
+* Availability
+* Payments
+
+### Risk & Control
+
+Это контроль потерь, инцидентов, фрода и качества.
+
+Сюда входят:
+
+* Fraud
+* Incidents
+* Lost Revenue
+* Audit
+* Data Quality
+* SLA
+
+### Business Growth
+
+Это рост выручки и LTV.
+
+Сюда входят:
+
+* Membership
+* Retention
+* Alternative Offers
+* Pricing
+* SEO / Content
+
+### Execution Layer
+
+Это инфраструктура действий, уведомлений и асинхронной работы.
+
+Сюда входят:
+
+* Operations Feed
+* Notification Engine
+* Job Queue
+
+### Analytics Layer
+
+Это слой принятия решений.
+
+Сюда входят:
+
+* Dashboard
+* Owner Analytics
+* Unit Economics
+* Model Performance
+* Staff Performance
+* Demand Analytics
+
+---
+
+# 4. Итоговая структура меню back office
+
+## 4.1. CORE
+
+* Action Center
+* Leads
+* Clients
+* Bookings
+* Models
+
+### Пояснение
+
+CORE должен содержать всё, чем ресепшен и операционная команда пользуются каждый день.
+Clients обязателен как отдельный раздел, потому что клиент больше не должен быть размазан по inquiry и booking.
+
+## 4.2. OPERATIONS
+
+* Availability
+* Reviews
+* Incidents
+* Fraud Monitor
+* Lost Revenue
+* Applications
+
+### Пояснение
+
+OPERATIONS это не каталог. Это контур контроля и реакции.
+Сюда попадает всё, что связано с доступностью, конфликтами, нарушениями, жалобами, потерями и рисками.
+
+## 4.3. BUSINESS
+
+* Pricing
+* Membership
+* Payments
+* Reports
+* SEO Health
+* Retention
+
+### Пояснение
+
+BUSINESS это деньги, биллинг, retention, monetization, growth-механики.
+
+## 4.4. ANALYTICS
+
+* Dashboard
+* Owner Analytics
+* Unit Economics
+* Model Performance
+* Demand
+* Staff Performance
+
+### Пояснение
+
+ANALYTICS нужен owner, senior manager и finance.
+Это не рабочие списки, а экраны решений.
+
+## 4.5. SYSTEM
+
+* SLA Monitor
+* Data Quality
+* Audit Log
+* Notifications
+* Jobs
+* Settings
+
+### Пояснение
+
+SYSTEM содержит внутреннюю инфраструктуру и контроль технической и операционной устойчивости.
+
+---
+
+# 5. Общие правила реализации
+
+## 5.1. Правило данных
+
+Все денежные значения хранить в Decimal / Numeric, не в Float.
+
+### Почему
+
+Float приводит к ошибкам округления в:
+
+* payments
+* refunds
+* membership discounts
+* lost revenue
+* compensation
+* pricing
+
+### Денежные поля, которые обязаны быть Decimal / Numeric
+
+* total_spent
+* amount
+* value_amount
+* base_price
+* final_price
+* refunded_amount
+* payout_amount
+* compensation_amount
+* price_monthly
+* discount_amount
+* lost_revenue_amount
+
+## 5.2. Правило именования
+
+В БД использовать snake_case.
+В Prisma / TypeScript допускается camelCase mapping, но единообразно по проекту.
+
+Пример:
+
+* client_id в БД
+* clientId в Prisma
+
+## 5.3. Правило soft delete
+
+Hard delete запрещён для ключевых бизнес-сущностей.
+
+### Обязательный soft delete
+
+* clients
+* bookings
+* models
+* reviews
+* incidents
+* membership_plans
+* pricing_rules
+* notification_templates
+
+### Необязательный soft delete
+
+* jobs
+* logs
+* events
+* feed_items
+
+## 5.4. Правило аудита
+
+Любая критичная операция должна создавать AuditLog.
+
+### Критичные операции
+
+* merge clients
+* change booking status
+* refund payment
+* change client risk status
+* change model status
+* create / resolve incident
+* resolve lost revenue entry
+* change pricing rules
+* create / cancel membership
+* manual override availability
+* manual close operations feed item
+
+## 5.5. Правило фоновых процессов
+
+Любая операция дольше 500 мс должна быть вынесена в Job Queue.
+
+### Примеры
+
+* notification sending
+* report generation
+* fraud scan
+* onboarding processing
+* SEO generation
+* retention scan
+* pricing recalculation
+* media processing
+
+## 5.6. Правило RBAC
+
+Все новые API и все новые экраны обязаны проверять доступ по ролям.
+
+## 5.7. Правило идемпотентности
+
+Все state-changing endpoints, где возможен повторный вызов, должны быть идемпотентными.
+
+### Примеры
+
+* refund
+* create membership
+* payment webhook
+* notification dispatch
+* retry job
+* merge clients
+
+## 5.8. Правило reason_code
+
+Для ручных действий, влияющих на деньги, статус, риск или доступность, обязателен reason_code.
+
+---
+
+# 6. Обновлённая модель системы
+
+Ниже описаны новые и усиленные сущности, которые надо внедрить.
+
+---
+
+# 7. CLIENT DOMAIN
+
+## 7.1. Client
+
+### Назначение
+
+Клиент это центральная сущность всей системы.
+Все inquiry, bookings, payments, fraud, incidents, membership, retention и timeline должны быть связаны с Client.
+
+### Поля
+
+* id
+  Уникальный идентификатор клиента.
+
+* first_name nullable
+  Имя клиента, если известно.
+
+* last_name nullable
+  Фамилия клиента, если известна.
+
+* full_name nullable
+  Полное имя для отображения, если нет раздельного first_name / last_name.
+
+* phone_number nullable
+  Основной номер клиента.
+
+* email nullable
+  Основной email клиента.
+
+* preferred_channel nullable
+  Предпочтительный канал связи.
+
+* language nullable
+  Основной язык общения.
+
+* city nullable
+  Город клиента.
+
+* country nullable
+  Страна клиента.
+
+* risk_status
+  Статус риска клиента.
+
+* total_spent
+  Суммарно потраченная сумма.
+
+* booking_count
+  Количество бронирований.
+
+* chargeback_count
+  Количество чарджбеков.
+
+* refund_count
+  Количество возвратов.
+
+* cancellation_rate
+  Доля отмен по клиенту.
+
+* vip_status nullable
+  Внутренний статус сегментации клиента.
+
+* notes nullable
+  Внутренние заметки.
+
+* merged_into_client_id nullable
+  Если запись была объединена в другого клиента.
+
+* deleted_at nullable
+  Soft delete.
+
+* deleted_by nullable
+  Кто удалил.
+
+* created_at
+  Дата создания.
+
+* updated_at
+  Дата обновления.
+
+### risk_status
+
+* normal
+  Нет серьёзных рисков.
+
+* monitoring
+  Есть подозрения или сигналы, но клиент ещё не ограничен.
+
+* restricted
+  Клиент ограничен по части функций или требует ручного подтверждения.
+
+* blocked
+  Клиент заблокирован.
+
+### vip_status
+
+* regular
+* vip
+* whale
+* internal_blacklist
+* internal_watchlist
+
+### Связи
+
+Client должен иметь связи с:
+
+* inquiries
+* bookings
+* reviews
+* fraud_signals
+* incidents
+* client_membership
+* client_events
+* client_identities
+* retention_profile
+* retention_actions
+* notifications
+* lost_revenue_entries
+
+---
+
+## 7.2. ClientIdentity
+
+### Назначение
+
+Хранить все идентификаторы клиента и предотвращать дубли.
+
+### Поля
+
+* id
+  Уникальный идентификатор записи identity.
+
+* client_id
+  Ссылка на Client.
+
+* identity_type
+  Тип идентификатора.
+
+* raw_value
+  Оригинальное значение, как пришло из источника.
+
+* normalized_value
+  Нормализованное значение для поиска совпадений.
+
+* is_primary
+  Основной ли это идентификатор для клиента.
+
+* is_verified
+  Подтверждён ли этот идентификатор.
+
+* confidence_score
+  Насколько система уверена в валидности этой identity.
+
+* source
+  Откуда identity пришла.
+
+* verified_at nullable
+  Когда identity была подтверждена.
+
+* last_seen_at nullable
+  Когда identity в последний раз использовалась.
+
+* is_active
+  Активна ли identity после merge.
+
+* created_at
+  Дата создания.
+
+* updated_at
+  Дата обновления.
+
+### identity_type
+
+* phone
+* email
+* telegram
+* whatsapp
+* device
+* ip
+* card_fingerprint
+
+### source
+
+* manual
+* inquiry
+* booking
+* payment
+* integration
+* system
+
+### Правила
+
+1. Все новые inquiry, bookings и payments должны проверять identity на совпадение.
+2. Совпадение по normalized_value должно либо привязать к существующему клиенту, либо создать merge candidate.
+3. После merge duplicate identities не удаляются, а помечаются inactive.
+4. Для одной client identity type + normalized_value не должно быть дубликатов среди active identities.
+
+---
+
+## 7.3. ClientMergeCandidate
+
+### Назначение
+
+Хранить кандидатов на merge.
+
+### Поля
+
+* id
+* primary_client_id
+* duplicate_client_id
+* score
+* reasons_json
+* status
+* created_at
+* resolved_at nullable
+* resolved_by nullable
+
+### status
+
+* open
+* approved
+* rejected
+* merged
+
+### Правила
+
+1. Score рассчитывается на основе совпадений phone, email, telegram, device, ip.
+2. Если совпали 2 и более сильных идентификатора, score должен быть высоким.
+3. Merge производится только вручную менеджером или выше.
+
+---
+
+## 7.4. ClientMergeLog
+
+### Назначение
+
+История merge операций.
+
+### Поля
+
+* id
+* primary_client_id
+* duplicate_client_id
+* merged_by
+* reason_code
+* merge_summary_json
+* created_at
+
+### Правила
+
+1. Любой merge создаёт ClientMergeLog.
+2. Любой merge создаёт AuditLog.
+3. Hard delete duplicate client запрещён.
+
+---
+
+## 7.5. ClientEvent
+
+### Назначение
+
+Единый timeline клиента.
+
+### Поля
+
+* id
+* client_id
+* event_type
+* entity_type
+* entity_id
+* title
+* description nullable
+* metadata_json nullable
+* severity
+* actor_type
+* created_by nullable
+* source
+* visibility
+* created_at
+
+### event_type
+
+* inquiry_created
+* inquiry_status_changed
+* booking_created
+* booking_confirmed
+* booking_cancelled
+* booking_completed
+* payment_authorized
+* payment_succeeded
+* payment_failed
+* payment_refunded
+* payment_disputed
+* review_created
+* review_approved
+* incident_opened
+* incident_resolved
+* fraud_flagged
+* membership_activated
+* membership_cancelled
+* retention_action_created
+* retention_action_completed
+* notification_sent
+* lost_revenue_detected
+
+### entity_type
+
+* inquiry
+* booking
+* payment
+* review
+* incident
+* membership
+* notification
+* fraud_signal
+* retention_action
+* lost_revenue
+
+### severity
+
+* info
+* warning
+* critical
+
+### actor_type
+
+* system
+* user
+* webhook
+* client
+
+### source
+
+* system
+* user
+* integration
+* webhook
+
+### visibility
+
+* internal
+* manager_only
+* owner_only
+
+### Правила
+
+1. Timeline append-only.
+2. События создаются автоматически.
+3. События должны быть пригодны для чтения оператором.
+4. События fraud, compensation и internal review могут иметь manager_only или owner_only.
+
+---
+
+# 8. LEADS DOMAIN
+
+## 8.1. Lead / Inquiry
+
+### Назначение
+
+Точка входа любого потенциального спроса.
+
+### Что уже есть
+
+Lead / Inquiry flow уже заложен в текущем rebuild plan. Его детальная state machine считается более операционно полезной, чем упрощённая базовая версия из спеки. Поэтому её не упрощать. 
+
+### Обязательные поля
+
+* id
+* client_id nullable
+* source_channel
+* source_campaign nullable
+* source_keyword nullable
+* requested_service nullable
+* requested_model_id nullable
+* requested_location nullable
+* requested_start_at nullable
+* requested_duration nullable
+* requested_budget nullable
+* message_raw
+* status
+* first_response_at nullable
+* assigned_user_id nullable
+* created_at
+* updated_at
+
+### status
+
+Использовать текущую более детальную операционную модель Virel, сохранив аналитический маппинг на in_progress, где нужно. 
+
+### Требования
+
+1. Inquiry обязан быть связан с client после identity resolution.
+2. Любой переход статуса должен логироваться.
+3. Любое превращение inquiry в booking создаёт timeline event.
+
+---
+
+# 9. BOOKING DOMAIN
+
+## 9.1. Booking
+
+### Назначение
+
+Центральная сущность исполнения услуги и движения денег.
+
+### Поля
+
+* id
+* short_id
+* client_id
+* model_id
+* receptionist_id nullable
+* status
+* start_time
+* end_time
+* duration_hours
+* booking_type
+* service_details nullable
+* location_address nullable
+* total_amount
+* commission_amount
+* payout_amount
+* cancellation_reason nullable
+* cancellation_fee nullable
+* created_at
+* updated_at
+* deleted_at nullable
+* deleted_by nullable
+
+### short_id
+
+Человеко-читаемый ID вида BK-12345.
+Он обязателен.
+
+### status
+
+Сохранять расширенную state machine Virel и добавить disputed, как уже указано в rebuild plan. 
+
+### booking_type
+
+* incall
+* outcall
+* virtual
+* custom
+
+### Правила
+
+1. Подтверждённый booking должен проходить через availability engine.
+2. Любая отмена требует cancellation_reason.
+3. Любой booking dispute должен создавать Incident.
+4. Любой completed booking может запускать review flow и retention logic.
+
+---
+
+## 9.2. Availability Engine
+
+## 9.2.1. ModelAvailability
+
+### Назначение
+
+Хранить доступность модели как отдельную доменную сущность, а не как побочный эффект booking.
+
+### Поля
+
+* id
+* model_id
+* start_at
+* end_at
+* timezone
+* status
+* source
+* source_ref_type nullable
+* source_ref_id nullable
+* booking_id nullable
+* location_id nullable
+* city nullable
+* area nullable
+* address_text nullable
+* notes nullable
+* created_at
+* updated_at
+
+### status
+
+* available
+* booked
+* blocked
+* travel
+* cooldown
+* unavailable
+
+### source
+
+* manual
+* booking
+* incident
+* system
+
+### source_ref_type
+
+* booking
+* incident
+* manual_block
+* policy
+* system
+
+### Правила
+
+1. Подтверждённый booking не может пересекаться с slot status `booked`, `blocked`, `travel`, `cooldown`.
+2. После confirmed booking система обязана автоматически создать:
+
+   * booked slot
+   * cooldown slot
+   * travel slot при необходимости
+3. После cancellation / no_show availability пересчитывается.
+4. Manual block доступен только менеджеру и выше.
+5. Любой availability override идёт в AuditLog.
+
+---
+
+## 9.2.2. AvailabilityPolicy
+
+### Назначение
+
+Хранить правила буферов и стратегии конфликтов.
+
+### Поля
+
+* id
+* default_buffer_minutes
+* same_location_buffer_minutes
+* different_location_buffer_minutes
+* travel_buffer_minutes
+* cooldown_minutes
+* conflict_strategy
+* created_at
+* updated_at
+
+### conflict_strategy
+
+* reject
+* warn
+* escalate
+
+### Правила
+
+1. Политика должна быть настраиваемой, не хардкодить числа в коде.
+2. Любое изменение policy логируется.
+
+---
+
+## 9.2.3. AvailabilityConflict
+
+### Назначение
+
+Хранить зафиксированные конфликты доступности.
+
+### Поля
+
+* id
+* model_id
+* booking_id nullable
+* conflicting_slot_id
+* conflict_type
+* status
+* resolved_by nullable
+* created_at
+* resolved_at nullable
+
+### conflict_type
+
+* overlap
+* travel_gap_too_short
+* cooldown_violation
+* manual_block_conflict
+
+### status
+
+* open
+* resolved
+* ignored
+
+### Правила
+
+1. Любой конфликт может создавать OperationsFeedItem.
+2. Конфликт не должен теряться после UI warning, он должен оставаться в журнале.
+
+---
+
+# 10. PAYMENTS DOMAIN
+
+## 10.1. Payment
+
+### Назначение
+
+Оплата booking и связанных финансовых операций.
+
+### Поля
+
+* id
+* booking_id
+* amount
+* currency
+* status
+* provider
+* provider_transaction_id nullable
+* payment_method_details nullable
+* failure_reason nullable
+* refunded_amount nullable
+* refunded_at nullable
+* created_at
+* updated_at
+
+### status
+
+* pending
+* succeeded
+* failed
+* cancelled
+* refunded
+* disputed
+
+### Правила
+
+1. Все webhook операции идемпотентны.
+2. Disputed payment автоматически влияет на FraudSignal и client risk.
+3. Refunded payment создаёт timeline event и audit log.
+4. Manual refund требует reason_code.
+
+---
+
+# 11. MODELS DOMAIN
+
+## 11.1. Model
+
+### Назначение
+
+Основной supply asset бизнеса.
+
+### Поля, которые обязательно усиливаются
+
+* status
+* data_completeness_score
+* model_risk_index
+
+### status
+
+Использовать согласованную модель:
+
+* draft
+* review
+* published
+* hidden
+* archived
+
+Как уже было зафиксировано в rebuild plan.
+
+### model_risk_index
+
+* green
+* yellow
+* red
+
+### Правила
+
+1. Published profile обязан пройти минимальный threshold completeness.
+2. Red model может требовать ручного подтверждения booking.
+3. Changes в model status и risk index логируются.
+
+---
+
+# 12. LOST REVENUE DOMAIN
+
+## 12.1. LostRevenueEntry
+
+### Назначение
+
+Фиксация каждого значимого случая потери денег.
+
+### Поля
+
+* id
+* type
+* amount
+* amount_type
+* currency
+* lead_id nullable
+* booking_id nullable
+* client_id nullable
+* model_id nullable
+* receptionist_id nullable
+* responsible_role
+* responsible_user_id nullable
+* root_cause
+* detection_source
+* detected_by nullable
+* detected_by_type nullable
+* status
+* resolution_reason nullable
+* notes nullable
+* operations_feed_item_id nullable
+* detected_at
+* resolved_at nullable
+* created_at
+* updated_at
+
+### type
+
+* unanswered_lead
+* model_unavailable
+* client_declined_price
+* payment_failed
+* booking_cancelled_after_hold
+* no_alternative_offered
+* receptionist_delay
+* double_booking_loss
+* dispute_refund
+* no_show
+* wrong_quote
+* service_mismatch
+
+### amount_type
+
+* actual
+* estimated
+
+### responsible_role
+
+* client
+* model
+* receptionist
+* manager
+* system
+* payment_provider
+
+### detection_source
+
+* manual
+* sla_rule
+* payment_webhook
+* booking_rule
+* ops_review
+* fraud_rule
+* alternative_offer_rule
+
+### detected_by_type
+
+* system
+* user
+* audit
+* owner
+
+### status
+
+* open
+* in_review
+* resolved
+* waived
+
+### Правила
+
+1. LostRevenueEntry нельзя удалять.
+2. LostRevenueEntry создаётся автоматически минимум по 5 автосценариям.
+3. Каждый resolved / waived status требует resolution_reason.
+4. Все изменения статуса логируются.
+5. Любой unresolved high-value loss может создавать OperationsFeedItem.
+
+### Обязательные автосценарии
+
+1. Lead без first response дольше SLA.
+2. Payment failed после созданного intent.
+3. Confirmed booking cancelled после hold.
+4. Requested model unavailable и alternative not offered.
+5. Double booking conflict.
+6. Incident, завершившийся compensation / refund loss.
+7. Client отказался из-за price mismatch, когда есть явный quote loss.
+
+---
+
+# 13. OPERATIONS FEED DOMAIN
+
+## 13.1. OperationsFeedItem
+
+### Назначение
+
+Единый action center всех важных задач, алертов и исключений.
+
+### Поля
+
+* id
+* type
+* source_module
+* priority
+* entity_type
+* entity_id
+* dedupe_key nullable
+* title
+* description nullable
+* assigned_user_id nullable
+* status
+* due_at nullable
+* snoozed_until nullable
+* resolution_note nullable
+* metadata_json nullable
+* created_at
+* resolved_at nullable
+
+### type
+
+* sla_breach
+* fraud_alert
+* incident_opened
+* review_flagged
+* booking_dispute
+* payment_failed
+* lost_revenue
+* model_profile_issue
+* availability_conflict
+* membership_past_due
+* document_expiry
+* retention_task
+* queue_failed_job
+
+### source_module
+
+* sla
+* fraud
+* reviews
+* bookings
+* payments
+* retention
+* jobs
+* membership
+* data_quality
+* lost_revenue
+
+### priority
+
+* critical
+* high
+* medium
+* low
+
+### status
+
+* new
+* acknowledged
+* in_progress
+* resolved
+* dismissed
+
+### Правила
+
+1. Feed item должен иметь dedupe logic.
+2. Один и тот же recurring problem не должен штамповать бесконечные дубликаты.
+3. High и critical items показываются в Action Center первыми.
+4. Некоторые items должны auto-close при закрытии источника.
+5. Любое ручное закрытие требует resolution_note.
+
+---
+
+# 14. FRAUD DOMAIN
+
+## 14.1. FraudSignal
+
+### Назначение
+
+Единичный сигнал риска, влияющий на оценку клиента.
+
+### Поля
+
+* id
+* client_id
+* booking_id nullable
+* model_id nullable
+* signal_type
+* source_module
+* ip_address nullable
+* device_fingerprint nullable
+* geo_country nullable
+* geo_city nullable
+* card_fingerprint nullable
+* velocity_1h nullable
+* velocity_24h nullable
+* cancellation_rate_snapshot nullable
+* refund_rate_snapshot nullable
+* risk_score_impact
+* risk_score_before nullable
+* risk_score_after nullable
+* metadata nullable
+* status
+* reviewed_by nullable
+* reviewed_at nullable
+* created_at
+
+### signal_type
+
+* high_velocity
+* chargeback
+* ip_mismatch
+* suspicious_pattern
+* manual_flag
+* refund_abuse
+* account_sharing
+* geo_anomaly
+* multiple_cards
+
+### source_module
+
+* payments
+* inquiries
+* bookings
+* membership
+* retention
+* manual
+
+### status
+
+* new
+* reviewing
+* confirmed
+* dismissed
+
+### Правила
+
+1. FraudSignal создаётся автоматически или вручную.
+2. Confirmed signal влияет на client risk.
+3. Fraud changes должны создавать ClientEvent.
+4. Risk status change требует AuditLog.
+
+---
+
+## 14.2. ClientRiskHistory
+
+### Назначение
+
+История переходов risk status клиента.
+
+### Поля
+
+* id
+* client_id
+* previous_status
+* new_status
+* reason
+* created_by
+* created_at
+
+---
+
+# 15. INCIDENT DOMAIN
+
+## 15.1. Incident
+
+### Назначение
+
+Формализованное расследование конфликтов, жалоб и спорных ситуаций.
+
+### Поля
+
+* id
+* booking_id nullable
+* client_id nullable
+* model_id nullable
+* owner_user_id nullable
+* reporter_type
+* reporter_id nullable
+* incident_type
+* severity
+* source_channel
+* status
+* description
+* resolution_details nullable
+* resolution_type nullable
+* compensation_amount nullable
+* compensation_status
+* linked_review_id nullable
+* linked_payment_id nullable
+* created_at
+* updated_at
+* closed_at nullable
+* deleted_at nullable
+* deleted_by nullable
+
+### reporter_type
+
+* client
+* model
+* staff
+* system
+
+### incident_type
+
+* service
+* payment
+* fraud
+* safety
+* conduct
+* quality
+* review_dispute
+
+### severity
+
+* low
+* medium
+* high
+* critical
+
+### source_channel
+
+* admin
+* client_form
+* email
+* telegram
+* whatsapp
+* system
+
+### status
+
+* reported
+* investigating
+* resolved
+* closed
+
+### resolution_type
+
+* refund
+* apology
+* no_action
+* warning
+* block
+* escalation
+
+### compensation_status
+
+* not_applicable
+* pending
+* approved
+* paid
+* rejected
+
+### Правила
+
+1. Любой disputed booking должен иметь связанный Incident.
+2. Compensation нельзя выплачивать без resolution_details.
+3. Closed incident должен иметь финальный outcome.
+4. Incident high/critical может создавать OperationsFeedItem.
+
+---
+
+# 16. REVIEWS DOMAIN
+
+## 16.1. Review
+
+### Назначение
+
+Контроль качества, доверия и репутации.
+
+### Поля
+
+* id
+* booking_id
+* client_id
+* model_id
+* rating
+* text nullable
+* status
+* public_visibility_status
+* is_verified_booking
+* sentiment_score nullable
+* toxicity_flag
+* suspicious_flag
+* language nullable
+* reply_by_model nullable
+* reply_by_manager nullable
+* moderated_by nullable
+* moderated_at nullable
+* created_at
+* updated_at
+* deleted_at nullable
+* deleted_by nullable
+
+### status
+
+* pending
+* approved
+* rejected
+* flagged
+* escalated
+
+### public_visibility_status
+
+* hidden
+* visible
+
+### Правила
+
+1. Review создаётся только после completed booking.
+2. Один verified review на booking.
+3. Approved не обязательно сразу visible.
+4. 3 подряд негативных verified reviews по одной модели создают operations alert.
+5. Moderator actions логируются.
+
+---
+
+## 16.2. ReviewComplaintPattern
+
+### Назначение
+
+Агрегация повторяющихся жалоб.
+
+### Поля
+
+* id
+* model_id
+* keyword
+* count
+* period_start
+* period_end
+* created_at
+
+---
+
+# 17. MEMBERSHIP DOMAIN
+
+## 17.1. MembershipPlan
+
+### Назначение
+
+Коммерческий план подписки для клиентов.
+
+### Поля
+
+* id
+* name
+* tier
+* price_monthly
+* currency
+* booking_discount_percent
+* priority_support_level
+* perks nullable
+* status
+* version
+* previous_version_id nullable
+* deleted_at nullable
+* deleted_by nullable
+* created_at
+* updated_at
+
+### status
+
+* active
+* archived
+
+### Правила
+
+1. MembershipPlan это клиентская сущность, не связанная с Model.
+2. Изменения плана логируются и должны быть versioned.
+
+---
+
+## 17.2. ClientMembership
+
+### Назначение
+
+Активная или неактивная подписка конкретного клиента.
+
+### Поля
+
+* id
+* client_id
+* plan_id
+* status
+* started_at
+* expires_at nullable
+* auto_renew
+* next_billing_at nullable
+* abuse_flag
+* created_at
+* updated_at
+
+### status
+
+* pending
+* active
+* past_due
+* suspended
+* cancelled
+* expired
+
+### Правила
+
+1. Один клиент может иметь только одну активную membership.
+2. Suspended membership может влиять на booking privileges.
+3. Membership status changes идут в ClientEvent и AuditLog.
+
+---
+
+## 17.3. SubscriptionInvoice
+
+### Назначение
+
+Счета по membership.
+
+### Поля
+
+* id
+* client_membership_id
+* amount
+* currency
+* status
+* period_start
+* period_end
+* stripe_invoice_id nullable
+* paid_at nullable
+* created_at
+* updated_at
+
+### status
+
+* draft
+* paid
+* failed
+* void
+
+---
+
+## 17.4. MembershipBenefitUsage
+
+### Назначение
+
+Учёт использования преимуществ membership.
+
+### Поля
+
+* id
+* client_membership_id
+* booking_id nullable
+* retention_action_id nullable
+* benefit_type
+* value_amount
+* currency
+* status
+* metadata_json nullable
+* created_by
+* expires_at nullable
+* created_at
+
+### benefit_type
+
+* discount
+* priority_support
+* vip_access
+* early_access
+* fee_waiver
+* free_upgrade
+
+### status
+
+* reserved
+* used
+* reversed
+* expired
+
+### Правила
+
+1. Все применения benefits логируются.
+2. Любое применение benefit должно быть связано либо с booking, либо с retention action.
+3. Suspicious usage pattern создаёт FraudSignal.
+4. Discount cost должен уходить в Owner Analytics.
+5. concurrent booking limits должны проверяться по membership plan.
+
+---
+
+# 18. PRICING DOMAIN
+
+## 18.1. PricingRule
+
+### Назначение
+
+Правило динамического ценообразования.
+
+### Поля
+
+* id
+* name
+* status
+* priority
+* condition_type
+* condition_config
+* action_type
+* action_value
+* applies_to
+* scope_entity_id nullable
+* times_applied
+* revenue_impact
+* version
+* previous_version_id nullable
+* deleted_at nullable
+* deleted_by nullable
+* created_at
+* updated_at
+
+### status
+
+* active
+* disabled
+* testing
+
+### condition_type
+
+* day_of_week
+* time_of_day
+* demand
+* season
+* advance_booking
+
+### action_type
+
+* multiply
+* add
+* set_minimum
+
+### applies_to
+
+* all
+* location
+* model
+* service
+
+---
+
+## 18.2. PricingDecisionLog
+
+### Назначение
+
+История того, как и почему получилась цена.
+
+### Поля
+
+* id
+* booking_id nullable
+* model_id nullable
+* currency
+* base_price
+* final_price
+* decision_source
+* applied_rules_json
+* pricing_rule_version nullable
+* margin_impact nullable
+* created_at
+
+### decision_source
+
+* rule_engine
+* manual_override
+* fallback
+
+### Правила
+
+1. Каждое pricing decision должно быть объяснимо.
+2. Любое ручное price override требует AuditLog.
+3. Disabled rule не удаляется hard delete.
+
+---
+
+# 19. RETENTION DOMAIN
+
+## 19.1. ClientRetentionProfile
+
+### Назначение
+
+Сводный профиль удержания клиента.
+
+### Поля
+
+* id
+* client_id
+* last_booking_at nullable
+* days_since_last_booking
+* total_bookings
+* total_spent
+* avg_booking_value
+* segment
+* segment_reason nullable
+* churn_risk_score
+* churn_risk_factors_json nullable
+* next_best_action_type nullable
+* updated_at
+
+### segment
+
+* new
+* active
+* cooling
+* at_risk
+* lost
+* vip
+* whale
+
+### next_best_action_type
+
+* follow_up
+* win_back_offer
+* vip_checkin
+* membership_offer
+* manual_call
+
+### Правила
+
+1. Профиль пересчитывается фоновым scan job.
+2. Profile advisory, но используется для retention actions.
+
+---
+
+## 19.2. RetentionAction
+
+### Назначение
+
+Конкретное действие по удержанию клиента.
+
+### Поля
+
+* id
+* client_id
+* owner_user_id nullable
+* action_type
+* status
+* channel
+* scheduled_at
+* completed_at nullable
+* expires_at nullable
+* converted_booking_id nullable
+* result nullable
+* metadata_json nullable
+* created_at
+
+### action_type
+
+* follow_up
+* win_back_offer
+* vip_checkin
+* membership_offer
+* birthday_message
+* inactivity_alert
+* manual_call_task
+
+### status
+
+* planned
+* sent
+* completed
+* failed
+* cancelled
+
+### channel
+
+* email
+* telegram
+* sms
+* internal
+* phone_call
+
+### Правила
+
+1. Любой completed retention action может быть связан с booking conversion.
+2. RetentionAction может создавать ClientEvent.
+3. Overdue action может создавать OperationsFeedItem.
+
+---
+
+## 19.3. RetentionCampaign
+
+### Назначение
+
+Шаблонный retention сценарий.
+
+### Поля
+
+* id
+* name
+* trigger_type
+* segment_filter
+* channel
+* template_id nullable
+* is_active
+* version
+* previous_version_id nullable
+* created_at
+* updated_at
+
+### trigger_type
+
+* inactivity
+* post_booking
+* vip_followup
+* churn_risk
+* membership_expiry
+
+---
+
+# 20. ALTERNATIVE OFFER DOMAIN
+
+## 20.1. ModelSimilarity
+
+### Назначение
+
+Машина подбора альтернатив по модели.
+
+### Поля
+
+* id
+* model_a_id
+* model_b_id
+* similarity_score
+* similarity_version
+* factors_json
+* updated_at
+
+### Правила
+
+1. similarity должен учитывать location, services, price band, rating, availability behavior.
+2. Algorithm version фиксируется.
+
+---
+
+## 20.2. AlternativeOffer
+
+### Назначение
+
+Зафиксированное предложение альтернативы клиенту.
+
+### Поля
+
+* id
+* offer_set_id nullable
+* inquiry_id nullable
+* booking_id nullable
+* requested_model_id
+* offered_model_id
+* generation_reason
+* rank
+* status
+* presented_by_type nullable
+* presented_by_id nullable
+* shown_at nullable
+* accepted_at nullable
+* rejected_at nullable
+* created_at
+
+### generation_reason
+
+* requested_model_unavailable
+* price_mismatch
+* location_mismatch
+* schedule_conflict
+* vip_restriction
+
+### status
+
+* generated
+* shown
+* accepted
+* rejected
+* expired
+
+### presented_by_type
+
+* system
+* receptionist
+* manager
+
+### Правила
+
+1. Если requested model нельзя подтвердить, система должна уметь сгенерировать alternatives.
+2. Если alternative не был предложен и lead lost, возможен LostRevenueEntry.
+3. Нужно считать conversion по alternative offers.
+
+---
+
+## 20.3. OfferConversion
+
+### Назначение
+
+Фиксация того, привела ли альтернатива к сделке.
+
+### Поля
+
+* id
+* alternative_offer_id
+* converted_booking_id nullable
+* revenue_amount nullable
+* created_at
+
+---
+
+# 21. NOTIFICATION DOMAIN
+
+## 21.1. NotificationTemplate
+
+### Назначение
+
+Шаблон уведомлений.
+
+### Поля
+
+* id
+* event_type
+* channel
+* recipient_type
+* subject nullable
+* body_template
+* is_active
+* version
+* previous_version_id nullable
+* deleted_at nullable
+* deleted_by nullable
+* created_at
+* updated_at
+
+### recipient_type
+
+* client
+* model
+* manager
+* owner
+* staff
+
+### channel
+
+* email
+* telegram
+* sms
+* internal
+
+---
+
+## 21.2. Notification
+
+### Назначение
+
+Конкретная отправка уведомления.
+
+### Поля
+
+* id
+* template_id nullable
+* event_type
+* recipient_type
+* recipient_id
+* recipient_address nullable
+* channel
+* provider nullable
+* status
+* idempotency_key
+* payload_json
+* payload_version nullable
+* rendered_subject nullable
+* rendered_body
+* scheduled_at nullable
+* sent_at nullable
+* failed_at nullable
+* retry_count
+* created_at
+* updated_at
+
+### status
+
+* queued
+* sending
+* sent
+* failed
+* cancelled
+
+### Правила
+
+1. Notification отправляется только через queue.
+2. Duplicate send блокируется idempotency_key.
+3. Все провалы должны иметь NotificationLog.
+
+---
+
+## 21.3. NotificationLog
+
+### Назначение
+
+История попыток доставки.
+
+### Поля
+
+* id
+* notification_id
+* attempt_number
+* provider
+* provider_message_id nullable
+* status
+* response_json nullable
+* error_text nullable
+* created_at
+
+### status
+
+* success
+* failed
+* timeout
+* rejected
+
+---
+
+## 21.4. NotificationPreference
+
+### Назначение
+
+Управление opt-in / opt-out клиента.
+
+### Поля
+
+* id
+* client_id
+* channel
+* event_type
+* is_enabled
+* updated_at
+
+---
+
+# 22. JOB QUEUE DOMAIN
+
+## 22.1. JobQueue
+
+### Назначение
+
+Единая очередь фоновых задач.
+
+### Поля
+
+* id
+* type
+* payload_json
+* dedupe_key nullable
+* status
+* priority
+* attempts
+* max_attempts
+* worker_name nullable
+* parent_job_id nullable
+* lock_token nullable
+* locked_at nullable
+* last_heartbeat_at nullable
+* scheduled_at
+* started_at nullable
+* finished_at nullable
+* failed_at nullable
+* error_text nullable
+* created_at
+* updated_at
+
+### type
+
+* send_email
+* send_telegram
+* send_sms
+* generate_report
+* fraud_scan
+* media_processing
+* seo_generation
+* pricing_recalculation
+* retention_scan
+* membership_billing
+* notification_dispatch
+
+### status
+
+* queued
+* running
+* succeeded
+* failed
+* dead_letter
+* cancelled
+
+### priority
+
+* critical
+* high
+* normal
+* low
+
+### Правила
+
+1. Любой job должен иметь retry policy.
+2. После max_attempts job уходит в dead_letter.
+3. dead_letter job создаёт OperationsFeedItem.
+4. Queue должна уметь dedupe identical jobs.
+5. Зависшие jobs должны быть видны по heartbeat.
+
+---
+
+## 22.2. JobLog
+
+### Назначение
+
+Подробный лог шагов job.
+
+### Поля
+
+* id
+* job_id
+* step
+* status
+* message
+* created_at
+
+---
+
+# 23. STAFF ANALYTICS DOMAIN
+
+## 23.1. StaffPerformanceSnapshot
+
+### Назначение
+
+Сырые метрики сотрудника за период.
+
+### Поля
+
+* id
+* user_id
+* role_snapshot
+* period_start
+* period_end
+* leads_handled
+* avg_first_response_seconds
+* conversion_rate
+* bookings_completed
+* lost_revenue_amount
+* cancellation_rate
+* complaints_count
+* fraud_escalations_count
+* retention_actions_completed
+* created_at
+
+---
+
+## 23.2. StaffScoreSnapshot
+
+### Назначение
+
+Финальный score сотрудника, собранный из метрик.
+
+### Поля
+
+* id
+* user_id
+* period_start
+* period_end
+* final_score
+* component_scores_json
+* is_manual_adjusted
+* manual_adjust_reason nullable
+* created_at
+
+### Правила
+
+1. Staff performance advisory, не единственное основание для санкций.
+2. Snapshot не редактируется произвольно.
+3. Owner должен видеть raw и final separately.
+
+---
+
+## 23.3. StaffScoreRule
+
+### Назначение
+
+Настройка весов метрик.
+
+### Поля
+
+* id
+* metric_name
+* weight
+* created_at
+* updated_at
+
+---
+
+# 24. DEMAND ANALYTICS DOMAIN
+
+## 24.1. DemandStats
+
+### Назначение
+
+Понимание спроса по времени и локациям.
+
+### Поля
+
+* id
+* location_id nullable
+* city nullable
+* area nullable
+* time_slot
+* requests
+* bookings
+* conversion_rate
+* avg_price
+* available_models_count
+* demand_score
+* created_at
+
+### demand_score
+
+Минимально:
+`bookings / available_models_count`
+
+### Правила
+
+1. Demand должен использоваться для owner analytics и pricing.
+2. demand_score не должен быть магическим, формула должна быть фиксирована.
+
+---
+
+# 25. DATA QUALITY DOMAIN
+
+## 25.1. DataQualityCheck
+
+### Назначение
+
+Контроль целостности и актуальности данных.
+Этот блок уже заложен в Phase 3 как data governance. 
+
+### Поля
+
+* id
+* check_type
+* entity_type
+* entity_id
+* status
+* severity
+* details
+* resolved_at nullable
+* resolved_by nullable
+* created_at
+
+### check_type
+
+* profile_completeness
+* outdated_profile
+* missing_photos
+* stale_availability
+* price_anomaly
+* missing_membership_link
+* duplicate_client_candidate
+
+### status
+
+* open
+* resolved
+* ignored
+
+### severity
+
+* info
+* warning
+* error
+
+---
+
+# 26. API ТРЕБОВАНИЯ
+
+## 26.1. Общий формат ответа
+
+Успех:
+
+```json
+{ "data": { ... } }
+```
+
+Ошибка:
+
+```json
+{ "error": { "code": "...", "message": "..." } }
+```
+
+Этот формат уже закреплён в спецификации и должен быть сохранён. 
+
+## 26.2. Обязательные требования ко всем новым endpoints
+
+Для каждого нового endpoint обязательно:
+
+1. RBAC check
+2. input validation
+3. pagination для list endpoints
+4. sorting support, где это уместно
+5. filters by date range, где это уместно
+6. audit logging для critical actions
+7. idempotency для state-changing operations
+8. standardized error codes
+9. permissions-aware responses
+
+---
+
+# 27. СПИСОК НОВЫХ API ГРУПП
+
+## 27.1. Clients
+
+* `GET /api/v1/clients`
+* `GET /api/v1/clients/:id`
+* `GET /api/v1/clients/:id/timeline`
+* `GET /api/v1/clients/:id/identities`
+* `POST /api/v1/clients/merge`
+* `GET /api/v1/clients/merge-candidates`
+
+## 27.2. Availability
+
+* `GET /api/v1/models/:id/availability`
+* `POST /api/v1/models/:id/availability/block`
+* `DELETE /api/v1/models/:id/availability/:slotId`
+* `POST /api/v1/bookings/check-availability`
+
+## 27.3. Lost Revenue
+
+* `GET /api/v1/lost-revenue`
+* `POST /api/v1/lost-revenue`
+* `PATCH /api/v1/lost-revenue/:id/status`
+* `GET /api/v1/lost-revenue/summary`
+
+## 27.4. Operations Feed
+
+* `GET /api/v1/operations-feed`
+* `PATCH /api/v1/operations-feed/:id/status`
+* `PATCH /api/v1/operations-feed/:id/assign`
+
+## 27.5. Notifications
+
+* `GET /api/v1/notifications`
+* `GET /api/v1/notification-templates`
+* `PATCH /api/v1/notification-templates/:id`
+* `POST /api/v1/notifications/test`
+
+## 27.6. Jobs
+
+* `GET /api/v1/jobs`
+* `GET /api/v1/jobs/:id`
+* `POST /api/v1/jobs/:id/retry`
+* `POST /api/v1/jobs/:id/cancel`
+
+## 27.7. Retention
+
+* `GET /api/v1/retention/clients`
+* `GET /api/v1/retention/actions`
+* `POST /api/v1/retention/actions`
+* `GET /api/v1/retention/campaigns`
+* `POST /api/v1/retention/run-scan`
+
+## 27.8. Alternative Offers
+
+* `POST /api/v1/alternative-offers/generate`
+* `GET /api/v1/alternative-offers`
+* `PATCH /api/v1/alternative-offers/:id/status`
+
+## 27.9. Staff Performance
+
+* `GET /api/v1/staff-performance`
+* `GET /api/v1/staff-performance/:userId`
+
+## 27.10. Search
+
+* `GET /api/v1/search?q=...`
+
+---
+
+# 28. SEARCH DOMAIN
+
+## 28.1. Global Search
+
+### Назначение
+
+Быстрый поиск всех ключевых сущностей.
+
+### Поиск по:
+
+* client phone
+* client email
+* booking short_id
+* model name
+* review text
+* incident id
+
+### Ответ должен содержать
+
+* entity_type
+* entity_id
+* display_text
+* secondary_text nullable
+* route
+* matched_field
+
+### Правила
+
+1. Search должен быть permissions-aware.
+2. Пользователь видит только сущности, доступные по RBAC.
+
+---
+
+# 29. UI ТРЕБОВАНИЯ
+
+## 29.1. Общий стиль
+
+Использовать текущий dark admin pattern, как зафиксировано в Phase 2 и design refresh.
+
+## 29.2. Каждая новая admin page должна содержать
+
+* page title
+* one-line description
+* summary cards, если модуль аналитический
+* filters
+* main table / timeline / calendar
+* actions
+* empty state
+* loading state
+* error state
+
+## 29.3. Обязательные новые экраны
+
+* Clients list
+* Client profile
+* Client timeline
+* Merge candidates
+* Availability calendar
+* Lost Revenue page
+* Action Center
+* Notifications page
+* Jobs page
+* Retention page
+* Alternative Offers panel
+* Staff Performance page
+* Demand analytics page
+
+---
+
+# 30. МЕТРИКИ И OWNER ANALYTICS
+
+## 30.1. Сохранить из исходной спеки
+
+В исходной архитектуре уже есть Revenue, Net Margin, Conversion, ARPU, MRR, Churn Rate, Chargeback Rate, SLA Breach Rate и другие. Они должны быть сохранены. 
+
+## 30.2. Добавить новые метрики
+
+### Lost Revenue Amount
+
+Сумма потерь по LostRevenueEntry за период.
+
+### Lost Revenue by Root Cause
+
+Разбивка потерь по root_cause.
+
+### Alternative Offer Acceptance Rate
+
+Доля принятых alternative offers.
+
+### Retention Recovery Rate
+
+Доля retention actions, приведших к новому booking.
+
+### Client Duplicate Rate
+
+Доля клиентов, у которых были merge candidates или merge operations.
+
+### Jobs Failed Rate
+
+Доля jobs, завершившихся failed или dead_letter.
+
+### Notification Delivery Success Rate
+
+Доля успешных уведомлений по Notification и NotificationLog.
+
+### Staff Conversion Ranking
+
+Рейтинг сотрудников по conversion.
+
+### Staff Lost Revenue Ranking
+
+Рейтинг сотрудников по amount lost.
+
+### Availability Conflict Count
+
+Количество конфликтов доступности.
+
+### Membership Benefit Cost
+
+Стоимость скидок и преимуществ membership.
+
+### Risk Escalations per Week
+
+Количество клиентов, переведённых в monitoring / restricted / blocked.
+
+### VIP Client Share of Revenue
+
+Доля выручки от VIP / whale клиентов.
+
+### Win-back Conversion Rate
+
+Доля клиентов, вернувшихся после retention action.
+
+## 30.3. Для каждой метрики обязательно указать
+
+* source table
+* source fields
+* recompute schedule
+* cache / materialization strategy
+
+### Пример
+
+Lost Revenue Amount:
+
+* source: lost_revenue_entries
+* fields: amount, status, detected_at
+* recompute: hourly
+* materialization: daily summary table
+
+---
+
+# 31. ФАЗЫ РАЗРАБОТКИ
+
+## 31.1. Phase 1. Критическое усиление ядра
+
+1. Client Identity Resolution
+2. Client Timeline
+3. Availability Engine
+4. Lost Revenue Engine
+5. Operations Feed
+
+### Почему именно это first
+
+Потому что эти модули:
+
+* снижают хаос
+* снижают ручную работу
+* уменьшают денежные потери
+* закрывают дубли клиентов
+* закрывают конфликты бронирований
+* дают owner visibility
+
+## 31.2. Phase 2. Автоматизация и рост
+
+1. Job Queue
+2. Notification Engine
+3. Retention Engine
+4. Alternative Offer Engine
+5. Staff Performance Analytics
+
+### Почему Job Queue должен идти первым в этой фазе
+
+Без него notification, retention, scans и report generation будут жить криво.
+
+## 31.3. Phase 3. Усиление аналитики и контроля
+
+1. Fraud enrichment
+2. Membership benefit tracking
+3. Pricing decision log
+4. Global search
+5. Soft delete and versioning hardening
+
+---
+
+# 32. ACCEPTANCE CRITERIA
+
+## 32.1. Identity
+
+1. merge не теряет связанные записи
+2. merge создаёт audit log
+3. duplicate client не удаляется hard delete
+4. duplicate candidates отображаются в UI
+
+## 32.2. Timeline
+
+1. минимум 10 основных событий автоматически пишутся в ClientEvent
+2. timeline сортируется строго по created_at desc
+3. timeline виден в профиле клиента
+
+## 32.3. Availability
+
+1. система отклоняет overlapping confirmed bookings
+2. auto-created cooldown / travel slots создаются
+3. manual block работает и логируется
+4. conflicts сохраняются в журнале
+
+## 32.4. Lost Revenue
+
+1. минимум 5 автосценариев реально срабатывают
+2. entries нельзя удалять
+3. owner видит summary и root causes
+
+## 32.5. Operations Feed
+
+1. high / critical items видны на Action Center
+2. item можно assign / acknowledge / resolve
+3. duplicate feed items не штампуются бесконечно
+
+## 32.6. Notifications
+
+1. уведомления идут через Notification Engine, а не напрямую из модулей
+2. failed notifications попадают в retry flow
+3. duplicate notifications не создаются при повторном webhook
+
+## 32.7. Jobs
+
+1. dead-letter jobs видны в UI
+2. retry работает
+3. hanging jobs видны по heartbeat
+
+## 32.8. Retention
+
+1. at-risk scan работает по расписанию
+2. retention action может быть связан с booking conversion
+3. at-risk clients видны в UI
+
+## 32.9. Alternative Offers
+
+1. при недоступной requested model система генерирует alternatives
+2. offer acceptance / rejection логируется
+3. offer conversion считается
+
+## 32.10. Staff Performance
+
+1. snapshot не редактируется вручную
+2. owner видит raw metrics и final score
+3. лидерборд работает по периодам
+
+---
+
+# 33. ЧТО РАЗРАБОТЧИК ДОЛЖЕН СДАТЬ
+
+## 33.1. Backend
+
+* обновлённая Prisma schema
+* миграции
+* новые API routes
+* сервисы
+* бизнес-правила
+* background workers
+* queue processing
+* notification sending
+* audit coverage
+
+## 33.2. Frontend
+
+* новые admin pages
+* filters
+* actions
+* timeline
+* tables
+* dashboards
+* empty / loading / error states
+
+## 33.3. Infra
+
+* queue runner
+* retry / dead letter handling
+* alerting hooks
+* cron jobs for retention scans and analytics recompute
+
+## 33.4. Документация
+
+* API reference
+* ER overview
+* list of cron jobs
+* list of event producers
+* list of audit-covered actions
+
+---
+
+# 34. Итог
+
+После выполнения этого ТЗ Virel должен стать не просто admin panel, а операционной платформой, которая:
+
+* видит клиента как единую сущность
+* хранит его историю
+* управляет доступностью supply
+* предотвращает потери выручки
+* централизует срочные операционные события
+* автоматизирует уведомления и фоновые процессы
+* удерживает клиентов
+* защищает конверсию через alternative offers
+* показывает owner, где реальные деньги и где реальные проблемы
+
+

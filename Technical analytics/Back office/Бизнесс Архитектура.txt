@@ -1,0 +1,356 @@
+# PROMPT V3.2
+
+# BACK OFFICE КАК СИСТЕМА КОНТРОЛЯ ДЕНЕГ И РИСКОВ
+
+---
+
+## РОЛЬ
+
+Ты проектируешь не админку.
+Ты проектируешь операционную систему, которая:
+
+* защищает 100% денежного потока
+* фиксирует ответственность
+* не допускает снижения маржи
+* не разваливается под нагрузкой
+* не усложняется ради красоты
+
+Каждое решение должно быть экономически оправдано.
+
+---
+
+# ОБЯЗАТЕЛЬНЫЕ ПРИНЦИПЫ (ВСТРОЕНЫ В АРХИТЕКТУРУ)
+
+## 1. Никакая функция не может снижать маржу бесконтрольно
+
+Перед применением:
+
+* скидки
+* membership benefits
+* dynamic pricing
+* ручные корректировки
+
+Система обязана вычислить:
+
+ProjectedNetMargin = (Revenue - Payout - PSP Fees - Discount)
+
+Если ProjectedNetMargin < MinimumMarginThreshold → операция запрещена.
+
+---
+
+## 2. AI не принимает решения
+
+AI может:
+
+* извлекать данные
+* оценивать фото
+* предлагать текст
+
+AI не может:
+
+* устанавливать цену
+* менять статус
+* публиковать профиль
+* применять скидку
+
+confidence_score < 0.8 → ручная проверка обязательна.
+
+---
+
+## 3. Все финансовые действия под контролем
+
+Операции:
+
+* refund
+* изменение payout
+* изменение commission
+* изменение booking после completed
+* изменение membership вручную
+
+Требуют:
+
+* reason_code
+* запись в AuditEvent
+* если сумма > configurable_limit → второе подтверждение
+
+---
+
+## 4. Никакой тяжёлой аналитики в реальном времени
+
+Все метрики Owner Dashboard считаются через:
+
+* materialized views
+* nightly batch
+* precomputed KPI tables
+
+Запрещено full-table scan в production.
+
+---
+
+## 5. Интеграции не должны ломать бизнес
+
+Если:
+
+* PSP latency > threshold
+* webhook не получен
+* API error rate > X
+
+Включается:
+
+* retry
+* fallback
+* создание Incident
+
+---
+
+# I. АРХИТЕКТУРА МОДУЛЕЙ (21)
+
+(Список сохраняется как в v3.1, но с встроенными ограничениями)
+
+---
+
+# 1. LEAD MANAGEMENT
+
+Выручка: 100% входящего потока.
+Если отключить → бизнес останавливается.
+
+Ограничения:
+
+* любой lead должен иметь source
+* SLA считается автоматически
+* если first_response > 5 минут → SLA breach
+
+Lead не может быть удалён, только archived.
+
+---
+
+# 2. BOOKING MANAGEMENT
+
+Защищает подтверждённую выручку.
+
+Обязательное:
+
+* строгая state machine
+* запрет двойного бронирования
+* cancellation_reason обязателен
+* commission и payout рассчитываются автоматически
+
+Guardrail:
+
+Booking.completed нельзя изменить без Audit + reason_code.
+
+---
+
+# 3. PAYMENT & FINANCE
+
+Защищает денежный поток.
+
+Обязательное:
+
+* webhook verification
+* идемпотентность
+* лог PSP комиссии
+
+Chargeback автоматически:
+
+* создаёт FraudSignal
+* создаёт Incident
+
+---
+
+# 4. MODEL CONTROL SYSTEM
+
+Актив бизнеса.
+
+Ограничения:
+
+* профиль без обязательных полей не может быть published
+* data_completeness_score < 80 → предупреждение
+* изменения фиксируются через Audit
+
+---
+
+# 5. ONE CLICK ONBOARDING
+
+Flow остаётся прежним.
+
+Встроенные ограничения:
+
+* AIExtractionResult хранит source + confidence
+* если есть дубликат по hash → блокировка
+* если onboarding > 10 минут → SystemHealth alert
+
+---
+
+# 6. REVIEWS
+
+Ограничения:
+
+* review без booking_id → запрещён
+* rating < 3 → auto notify manager
+* массовые негативные за день → Incident
+
+---
+
+# 7. REVENUE LEAKAGE CONTROL
+
+Каждый leakage случай обязан содержать:
+
+* estimated_amount
+* responsible_role
+* root_cause
+* SLA resolution time
+
+Без указания ответственного кейс не может быть закрыт.
+
+---
+
+# 8. SLA MONITORING
+
+Escalation:
+
+breach 1 → team lead
+breach 2 → owner
+breach 3 → дисциплинарная запись
+
+SLA breach влияет на performance KPI.
+
+---
+
+# 9. FRAUD DETECTION
+
+Rule-based, не ML.
+
+Триггеры:
+
+* 3 отмены подряд
+* 2 chargeback
+* high velocity
+
+risk_status влияет на возможность instant booking.
+
+---
+
+# 10. DYNAMIC PRICING
+
+Ограничения:
+
+* max increase %
+* max decrease %
+* минимальная маржа
+
+Правила версионируются.
+
+---
+
+# 11. SEO
+
+Ограничения:
+
+* страница без title/meta → не может быть indexed
+* LCP > 2.5 → alert
+
+---
+
+# 12. OWNER ANALYTICS
+
+Метрики только те, которые влияют на:
+
+* revenue
+* margin
+* SLA
+* churn
+* fraud
+
+Без декоративных графиков.
+
+---
+
+# 13. MEMBERSHIP
+
+Встроенные ограничения:
+
+* discount_cost учитывается в net margin
+* если membership_uplift < discount_cost → план underperforming
+* 3 failed payments → suspended
+* 2 chargeback → auto block
+
+MembershipBenefitUsage логируется.
+
+---
+
+# 14. DATA GOVERNANCE
+
+* обязательные поля
+* expiry документов
+* outdated_profile_flag
+
+---
+
+# 15. SYSTEM HEALTH
+
+Алерты:
+
+* 5xx > 0.5%
+* queue_length > threshold
+* onboarding_failure_rate > 5%
+
+---
+
+# 16. PERFORMANCE REQUIREMENTS
+
+TTFB < 400ms
+LCP < 2.5s
+search < 300ms
+filter < 1s
+
+Все операции > 500ms → async.
+
+---
+
+# MVP
+
+Фокус:
+
+* Lead
+* Booking
+* Payment
+* Model
+* Audit
+* RBAC
+* SEO базовый
+
+Без:
+
+* dynamic pricing
+* fraud automation
+* membership
+
+---
+
+# PHASE 2
+
+* One Click AI
+* Revenue Leakage
+* SLA automation
+* Fraud
+* Membership
+* Owner dashboards
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Система готова к запуску только если:
+
+* lead → booking → payment → completed проходит полностью
+* refund создаёт audit
+* price change требует reason_code
+* SLA считается
+* chargeback создаёт fraud signal
+* membership не может применить скидку ниже margin threshold
+* PageSpeed < 2.5s
+* backup выполнен
+
+---
+

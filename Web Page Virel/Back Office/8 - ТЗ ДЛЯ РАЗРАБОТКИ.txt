@@ -1,0 +1,2479 @@
+# ТЗ ДЛЯ РАЗРАБОТКИ
+
+## VIREL BACK OFFICE EXTENSION
+
+## Developer handoff, final version
+
+---
+
+# 1. Итоговая структура системы
+
+## 1.1 Разделы admin панели
+
+### CORE
+
+* Action Center
+* Leads
+* Clients
+* Bookings
+* Models
+
+### OPERATIONS
+
+* Availability
+* Reviews
+* Incidents
+* Fraud Monitor
+* Lost Revenue
+* Applications
+
+### BUSINESS
+
+* Pricing
+* Membership
+* Payments
+* Reports
+* SEO Health
+* Retention
+
+### ANALYTICS
+
+* Dashboard
+* Owner Analytics
+* Unit Economics
+* Model Performance
+* Demand
+* Staff Performance
+
+### SYSTEM
+
+* SLA Monitor
+* Data Quality
+* Audit Log
+* Notifications
+* Jobs
+* Settings
+
+---
+
+## 1.2 Новые и расширяемые домены
+
+### Client domain
+
+* Client
+* ClientIdentity
+* ClientMergeCandidate
+* ClientMergeLog
+* ClientEvent
+
+### Lead domain
+
+* Inquiry / Lead
+
+### Booking / Availability domain
+
+* Booking
+* ModelAvailability
+* AvailabilityPolicy
+* AvailabilityConflict
+
+### Payment domain
+
+* Payment
+
+### Revenue control domain
+
+* LostRevenueEntry
+* OperationsFeedItem
+
+### Fraud domain
+
+* FraudSignal
+* ClientRiskHistory
+
+### Incident domain
+
+* Incident
+
+### Review domain
+
+* Review
+* ReviewComplaintPattern
+
+### Membership domain
+
+* MembershipPlan
+* ClientMembership
+* SubscriptionInvoice
+* MembershipBenefitUsage
+
+### Pricing domain
+
+* PricingRule
+* PricingDecisionLog
+
+### Retention domain
+
+* ClientRetentionProfile
+* RetentionAction
+* RetentionCampaign
+
+### Alternative offer domain
+
+* ModelSimilarity
+* AlternativeOffer
+* OfferConversion
+
+### Notification domain
+
+* NotificationTemplate
+* Notification
+* NotificationLog
+* NotificationPreference
+
+### Queue domain
+
+* JobQueue
+* JobLog
+
+### Staff analytics domain
+
+* StaffPerformanceSnapshot
+* StaffScoreSnapshot
+* StaffScoreRule
+
+### Demand analytics domain
+
+* DemandStats
+
+### Data quality domain
+
+* DataQualityCheck
+
+---
+
+## 1.3 Порядок реализации
+
+### Phase 1
+
+* Client Identity Resolution
+* Client Timeline
+* Availability Engine
+* Lost Revenue Engine
+* Operations Feed
+
+### Phase 2
+
+* Job Queue
+* Notification Engine
+* Retention Engine
+* Alternative Offer Engine
+* Staff Performance Analytics
+
+### Phase 3
+
+* Fraud enrichment
+* Membership benefit tracking
+* Pricing decision log
+* Global search
+* Soft delete and versioning hardening
+
+---
+
+# 2. Общие технические правила
+
+## 2.1 Стек
+
+Использовать текущий стек:
+
+* Next.js 14
+* TypeScript
+* PostgreSQL
+* Prisma
+* Tailwind
+* Stripe
+* Vercel
+
+## 2.2 Общие ограничения
+
+* не ломать текущие рабочие flows
+* все миграции только аддитивные
+* все новые поля с default или nullable
+* никакого hard delete для ключевых бизнес-сущностей
+* все денежные значения хранить как Decimal / Numeric
+* все критичные действия писать в AuditLog
+* все длительные операции выполнять через JobQueue
+* все state-changing endpoints валидировать и логировать
+* все ручные overrides только с reason_code
+* все list endpoints с pagination
+* все новые admin страницы в текущем dark UI pattern
+
+## 2.3 Naming
+
+* в БД использовать snake_case
+* в Prisma / TypeScript использовать camelCase mapping
+* naming должен быть единообразным по всему проекту
+
+## 2.4 Денежные типы
+
+Все поля ниже хранить как Decimal / Numeric:
+
+* total_spent
+* amount
+* value_amount
+* total_amount
+* commission_amount
+* payout_amount
+* refunded_amount
+* compensation_amount
+* price_monthly
+* revenue_amount
+* avg_price
+* margin_impact
+* cancellation_fee
+
+## 2.5 Soft delete
+
+Обязательно добавить soft delete поля:
+
+* deleted_at
+* deleted_by
+
+В таблицы:
+
+* clients
+* bookings
+* models
+* reviews
+* incidents
+* membership_plans
+* pricing_rules
+* notification_templates
+
+## 2.6 Audit
+
+Все критичные действия обязаны создавать запись в AuditLog.
+
+Минимальный список:
+
+* client.merge
+* client.identity.added
+* client.risk_status.changed
+* booking.status.changed
+* booking.disputed
+* payment.refunded
+* payment.disputed
+* availability.block.created
+* availability.block.removed
+* availability.conflict.resolved
+* lost_revenue.created.manual
+* lost_revenue.status.changed
+* operations_feed.assigned
+* operations_feed.resolved
+* incident.created
+* incident.status.changed
+* review.status.changed
+* review.visibility.changed
+* membership.subscription.created
+* membership.subscription.cancelled
+* membership.benefit.applied
+* pricing.rule.created
+* pricing.rule.updated
+* pricing.rule.disabled
+* notification.template.updated
+* job.retried
+* retention.action.created
+* retention.action.completed
+
+## 2.7 API response format
+
+Успех:
+
+```json
+{ "data": { } }
+```
+
+Ошибка:
+
+```json
+{ "error": { "code": "string", "message": "string" } }
+```
+
+## 2.8 Общие требования ко всем новым API
+
+* RBAC check
+* input validation
+* pagination для list endpoints
+* sorting support там, где нужен список
+* filtering support там, где нужен список
+* standardized error codes
+* audit logging для critical actions
+* idempotency для повторяемых state-changing операций
+* permissions-aware responses
+* reason_code для manual critical actions
+
+---
+
+# 3. Prisma / DB changes
+
+---
+
+# 3.1 Изменения существующих таблиц
+
+## 3.1.1 Client
+
+### Добавить поля
+
+* `first_name` string nullable
+  Имя клиента.
+
+* `last_name` string nullable
+  Фамилия клиента.
+
+* `full_name` string nullable
+  Полное имя клиента для отображения.
+
+* `language` string nullable
+  Язык клиента.
+
+* `city` string nullable
+  Город клиента.
+
+* `country` string nullable
+  Страна клиента.
+
+* `refund_count` int default 0
+  Количество возвратов.
+
+* `cancellation_rate` decimal default 0
+  Доля отмен клиента.
+
+* `vip_status` string nullable
+  Внутренний сегмент клиента.
+
+* `merged_into_client_id` string nullable
+  Ссылка на основной client при merge.
+
+* `deleted_at` datetime nullable
+  Soft delete timestamp.
+
+* `deleted_by` string nullable
+  Кто выполнил soft delete.
+
+### Проверить наличие и сохранить
+
+* `risk_status`
+* `total_spent`
+* `booking_count`
+* `chargeback_count`
+* `notes`
+
+### Индексы
+
+* email
+* phone_number
+* risk_status
+* merged_into_client_id
+* vip_status
+
+---
+
+## 3.1.2 Booking
+
+### Проверить наличие
+
+* `short_id`
+* `client_id`
+* `model_id`
+* `receptionist_id`
+* `status`
+* `start_time`
+* `end_time`
+* `duration_hours`
+* `total_amount`
+* `commission_amount`
+* `payout_amount`
+
+### Добавить поля при отсутствии
+
+* `booking_type` string default `outcall`
+* `deleted_at` datetime nullable
+* `deleted_by` string nullable
+
+### Индексы
+
+* short_id unique
+* client_id
+* model_id
+* status
+* start_time
+* receptionist_id
+
+---
+
+## 3.1.3 Payment
+
+### Проверить наличие
+
+* `booking_id`
+* `amount`
+* `currency`
+* `status`
+* `provider`
+* `provider_transaction_id`
+* `payment_method_details`
+* `failure_reason`
+* `refunded_amount`
+* `refunded_at`
+
+### Индексы
+
+* booking_id
+* provider_transaction_id
+* status
+* created_at
+
+---
+
+## 3.1.4 Model
+
+### Проверить наличие
+
+* `status`
+* `data_completeness_score`
+* `model_risk_index`
+
+### Добавить
+
+* `deleted_at` datetime nullable
+* `deleted_by` string nullable
+
+### Индексы
+
+* status
+* model_risk_index
+
+---
+
+## 3.1.5 Review
+
+### Добавить / проверить
+
+* `public_visibility_status` string default `hidden`
+* `language` string nullable
+* `moderated_by` string nullable
+* `moderated_at` datetime nullable
+* `deleted_at` datetime nullable
+* `deleted_by` string nullable
+
+### Индексы
+
+* booking_id unique
+* client_id
+* model_id
+* status
+* public_visibility_status
+* created_at
+
+---
+
+## 3.1.6 Incident
+
+### Добавить / проверить
+
+* `client_id` nullable
+* `model_id` nullable
+* `owner_user_id` nullable
+* `incident_type`
+* `severity`
+* `source_channel`
+* `resolution_type` nullable
+* `compensation_status`
+* `linked_review_id` nullable
+* `linked_payment_id` nullable
+* `closed_at` nullable
+* `deleted_at` nullable
+* `deleted_by` nullable
+
+### Индексы
+
+* booking_id
+* client_id
+* model_id
+* status
+* severity
+* owner_user_id
+* created_at
+
+---
+
+## 3.1.7 MembershipPlan
+
+### Добавить
+
+* `version` int default 1
+* `previous_version_id` nullable
+* `deleted_at` nullable
+* `deleted_by` nullable
+
+---
+
+## 3.1.8 ClientMembership
+
+### Проверить / добавить
+
+* `abuse_flag` bool default false
+
+### Индексы
+
+* client_id unique
+* plan_id
+* status
+* next_billing_at
+
+---
+
+## 3.1.9 PricingRule
+
+### Добавить
+
+* `version` int default 1
+* `previous_version_id` nullable
+* `deleted_at` nullable
+* `deleted_by` nullable
+
+### Индексы
+
+* status
+* priority
+
+---
+
+## 3.1.10 NotificationTemplate
+
+### Добавить
+
+* `version` int default 1
+* `previous_version_id` nullable
+* `deleted_at` nullable
+* `deleted_by` nullable
+
+---
+
+# 3.2 Новые таблицы
+
+## 3.2.1 ClientIdentity
+
+### Поля
+
+* `id`
+* `client_id`
+* `identity_type`
+* `raw_value`
+* `normalized_value`
+* `is_primary`
+* `is_verified`
+* `confidence_score`
+* `source`
+* `verified_at` nullable
+* `last_seen_at` nullable
+* `is_active`
+* `created_at`
+* `updated_at`
+
+### identity_type
+
+* phone
+* email
+* telegram
+* whatsapp
+* device
+* ip
+* card_fingerprint
+
+### source
+
+* manual
+* inquiry
+* booking
+* payment
+* integration
+* system
+
+### Индексы
+
+* client_id
+* normalized_value
+* identity_type + normalized_value
+* is_active
+
+---
+
+## 3.2.2 ClientMergeCandidate
+
+### Поля
+
+* `id`
+* `primary_client_id`
+* `duplicate_client_id`
+* `score`
+* `reasons_json`
+* `status`
+* `created_at`
+* `resolved_at` nullable
+* `resolved_by` nullable
+
+### status
+
+* open
+* approved
+* rejected
+* merged
+
+### Индексы
+
+* primary_client_id
+* duplicate_client_id
+* status
+
+---
+
+## 3.2.3 ClientMergeLog
+
+### Поля
+
+* `id`
+* `primary_client_id`
+* `duplicate_client_id`
+* `merged_by`
+* `reason_code`
+* `merge_summary_json`
+* `created_at`
+
+---
+
+## 3.2.4 ClientEvent
+
+### Поля
+
+* `id`
+* `client_id`
+* `event_type`
+* `entity_type`
+* `entity_id`
+* `title`
+* `description` nullable
+* `metadata_json` nullable
+* `severity`
+* `actor_type`
+* `created_by` nullable
+* `source`
+* `visibility`
+* `created_at`
+
+### event_type
+
+* inquiry_created
+* inquiry_status_changed
+* booking_created
+* booking_confirmed
+* booking_cancelled
+* booking_completed
+* payment_authorized
+* payment_succeeded
+* payment_failed
+* payment_refunded
+* payment_disputed
+* review_created
+* review_approved
+* incident_opened
+* incident_resolved
+* fraud_flagged
+* membership_activated
+* membership_cancelled
+* retention_action_created
+* retention_action_completed
+* notification_sent
+* lost_revenue_detected
+
+### entity_type
+
+* inquiry
+* booking
+* payment
+* review
+* incident
+* membership
+* notification
+* fraud_signal
+* retention_action
+* lost_revenue
+
+### severity
+
+* info
+* warning
+* critical
+
+### actor_type
+
+* system
+* user
+* webhook
+* client
+
+### source
+
+* system
+* user
+* integration
+* webhook
+
+### visibility
+
+* internal
+* manager_only
+* owner_only
+
+### Индексы
+
+* client_id
+* event_type
+* entity_type + entity_id
+* created_at
+
+---
+
+## 3.2.5 ModelAvailability
+
+### Поля
+
+* `id`
+* `model_id`
+* `start_at`
+* `end_at`
+* `timezone`
+* `status`
+* `source`
+* `source_ref_type` nullable
+* `source_ref_id` nullable
+* `booking_id` nullable
+* `location_id` nullable
+* `city` nullable
+* `area` nullable
+* `address_text` nullable
+* `notes` nullable
+* `created_at`
+* `updated_at`
+
+### status
+
+* available
+* booked
+* blocked
+* travel
+* cooldown
+* unavailable
+
+### source
+
+* manual
+* booking
+* incident
+* system
+
+### source_ref_type
+
+* booking
+* incident
+* manual_block
+* policy
+* system
+
+### Индексы
+
+* model_id + start_at + end_at
+* booking_id
+* status
+
+---
+
+## 3.2.6 AvailabilityPolicy
+
+### Поля
+
+* `id`
+* `default_buffer_minutes`
+* `same_location_buffer_minutes`
+* `different_location_buffer_minutes`
+* `travel_buffer_minutes`
+* `cooldown_minutes`
+* `conflict_strategy`
+* `created_at`
+* `updated_at`
+
+### conflict_strategy
+
+* reject
+* warn
+* escalate
+
+---
+
+## 3.2.7 AvailabilityConflict
+
+### Поля
+
+* `id`
+* `model_id`
+* `booking_id` nullable
+* `conflicting_slot_id`
+* `conflict_type`
+* `status`
+* `resolved_by` nullable
+* `created_at`
+* `resolved_at` nullable
+
+### conflict_type
+
+* overlap
+* travel_gap_too_short
+* cooldown_violation
+* manual_block_conflict
+
+### status
+
+* open
+* resolved
+* ignored
+
+### Индексы
+
+* model_id
+* booking_id
+* status
+
+---
+
+## 3.2.8 LostRevenueEntry
+
+### Поля
+
+* `id`
+* `type`
+* `amount`
+* `amount_type`
+* `currency`
+* `lead_id` nullable
+* `booking_id` nullable
+* `client_id` nullable
+* `model_id` nullable
+* `receptionist_id` nullable
+* `responsible_role`
+* `responsible_user_id` nullable
+* `root_cause`
+* `detection_source`
+* `detected_by` nullable
+* `detected_by_type` nullable
+* `status`
+* `resolution_reason` nullable
+* `notes` nullable
+* `operations_feed_item_id` nullable
+* `detected_at`
+* `resolved_at` nullable
+* `created_at`
+* `updated_at`
+
+### type
+
+* unanswered_lead
+* model_unavailable
+* client_declined_price
+* payment_failed
+* booking_cancelled_after_hold
+* no_alternative_offered
+* receptionist_delay
+* double_booking_loss
+* dispute_refund
+* no_show
+* wrong_quote
+* service_mismatch
+
+### amount_type
+
+* actual
+* estimated
+
+### responsible_role
+
+* client
+* model
+* receptionist
+* manager
+* system
+* payment_provider
+
+### detection_source
+
+* manual
+* sla_rule
+* payment_webhook
+* booking_rule
+* ops_review
+* fraud_rule
+* alternative_offer_rule
+
+### detected_by_type
+
+* system
+* user
+* audit
+* owner
+
+### status
+
+* open
+* in_review
+* resolved
+* waived
+
+### Индексы
+
+* type
+* booking_id
+* client_id
+* responsible_role
+* status
+* detected_at
+
+---
+
+## 3.2.9 OperationsFeedItem
+
+### Поля
+
+* `id`
+* `type`
+* `source_module`
+* `priority`
+* `entity_type`
+* `entity_id`
+* `dedupe_key` nullable
+* `title`
+* `description` nullable
+* `assigned_user_id` nullable
+* `status`
+* `due_at` nullable
+* `snoozed_until` nullable
+* `resolution_note` nullable
+* `metadata_json` nullable
+* `created_at`
+* `resolved_at` nullable
+
+### type
+
+* sla_breach
+* fraud_alert
+* incident_opened
+* review_flagged
+* booking_dispute
+* payment_failed
+* lost_revenue
+* model_profile_issue
+* availability_conflict
+* membership_past_due
+* document_expiry
+* retention_task
+* queue_failed_job
+
+### source_module
+
+* sla
+* fraud
+* reviews
+* bookings
+* payments
+* retention
+* jobs
+* membership
+* data_quality
+* lost_revenue
+
+### priority
+
+* critical
+* high
+* medium
+* low
+
+### status
+
+* new
+* acknowledged
+* in_progress
+* resolved
+* dismissed
+
+### Индексы
+
+* priority
+* status
+* assigned_user_id
+* source_module
+* entity_type + entity_id
+* dedupe_key
+
+---
+
+## 3.2.10 FraudSignal
+
+### Поля
+
+* `id`
+* `client_id`
+* `booking_id` nullable
+* `model_id` nullable
+* `signal_type`
+* `source_module`
+* `ip_address` nullable
+* `device_fingerprint` nullable
+* `geo_country` nullable
+* `geo_city` nullable
+* `card_fingerprint` nullable
+* `velocity_1h` nullable
+* `velocity_24h` nullable
+* `cancellation_rate_snapshot` nullable
+* `refund_rate_snapshot` nullable
+* `risk_score_impact`
+* `risk_score_before` nullable
+* `risk_score_after` nullable
+* `metadata` nullable
+* `status`
+* `reviewed_by` nullable
+* `reviewed_at` nullable
+* `created_at`
+
+### signal_type
+
+* high_velocity
+* chargeback
+* ip_mismatch
+* suspicious_pattern
+* manual_flag
+* refund_abuse
+* account_sharing
+* geo_anomaly
+* multiple_cards
+
+### source_module
+
+* payments
+* inquiries
+* bookings
+* membership
+* retention
+* manual
+
+### status
+
+* new
+* reviewing
+* confirmed
+* dismissed
+
+### Индексы
+
+* client_id
+* signal_type
+* status
+* source_module
+* created_at
+
+---
+
+## 3.2.11 ClientRiskHistory
+
+### Поля
+
+* `id`
+* `client_id`
+* `previous_status`
+* `new_status`
+* `reason`
+* `created_by`
+* `created_at`
+
+---
+
+## 3.2.12 ReviewComplaintPattern
+
+### Поля
+
+* `id`
+* `model_id`
+* `keyword`
+* `count`
+* `period_start`
+* `period_end`
+* `created_at`
+
+---
+
+## 3.2.13 MembershipBenefitUsage
+
+### Поля
+
+* `id`
+* `client_membership_id`
+* `booking_id` nullable
+* `retention_action_id` nullable
+* `benefit_type`
+* `value_amount`
+* `currency`
+* `status`
+* `metadata_json` nullable
+* `created_by`
+* `expires_at` nullable
+* `created_at`
+
+### benefit_type
+
+* discount
+* priority_support
+* vip_access
+* early_access
+* fee_waiver
+* free_upgrade
+
+### status
+
+* reserved
+* used
+* reversed
+* expired
+
+### Индексы
+
+* client_membership_id
+* booking_id
+* benefit_type
+* status
+
+---
+
+## 3.2.14 PricingDecisionLog
+
+### Поля
+
+* `id`
+* `booking_id` nullable
+* `model_id` nullable
+* `currency`
+* `base_price`
+* `final_price`
+* `decision_source`
+* `applied_rules_json`
+* `pricing_rule_version` nullable
+* `margin_impact` nullable
+* `created_at`
+
+### decision_source
+
+* rule_engine
+* manual_override
+* fallback
+
+---
+
+## 3.2.15 ClientRetentionProfile
+
+### Поля
+
+* `id`
+* `client_id`
+* `last_booking_at` nullable
+* `days_since_last_booking`
+* `total_bookings`
+* `total_spent`
+* `avg_booking_value`
+* `segment`
+* `segment_reason` nullable
+* `churn_risk_score`
+* `churn_risk_factors_json` nullable
+* `next_best_action_type` nullable
+* `updated_at`
+
+### segment
+
+* new
+* active
+* cooling
+* at_risk
+* lost
+* vip
+* whale
+
+### next_best_action_type
+
+* follow_up
+* win_back_offer
+* vip_checkin
+* membership_offer
+* manual_call
+
+### Индексы
+
+* client_id unique
+* segment
+* churn_risk_score
+
+---
+
+## 3.2.16 RetentionAction
+
+### Поля
+
+* `id`
+* `client_id`
+* `owner_user_id` nullable
+* `action_type`
+* `status`
+* `channel`
+* `scheduled_at`
+* `completed_at` nullable
+* `expires_at` nullable
+* `converted_booking_id` nullable
+* `result` nullable
+* `metadata_json` nullable
+* `created_at`
+
+### action_type
+
+* follow_up
+* win_back_offer
+* vip_checkin
+* membership_offer
+* birthday_message
+* inactivity_alert
+* manual_call_task
+
+### status
+
+* planned
+* sent
+* completed
+* failed
+* cancelled
+
+### channel
+
+* email
+* telegram
+* sms
+* internal
+* phone_call
+
+### Индексы
+
+* client_id
+* owner_user_id
+* action_type
+* status
+* scheduled_at
+
+---
+
+## 3.2.17 RetentionCampaign
+
+### Поля
+
+* `id`
+* `name`
+* `trigger_type`
+* `segment_filter`
+* `channel`
+* `template_id` nullable
+* `is_active`
+* `version`
+* `previous_version_id` nullable
+* `created_at`
+* `updated_at`
+
+### trigger_type
+
+* inactivity
+* post_booking
+* vip_followup
+* churn_risk
+* membership_expiry
+
+---
+
+## 3.2.18 ModelSimilarity
+
+### Поля
+
+* `id`
+* `model_a_id`
+* `model_b_id`
+* `similarity_score`
+* `similarity_version`
+* `factors_json`
+* `updated_at`
+
+### Индексы
+
+* model_a_id
+* model_b_id
+
+---
+
+## 3.2.19 AlternativeOffer
+
+### Поля
+
+* `id`
+* `offer_set_id` nullable
+* `inquiry_id` nullable
+* `booking_id` nullable
+* `requested_model_id`
+* `offered_model_id`
+* `generation_reason`
+* `rank`
+* `status`
+* `presented_by_type` nullable
+* `presented_by_id` nullable
+* `shown_at` nullable
+* `accepted_at` nullable
+* `rejected_at` nullable
+* `created_at`
+
+### generation_reason
+
+* requested_model_unavailable
+* price_mismatch
+* location_mismatch
+* schedule_conflict
+* vip_restriction
+
+### status
+
+* generated
+* shown
+* accepted
+* rejected
+* expired
+
+### presented_by_type
+
+* system
+* receptionist
+* manager
+
+### Индексы
+
+* inquiry_id
+* booking_id
+* requested_model_id
+* offered_model_id
+* status
+
+---
+
+## 3.2.20 OfferConversion
+
+### Поля
+
+* `id`
+* `alternative_offer_id`
+* `converted_booking_id` nullable
+* `revenue_amount` nullable
+* `created_at`
+
+---
+
+## 3.2.21 Notification
+
+### Поля
+
+* `id`
+* `template_id` nullable
+* `event_type`
+* `recipient_type`
+* `recipient_id`
+* `recipient_address` nullable
+* `channel`
+* `provider` nullable
+* `status`
+* `idempotency_key`
+* `payload_json`
+* `payload_version` nullable
+* `rendered_subject` nullable
+* `rendered_body`
+* `scheduled_at` nullable
+* `sent_at` nullable
+* `failed_at` nullable
+* `retry_count`
+* `created_at`
+* `updated_at`
+
+### status
+
+* queued
+* sending
+* sent
+* failed
+* cancelled
+
+### Индексы
+
+* recipient_type + recipient_id
+* event_type
+* status
+* idempotency_key unique
+
+---
+
+## 3.2.22 NotificationLog
+
+### Поля
+
+* `id`
+* `notification_id`
+* `attempt_number`
+* `provider`
+* `provider_message_id` nullable
+* `status`
+* `response_json` nullable
+* `error_text` nullable
+* `created_at`
+
+### status
+
+* success
+* failed
+* timeout
+* rejected
+
+---
+
+## 3.2.23 NotificationPreference
+
+### Поля
+
+* `id`
+* `client_id`
+* `channel`
+* `event_type`
+* `is_enabled`
+* `updated_at`
+
+### Индексы
+
+* client_id
+* channel + event_type
+
+---
+
+## 3.2.24 JobQueue
+
+### Поля
+
+* `id`
+* `type`
+* `payload_json`
+* `dedupe_key` nullable
+* `status`
+* `priority`
+* `attempts`
+* `max_attempts`
+* `worker_name` nullable
+* `parent_job_id` nullable
+* `lock_token` nullable
+* `locked_at` nullable
+* `last_heartbeat_at` nullable
+* `scheduled_at`
+* `started_at` nullable
+* `finished_at` nullable
+* `failed_at` nullable
+* `error_text` nullable
+* `created_at`
+* `updated_at`
+
+### type
+
+* send_email
+* send_telegram
+* send_sms
+* generate_report
+* fraud_scan
+* media_processing
+* seo_generation
+* pricing_recalculation
+* retention_scan
+* membership_billing
+* notification_dispatch
+
+### status
+
+* queued
+* running
+* succeeded
+* failed
+* dead_letter
+* cancelled
+
+### priority
+
+* critical
+* high
+* normal
+* low
+
+### Индексы
+
+* status + priority
+* type
+* scheduled_at
+* dedupe_key
+* parent_job_id
+
+---
+
+## 3.2.25 JobLog
+
+### Поля
+
+* `id`
+* `job_id`
+* `step`
+* `status`
+* `message`
+* `created_at`
+
+---
+
+## 3.2.26 StaffPerformanceSnapshot
+
+### Поля
+
+* `id`
+* `user_id`
+* `role_snapshot`
+* `period_start`
+* `period_end`
+* `leads_handled`
+* `avg_first_response_seconds`
+* `conversion_rate`
+* `bookings_completed`
+* `lost_revenue_amount`
+* `cancellation_rate`
+* `complaints_count`
+* `fraud_escalations_count`
+* `retention_actions_completed`
+* `created_at`
+
+---
+
+## 3.2.27 StaffScoreSnapshot
+
+### Поля
+
+* `id`
+* `user_id`
+* `period_start`
+* `period_end`
+* `final_score`
+* `component_scores_json`
+* `is_manual_adjusted`
+* `manual_adjust_reason` nullable
+* `created_at`
+
+---
+
+## 3.2.28 StaffScoreRule
+
+### Поля
+
+* `id`
+* `metric_name`
+* `weight`
+* `created_at`
+* `updated_at`
+
+---
+
+## 3.2.29 DemandStats
+
+### Поля
+
+* `id`
+* `location_id` nullable
+* `city` nullable
+* `area` nullable
+* `time_slot`
+* `requests`
+* `bookings`
+* `conversion_rate`
+* `avg_price`
+* `available_models_count`
+* `demand_score`
+* `created_at`
+
+---
+
+## 3.2.30 DataQualityCheck
+
+### Поля
+
+* `id`
+* `check_type`
+* `entity_type`
+* `entity_id`
+* `status`
+* `severity`
+* `details`
+* `resolved_at` nullable
+* `resolved_by` nullable
+* `created_at`
+
+### check_type
+
+* profile_completeness
+* outdated_profile
+* missing_photos
+* stale_availability
+* price_anomaly
+* missing_membership_link
+* duplicate_client_candidate
+
+### status
+
+* open
+* resolved
+* ignored
+
+### severity
+
+* info
+* warning
+* error
+
+---
+
+# 4. Services
+
+## 4.1 ClientIdentityService
+
+Функции:
+
+* normalize phone/email/telegram/whatsapp
+* искать совпадения
+* создавать merge candidates
+* выполнять merge
+* переносить связи на primary client
+* деактивировать duplicate identities
+* писать audit
+* писать client events
+
+Методы:
+
+* `normalizeIdentity(type, rawValue)`
+* `findClientMatches(payload)`
+* `createMergeCandidate(primaryId, duplicateId, reasons)`
+* `mergeClients(primaryId, duplicateId, actorId, reasonCode)`
+
+---
+
+## 4.2 ClientTimelineService
+
+Функции:
+
+* append timeline events
+* строить human-readable titles
+* фильтровать по visibility
+* возвращать timeline клиента
+
+Методы:
+
+* `appendEvent(params)`
+* `getTimeline(clientId, filters)`
+
+---
+
+## 4.3 AvailabilityService
+
+Функции:
+
+* проверка доступности
+* генерация booked/travel/cooldown slots
+* ручные блокировки
+* удаление слотов из booking
+* детекция конфликтов
+* синхронизация при смене booking status
+
+Методы:
+
+* `checkAvailability(modelId, startAt, endAt, context)`
+* `createBookingSlots(bookingId)`
+* `removeBookingSlots(bookingId)`
+* `createManualBlock(modelId, payload)`
+* `detectConflicts(modelId, range)`
+
+---
+
+## 4.4 LostRevenueService
+
+Функции:
+
+* ручное создание loss entries
+* автодетекция
+* агрегаты summary
+* resolve / waive
+* связь с operations feed
+
+Методы:
+
+* `createEntry(params)`
+* `detectFromLead(leadId)`
+* `detectFromBooking(bookingId)`
+* `detectFromPayment(paymentId)`
+* `resolveEntry(id, actorId, reasonCode)`
+
+---
+
+## 4.5 OperationsFeedService
+
+Функции:
+
+* создавать items
+* дедуплицировать
+* assign / acknowledge / resolve / dismiss
+* auto-close по источнику
+
+Методы:
+
+* `pushItem(params)`
+* `assignItem(itemId, userId)`
+* `resolveItem(itemId, actorId, note)`
+* `dismissItem(itemId, actorId, note)`
+
+---
+
+## 4.6 FraudService
+
+Функции:
+
+* создавать fraud signals
+* считать aggregate risk
+* обновлять risk status
+* писать ClientRiskHistory
+
+Методы:
+
+* `createSignal(params)`
+* `recalculateClientRisk(clientId)`
+* `changeClientRiskStatus(clientId, nextStatus, actorId, reasonCode)`
+
+---
+
+## 4.7 IncidentService
+
+Функции:
+
+* создавать инциденты
+* двигать state machine
+* обрабатывать compensation
+* синхронизировать booking dispute
+* создавать feed items на high/critical
+
+Методы:
+
+* `createIncident(params)`
+* `updateIncidentStatus(id, status, actorId, payload)`
+
+---
+
+## 4.8 ReviewService
+
+Функции:
+
+* создавать review только из completed booking
+* модерация
+* переключение public visibility
+* паттерны жалоб
+* negative streak alerts
+
+Методы:
+
+* `createVerifiedReview(bookingId, clientId, modelId, payload)`
+* `moderateReview(id, status, actorId, reasonCode)`
+* `setVisibility(id, visibility, actorId, reasonCode)`
+* `rebuildComplaintPatterns(modelId)`
+
+---
+
+## 4.9 MembershipService
+
+Функции:
+
+* создание подписки
+* отмена подписки
+* смена статусов
+* применение benefits
+* anti-abuse hooks
+* ограничения для booking
+
+Методы:
+
+* `createMembership(clientId, planId, payload)`
+* `cancelMembership(clientId, actorId, reasonCode)`
+* `applyBenefit(params)`
+* `validateMembershipBookingAccess(clientId, bookingContext)`
+
+---
+
+## 4.10 PricingService
+
+Функции:
+
+* применять pricing rules
+* считать final price
+* логировать pricing decisions
+* manual override
+
+Методы:
+
+* `calculateDynamicPrice(ctx)`
+* `logDecision(ctx, result)`
+* `disableRule(ruleId, actorId, reasonCode)`
+
+---
+
+## 4.11 RetentionService
+
+Функции:
+
+* считать retention profile
+* daily retention scan
+* создавать retention actions
+* связывать retention actions с converted bookings
+
+Методы:
+
+* `rebuildRetentionProfile(clientId)`
+* `runDailyRetentionScan()`
+* `createRetentionAction(params)`
+* `completeRetentionAction(id, result)`
+
+---
+
+## 4.12 AlternativeOfferService
+
+Функции:
+
+* генерировать alternatives
+* ранжировать их
+* показывать / принимать / отклонять
+* связывать с conversion
+
+Методы:
+
+* `generateAlternatives(context)`
+* `markOfferShown(id, actor)`
+* `markOfferAccepted(id, bookingId)`
+* `markOfferRejected(id)`
+
+---
+
+## 4.13 NotificationService
+
+Функции:
+
+* рендер шаблонов
+* создавать notifications
+* класть в queue
+* применять preferences
+* обеспечивать idempotency
+* логировать delivery
+
+Методы:
+
+* `queueNotification(eventType, payload)`
+* `renderTemplate(templateId, payload)`
+* `dispatchNotification(notificationId)`
+
+---
+
+## 4.14 JobService / WorkerService
+
+Функции:
+
+* enqueue
+* lock / claim
+* heartbeat
+* mark success / failure
+* retry with backoff
+* dead letter handling
+
+Методы:
+
+* `enqueue(type, payload, options)`
+* `claimNextJob(workerName)`
+* `heartbeat(jobId)`
+* `markSucceeded(jobId)`
+* `markFailed(jobId, error)`
+* `retry(jobId)`
+
+---
+
+## 4.15 StaffAnalyticsService
+
+Функции:
+
+* строить performance snapshots
+* строить score snapshots
+* отдавать leaderboard
+
+Методы:
+
+* `buildPerformanceSnapshot(period)`
+* `buildScoreSnapshot(period)`
+
+---
+
+## 4.16 DemandAnalyticsService
+
+Функции:
+
+* считать demand aggregates
+* строить heatmap данные
+
+Методы:
+
+* `rebuildDemandStats(period)`
+* `getDemandHeatmap(filters)`
+
+---
+
+## 4.17 SearchService
+
+Функции:
+
+* глобальный поиск
+* RBAC-aware filtering
+* выдача route/display text
+
+Методы:
+
+* `globalSearch(query, actor)`
+
+---
+
+# 5. API routes
+
+## 5.1 Clients
+
+* `GET /api/v1/clients`
+* `GET /api/v1/clients/:id`
+* `GET /api/v1/clients/:id/identities`
+* `GET /api/v1/clients/:id/timeline`
+* `GET /api/v1/clients/merge-candidates`
+* `POST /api/v1/clients/merge`
+
+## 5.2 Availability
+
+* `GET /api/v1/models/:id/availability`
+* `POST /api/v1/models/:id/availability/block`
+* `DELETE /api/v1/models/:id/availability/:slotId`
+* `POST /api/v1/bookings/check-availability`
+
+## 5.3 Lost Revenue
+
+* `GET /api/v1/lost-revenue`
+* `POST /api/v1/lost-revenue`
+* `PATCH /api/v1/lost-revenue/:id/status`
+* `GET /api/v1/lost-revenue/summary`
+
+## 5.4 Operations Feed
+
+* `GET /api/v1/operations-feed`
+* `PATCH /api/v1/operations-feed/:id/assign`
+* `PATCH /api/v1/operations-feed/:id/status`
+
+## 5.5 Fraud
+
+* `GET /api/v1/fraud/signals`
+* `GET /api/v1/fraud/clients/:id/status`
+* `PATCH /api/v1/fraud/clients/:id/status`
+
+## 5.6 Incidents
+
+* `GET /api/v1/incidents`
+* `POST /api/v1/incidents`
+* `PATCH /api/v1/incidents/:id/status`
+
+## 5.7 Reviews
+
+* `GET /api/v1/reviews`
+* `PATCH /api/v1/reviews/:id/status`
+* `PATCH /api/v1/reviews/:id/visibility`
+* `POST /api/v1/reviews/:id/reply`
+
+## 5.8 Membership
+
+* `GET /api/v1/membership/plans`
+* `GET /api/v1/membership/clients/:id/subscription`
+* `POST /api/v1/membership/clients/:id/subscription`
+* `DELETE /api/v1/membership/clients/:id/subscription`
+* `GET /api/v1/membership/invoices`
+* `GET /api/v1/membership/benefit-usage`
+
+## 5.9 Pricing
+
+* `GET /api/v1/pricing/rules`
+* `POST /api/v1/pricing/rules`
+* `PATCH /api/v1/pricing/rules/:id`
+* `DELETE /api/v1/pricing/rules/:id`
+* `POST /api/v1/pricing/calculate`
+
+## 5.10 Retention
+
+* `GET /api/v1/retention/clients`
+* `GET /api/v1/retention/actions`
+* `POST /api/v1/retention/actions`
+* `PATCH /api/v1/retention/actions/:id`
+* `GET /api/v1/retention/campaigns`
+* `POST /api/v1/retention/run-scan`
+
+## 5.11 Alternative Offers
+
+* `POST /api/v1/alternative-offers/generate`
+* `GET /api/v1/alternative-offers`
+* `PATCH /api/v1/alternative-offers/:id/status`
+
+## 5.12 Notifications
+
+* `GET /api/v1/notifications`
+* `GET /api/v1/notification-templates`
+* `PATCH /api/v1/notification-templates/:id`
+* `POST /api/v1/notifications/test`
+
+## 5.13 Jobs
+
+* `GET /api/v1/jobs`
+* `GET /api/v1/jobs/:id`
+* `POST /api/v1/jobs/:id/retry`
+* `POST /api/v1/jobs/:id/cancel`
+
+## 5.14 Staff Performance
+
+* `GET /api/v1/staff-performance`
+* `GET /api/v1/staff-performance/:userId`
+
+## 5.15 Search
+
+* `GET /api/v1/search?q=...`
+
+---
+
+# 6. Background jobs / cron
+
+## 6.1 Каждые 1-5 минут
+
+* notification_dispatch
+* failed_notification_retry
+* dead_letter_monitor
+
+## 6.2 Каждые 5-15 минут
+
+* fraud_signal_recompute
+* lost_revenue_auto_detection
+* operations_feed_auto_close
+* availability_sync_from_booking_changes
+
+## 6.3 Ежечасно
+
+* demand_stats_rebuild
+* pricing_impact_aggregate
+* jobs_health_check
+
+## 6.4 Ежедневно
+
+* retention_scan
+* client_retention_profile_rebuild
+* staff_performance_snapshot_build
+* staff_score_snapshot_build
+* review_complaint_pattern_rebuild
+* data_quality_checks_rebuild
+
+## 6.5 Ежедневно / еженедельно
+
+* owner_analytics_materialized_summary_refresh
+* lost_revenue_summary_refresh
+* membership_benefit_cost_summary_refresh
+
+---
+
+# 7. Admin pages
+
+## 7.1 Clients
+
+Создать:
+
+* `/admin/clients`
+* `/admin/clients/[id]`
+* `/admin/clients/merge-candidates`
+
+### `/admin/clients`
+
+Компоненты:
+
+* search
+* filters
+* table
+* risk status badge
+* vip status badge
+* total spent
+* bookings count
+* last seen
+
+### `/admin/clients/[id]`
+
+Вкладки:
+
+* Overview
+* Timeline
+* Bookings
+* Payments
+* Fraud
+* Membership
+* Retention
+* Identities
+
+### `/admin/clients/merge-candidates`
+
+Компоненты:
+
+* candidate table
+* reasons preview
+* approve / reject / merge actions
+
+---
+
+## 7.2 Availability
+
+Создать:
+
+* `/admin/availability`
+
+Компоненты:
+
+* model calendar
+* day / week view
+* filters by model/city/date
+* create manual block
+* conflict panel
+
+---
+
+## 7.3 Lost Revenue
+
+Создать:
+
+* `/admin/lost-revenue`
+
+Компоненты:
+
+* summary cards
+* filters
+* main table
+* unresolved list
+* root cause aggregation
+
+---
+
+## 7.4 Action Center
+
+Создать:
+
+* `/admin/action-center`
+
+Компоненты:
+
+* feed filters
+* priority tabs
+* assigned to me
+* overdue
+* acknowledge / assign / resolve / snooze actions
+
+---
+
+## 7.5 Notifications
+
+Создать:
+
+* `/admin/notifications`
+* `/admin/notifications/templates`
+
+Компоненты:
+
+* delivery table
+* failed list
+* template editor
+* resend / test send
+
+---
+
+## 7.6 Jobs
+
+Создать:
+
+* `/admin/jobs`
+
+Компоненты:
+
+* queue table
+* running / failed / dead-letter tabs
+* retry button
+* cancel button
+* log drawer
+
+---
+
+## 7.7 Retention
+
+Создать:
+
+* `/admin/retention`
+
+Компоненты:
+
+* at-risk clients
+* retention actions
+* campaign list
+* conversion summary
+
+---
+
+## 7.8 Alternative offers
+
+Создать:
+
+* `/admin/alternative-offers`
+
+Плюс встроить блок в Inquiry / Booking details:
+
+* suggested alternatives
+* show / accept / reject
+
+---
+
+## 7.9 Staff Performance
+
+Создать:
+
+* `/admin/staff-performance`
+
+Компоненты:
+
+* leaderboard
+* filters by period
+* user drilldown
+* raw metrics panel
+* score panel
+
+---
+
+## 7.10 Demand
+
+Создать:
+
+* `/admin/demand`
+
+Компоненты:
+
+* heatmap / table
+* filters by city / area / time range
+* demand score summary
+
+---
+
+# 8. Search response contract
+
+Для `GET /api/v1/search` каждый item обязан содержать:
+
+* `entityType`
+* `entityId`
+* `displayText`
+* `secondaryText` nullable
+* `route`
+* `matchedField`
+
+Search должен быть permissions-aware.
+
+---
+
+# 9. Acceptance criteria
+
+## 9.1 Core
+
+* client merge работает без потери связей
+* client timeline заполняется автоматически
+* overlapping bookings rejected
+* lost revenue entries создаются автоправилами
+* operations feed dedupe работает
+
+## 9.2 Automation
+
+* notifications не отправляются синхронно из API handlers
+* jobs retried with backoff
+* dead_letter visible in UI
+* retention scan создаёт actions
+* alternative offers can convert into booking
+
+## 9.3 Analytics
+
+* staff snapshots materialized
+* demand stats materialized
+* owner summaries refreshed by schedule
+* lost revenue summary available
+
+## 9.4 Security / control
+
+* RBAC applied on all new endpoints
+* reasonCode required on critical manual actions
+* audit logs created for critical actions
+* permissions-aware search works
+
+---
+
+# 10. Sprint order
+
+## Sprint 1
+
+* Prisma changes for Client / Identity / Merge / Timeline
+* ClientIdentityService
+* ClientTimelineService
+* Clients API
+* Clients admin pages
+
+## Sprint 2
+
+* Availability schema
+* AvailabilityService
+* Availability API
+* Availability admin page
+* Booking integration with availability checks
+
+## Sprint 3
+
+* LostRevenue schema
+* LostRevenueService
+* OperationsFeed schema
+* OperationsFeedService
+* Lost Revenue page
+* Action Center page
+
+## Sprint 4
+
+* JobQueue infra
+* Job worker runtime
+* Jobs UI
+* basic monitoring
+
+## Sprint 5
+
+* Notification schema
+* NotificationService
+* template editing
+* dispatch jobs
+* Notifications UI
+
+## Sprint 6
+
+* Retention schema
+* RetentionService
+* retention scan jobs
+* Retention UI
+
+## Sprint 7
+
+* Alternative offers schema
+* AlternativeOfferService
+* integration with inquiry / booking
+* Alternative offers UI
+
+## Sprint 8
+
+* Staff analytics schema
+* StaffAnalyticsService
+* Staff performance UI
+
+## Sprint 9
+
+* Fraud enrichment
+* Membership benefit usage
+* Pricing decision log
+* Search
+* hardening and QA
+
+---
+
+# 11. Final deliverables
+
+Разработчик должен сдать:
+
+## Backend
+
+* обновлённая Prisma schema
+* миграции
+* API routes
+* services
+* queue workers
+* cron jobs
+* audit coverage
+
+## Frontend
+
+* все новые admin pages
+* filters
+* tables
+* timeline
+* calendar
+* states: loading / error / empty
+
+## Infra
+
+* queue processing
+* retry / dead letter
+* scheduled jobs
+
+## QA / docs
+
+* endpoint list
+* cron list
+* audit-covered actions list
+* migration notes
+* rollout notes
+
+---
+
+# 12. Что считать завершением проекта
+
+Проект считается завершённым, когда:
+
+* клиент существует как единая сущность
+* история клиента видна на одном экране
+* booking confirmation зависит от реального availability engine
+* lost revenue считается, логируется и агрегируется
+* action center показывает реальный операционный backlog
+* уведомления централизованы
+* фоновые задачи централизованы
+* retention формализован
+* alternative offers работают
+* staff performance считается
+* search работает по основным сущностям
+* всё это покрыто RBAC, audit и predictable API behavior
+
+Это окончательная developer-ready версия без дополнительных хвостов.

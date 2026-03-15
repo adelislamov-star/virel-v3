@@ -230,7 +230,7 @@ async function parseDocumentWithAI(documentText: string): Promise<AIParsedProfil
     messages.push({ role: 'user', content: `Parse this profile document:\n\n${documentText}` })
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages,
@@ -304,7 +304,7 @@ index = original upload position (0-based). sortOrder = display position (1-base
     })
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
       messages: [{ role: 'user', content: blocks }],
     })
@@ -563,30 +563,46 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[quick-upload] Step 2: Linked ${linkedServices} services`)
 
-    // Step 3: Insert rates
+    // Step 3: Insert rates via Prisma (ModelRate -> CallRateMaster)
     console.log('[quick-upload] Step 3: Inserting rates...')
     let insertedRates = 0
 
-    const rateRows = aiParsed
-      ? mapRatesToRows(aiParsed.rates)
-      : (regexParsed?.rates || []).map(r => ({ duration: r.duration, callType: r.callType as 'incall' | 'outcall', price: r.price }))
+    const rateMasters = await prisma.callRateMaster.findMany({
+      where: { isActive: true },
+      select: { id: true, label: true },
+    })
+    const masterByLabel = new Map(rateMasters.map(m => [m.label.toLowerCase(), m.id]))
 
-    for (const rate of rateRows) {
-      try {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'GBP', true)
-           ON CONFLICT (model_id, location_id, duration_type, call_type) DO UPDATE SET
-             price = EXCLUDED.price, is_active = true`,
-          model.id, rate.duration, rate.callType, rate.price,
-        )
-        insertedRates++
-      } catch (e) {
-        console.error(`[quick-upload] Rate insert failed (${rate.duration} ${rate.callType}):`, e)
+    const aiRates = aiParsed?.rates
+    if (aiRates) {
+      for (const [duration, val] of Object.entries(aiRates)) {
+        if (!val) continue
+        const masterId = masterByLabel.get(duration.toLowerCase())
+        if (!masterId) { console.log('[quick-upload] No master for ' + duration); continue }
+        try {
+          await prisma.modelRate.upsert({
+            where: { modelId_callRateMasterId: { modelId: model.id, callRateMasterId: masterId } },
+            update: { incallPrice: val.incall ?? null, outcallPrice: val.outcall ?? null },
+            create: { modelId: model.id, callRateMasterId: masterId, incallPrice: val.incall ?? null, outcallPrice: val.outcall ?? null },
+          })
+          insertedRates++
+        } catch (e) { console.error('[quick-upload] Rate upsert failed ' + duration, e) }
+      }
+    } else if (regexParsed?.rates?.length) {
+      for (const rate of regexParsed.rates) {
+        const masterId = masterByLabel.get(rate.duration.toLowerCase())
+        if (!masterId) continue
+        try {
+          await prisma.modelRate.upsert({
+            where: { modelId_callRateMasterId: { modelId: model.id, callRateMasterId: masterId } },
+            update: { incallPrice: rate.callType === 'incall' ? rate.price : undefined, outcallPrice: rate.callType === 'outcall' ? rate.price : undefined },
+            create: { modelId: model.id, callRateMasterId: masterId, incallPrice: rate.callType === 'incall' ? rate.price : null, outcallPrice: rate.callType === 'outcall' ? rate.price : null },
+          })
+          insertedRates++
+        } catch (e) { console.error('[quick-upload] Regex rate upsert failed ' + rate.duration, e) }
       }
     }
-    console.log(`[quick-upload] Step 3: Inserted ${insertedRates} rates`)
-
+    console.log('[quick-upload] Step 3: Inserted ' + insertedRates + ' rates')
     // Step 4: Insert address
     console.log('[quick-upload] Step 4: Inserting address...')
     const street = aiParsed?.address || regexParsed?.address?.street || null

@@ -1,5 +1,5 @@
 // @ts-nocheck
-export const revalidate = 1800
+export const revalidate = 60
 
 import { Metadata } from 'next'
 import Link from 'next/link'

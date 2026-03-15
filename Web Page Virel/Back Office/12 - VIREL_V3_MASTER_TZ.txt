@@ -1,0 +1,631 @@
+# Virel v3 — Мастер ТЗ
+**Полная ситуация, аудит, дорожная карта · март 2026**
+
+---
+
+## 1. Контекст проекта
+
+Virel v3 — операционная платформа для модельного агентства (80+ моделей, Лондон).  
+Текущее состояние: бэк офис (`/admin`) работает, публичный фронт (`/`) существует но пустой (0 моделей в БД).
+
+### Инфраструктура
+
+| Сервис | Детали |
+|--------|--------|
+| Frontend / Hosting | Vercel · fra1 Frankfurt |
+| Database | Neon PostgreSQL · eu-central-1 |
+| File Storage | Cloudflare R2 · `virel-operations-eu` |
+| CDN | `https://pub-2df895cf47a14d359a7341e0cda3efaf.r2.dev` |
+| Stack | Next.js 14, TypeScript, Prisma, Tailwind, NextAuth |
+| RBAC | 4 роли (admin и выше) |
+| Prod URL | https://virel-v3.vercel.app |
+| GitHub | adelislamov-star/virel-v3 |
+| Версия | v3.0.0 · Release 1 (Foundation) |
+| Локальный код | `C:\Virel` |
+
+### Env переменные (уже есть)
+
+```
+DATABASE_URL=postgresql://...pooler...?sslmode=require&channel_binding=require
+NEXTAUTH_URL=https://virel-v3.vercel.app
+R2_ACCOUNT_ID=d53624886655cdd8ec0575389906dd2c
+R2_BUCKET_NAME=virel-operations-eu
+```
+
+---
+
+## 2. Аудит — живое состояние (март 2026)
+
+### 2.1 Бэк офис `/admin`
+
+| Раздел | Статус | Проблема |
+|--------|--------|----------|
+| Dashboard | ✅ Работает | Пустой — 0 данных в БД |
+| Action Center | ⚠️ Частично | Queue Worker не работает → задачи зависают часами |
+| Leads | ✅ Работает | — |
+| Clients | ✅ Работает | — |
+| Bookings | ✅ Работает | — |
+| Models (список) | ✅ Работает | 0 моделей в БД |
+| Models / Add Model | ✅ Есть форма | Полная форма, не протестирована с реальными данными |
+| Quick Upload (AI) | ⚠️ Частично | Модальное окно есть, E2E флоу не проверен |
+| Availability | ✅ Работает | Пустой — нет моделей |
+| Reviews | ✅ Работает | — |
+| Incidents | ✅ Работает | — |
+| Fraud Monitor | ✅ Работает | — |
+| Lost Revenue | ✅ Работает | — |
+| Applications | ✅ Работает | — |
+| **Pricing** | 🔴 Баг | `\u00a30` вместо `£0` — сломан рендер символа £ |
+| **Membership** | 🔴 Баг | `\u00a30` вместо `£0` — тот же баг |
+| **Payments** | 🔴 Не сделан | "Coming Soon" |
+| **Audit Log** | 🔴 Не сделан | "Coming Soon" |
+| Reports | ✅ Есть | 4 типа отчётов, нужно тестирование с данными |
+| Notifications | ⚠️ Частично | 0 уведомлений — нет Worker + боты не настроены |
+| **Jobs** | 🔴 Проблема | 5 задач в `queued` с 05:00, никогда не выполняются |
+| Settings / Integrations | ⚠️ Пустые | Telegram, Stripe, Email — все "Not Configured" |
+| SLA Monitor | ✅ Есть | — |
+| Data Quality | ✅ Есть | — |
+| SEO Health | ⚠️ Пустой | 0 страниц — зависит от моделей в БД |
+| Owner Analytics | ✅ Есть | — |
+| Retention | ✅ Есть | — |
+
+**System Status (Dashboard):**
+- Database: 🟢 Connected
+- API Server: 🟢 Running
+- Queue Worker: 🔴 Not Running  ← критично
+- Telegram Bots: 🟡 Not Configured
+
+### 2.2 Публичный фронт `/`
+
+| Страница | URL | Статус |
+|----------|-----|--------|
+| Главная | `/` | ✅ Работает · 195ms загрузка |
+| Companions | `/london-escorts` | ✅ Работает · 0 companions (нет данных) |
+| Join (заявка модели) | `/join` | ✅ Работает · 5-шаговая форма |
+| **About** | `/about` | 🔴 404 |
+| **Contact** | `/contact` | 🔴 404 |
+| **Book Now** (кнопка в nav) | `/book` | 🔴 404 |
+| FAQ | `/faq` | не проверено |
+| Services | `/services` | не проверено |
+| Terms / Privacy | `/terms` `/privacy` | не проверено |
+| Escorts in Mayfair и др. | `/escorts-in/[city]` | ✅ Страницы есть · 0 данных |
+| Профили моделей | `/companions/[slug]` | Нет данных |
+
+**SEO (главная):**
+- Title, meta description, canonical, OG теги — ✅ всё есть
+- TTFB: 30ms · Load: 195ms · имagesCount: 0 (hero пустой — нет фото)
+- Hero section: правая половина с текстом есть, левая половина — чёрная (нет фото)
+
+---
+
+## 3. Стратегия — 4 фазы
+
+```
+Фаза 1  Крепкий бэк офис          ← СЕЙЧАС
+Фаза 2  Загрузка анкет моделей     ← после Фазы 1
+Фаза 3  Публичный фронт            ← после Фазы 2
+Фаза 4  Members кабинет            ← после Фазы 3
+```
+
+**Принцип:** каждая фаза — самодостаточный фундамент для следующей.  
+Фронт не трогаем пока нет данных. Members не делаем пока нет моделей.
+
+---
+
+## 4. ФАЗА 1 — Крепкий бэк офис
+
+### Блок A — Критические блокеры
+
+#### A1 · Queue Worker → Vercel Cron Jobs
+**Приоритет:** 🔴 Блокер · **Время:** 2–3 ч
+
+**Проблема:** Vercel Serverless не поддерживает постоянный фоновый процесс.  
+5 задач висят в `queued` бесконечно: `fraud_scan`, `lost_revenue_auto_detection`,  
+`operations_feed_auto_close`, `notification_dispatch`, `demand_stats_rebuild`.
+
+**Решение:**
+```
+1. Создать vercel.json с cron schedule:
+   - notification_dispatch  → каждые 5 мин
+   - fraud_scan             → каждые 15 мин
+   - operations_feed_auto_close → каждый час
+   - lost_revenue_auto_detection → каждый час
+   - demand_stats_rebuild   → каждые 6 часов
+
+2. Создать API routes для каждого job:
+   src/app/api/cron/notification-dispatch/route.ts
+   src/app/api/cron/fraud-scan/route.ts
+   src/app/api/cron/operations-feed/route.ts
+   src/app/api/cron/lost-revenue/route.ts
+   src/app/api/cron/demand-stats/route.ts
+
+3. Добавить CRON_SECRET в Vercel env
+4. В каждом handler проверять: 
+   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) 
+     return 401
+5. Обновлять статус задачи в таблице Jobs после выполнения
+```
+
+**Env переменные:**
+```
+CRON_SECRET=<random 32 chars>
+```
+
+---
+
+#### A2 · Баг символа £ в Pricing и Membership
+**Приоритет:** 🔴 Блокер · **Время:** 30 мин
+
+**Проблема:** Отображается `\u00a30` и `1U00A3` вместо `£0`.
+
+**Решение:**
+```
+1. В src/app/admin/pricing/page.tsx и src/app/admin/membership/page.tsx
+2. Найти все occurrences символа £
+3. Заменить на литерал £ (убедиться что файл сохранён в UTF-8)
+   ИЛИ использовать: {'\u00a3'}{value} в JSX
+4. Проверить все другие страницы на тот же баг (Reports, Dashboard)
+```
+
+---
+
+### Блок B — Недостающие страницы бэк офиса
+
+#### B1 · Страница Payments — ручной учёт платежей
+**Приоритет:** 🔴 Важно · **Время:** 1 день
+
+**Сейчас:** "Coming Soon"
+
+**Что построить:**
+```
+Prisma модель Payment:
+  id, clientId, modelId, bookingId?, amount, currency(GBP),
+  method (cash/bank_transfer/card/crypto), status (pending/received/refunded),
+  reference, notes, receivedAt, createdAt, createdBy
+
+API:
+  GET  /api/v1/payments         ← список с фильтрами
+  POST /api/v1/payments         ← создать вручную
+  PUT  /api/v1/payments/[id]    ← обновить статус
+  GET  /api/v1/payments/summary ← итоги по периоду
+
+UI страница /admin/payments:
+  - Таблица: дата, клиент, модель, сумма, метод, статус, заметка
+  - Форма "+ Add Payment" (ручной ввод)
+  - Фильтры: период, модель, метод, статус
+  - Итоги сверху: всего получено / ожидает / возвраты
+  - Export CSV
+  - Архитектура готова к подключению Stripe (поле stripePaymentId)
+```
+
+---
+
+#### B2 · Страница Audit Log — журнал всех действий
+**Приоритет:** 🔴 Важно · **Время:** 1 день
+
+**Сейчас:** "Coming Soon"
+
+**Что построить:**
+```
+Prisma модель AuditLog:
+  id, userId, userEmail, action, resource, resourceId,
+  before (JSON), after (JSON), ip, userAgent, createdAt
+
+Логировать события:
+  - Создание/редактирование/удаление моделей
+  - Создание/изменение бронирований
+  - Создание/изменение клиентов
+  - Вход / выход из системы
+  - Изменение настроек
+  - Одобрение/отклонение заявок
+
+Service logAudit():
+  src/lib/audit.ts
+  Вызывать из всех мутирующих API routes
+
+UI страница /admin/audit-log:
+  - Таблица: время, пользователь, действие, ресурс, IP
+  - Фильтры: пользователь, тип действия, дата, ресурс
+  - Клик на строку → детали (before/after JSON)
+  - Хранить 90 дней
+```
+
+---
+
+### Блок C — Интеграции
+
+#### C1 · Telegram боты
+**Приоритет:** 🟡 Важно · **Время:** 1–2 ч
+
+```
+Env переменные добавить в Vercel:
+  TELEGRAM_DIVA_BOT_TOKEN=...
+  TELEGRAM_KESHA_BOT_TOKEN=...
+  TELEGRAM_ADMIN_CHAT_ID=...
+
+Создать:
+  src/lib/telegram.ts          ← sendTelegramMessage(chatId, text)
+  src/app/api/telegram/diva/route.ts
+  src/app/api/telegram/kesha/route.ts
+
+Базовые уведомления:
+  - Новое бронирование → @Tommy_Fridman
+  - Новый лид
+  - Критический алерт Action Center
+  - Fraud alert
+
+Обновить Settings страницу:
+  - Показывать Connected / Not Configured динамически
+  - Тест кнопка "Send test message"
+```
+
+---
+
+#### C2 · Email — Resend
+**Приоритет:** 🟡 Важно · **Время:** 2 ч
+
+```
+Env:
+  RESEND_API_KEY=...
+  EMAIL_FROM=bookings@virel.com
+
+Создать:
+  src/lib/email.ts             ← sendEmail(to, template, data)
+
+Шаблоны:
+  - booking_confirmation       ← клиенту
+  - booking_reminder           ← за 2 часа до
+  - new_lead_alert             ← менеджеру
+  - system_alert               ← критические ошибки
+
+Интеграция с notification_dispatch cron (задача A1)
+```
+
+---
+
+### Блок D — Безопасность
+
+#### D1 · Rate limiting на /api/auth/login
+**Приоритет:** 🟡 Важно · **Время:** 2 ч
+
+```
+npm install @upstash/ratelimit @upstash/redis
+
+Env:
+  UPSTASH_REDIS_REST_URL=...
+  UPSTASH_REDIS_REST_TOKEN=...
+
+Создать:
+  src/lib/ratelimit.ts
+
+Правило: 5 попыток / 15 мин с одного IP
+При превышении: 429 + сообщение пользователю
+Применить в: src/app/api/auth/[...nextauth]/route.ts
+```
+
+---
+
+#### D2 · Sentry — мониторинг ошибок prod
+**Приоритет:** 🟡 Важно · **Время:** 1 ч
+
+```
+npm install @sentry/nextjs
+npx @sentry/wizard@latest -i nextjs
+
+Env:
+  SENTRY_DSN=...
+  SENTRY_AUTH_TOKEN=...
+
+Обернуть next.config.js в withSentryConfig()
+Алерт на email при Error Rate > 5/мин
+```
+
+---
+
+### Блок E — Инфраструктура
+
+#### E1 · Neon connection pooling — правильная настройка
+**Приоритет:** 🟡 Важно · **Время:** 30 мин
+
+```
+В Vercel env:
+  DATABASE_URL = pooler URL + ?pgbouncer=true&connect_timeout=15
+  DIRECT_URL   = прямой URL (без pooler) — для Prisma migrations
+
+В prisma/schema.prisma:
+  datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")   ← добавить
+  }
+
+Зачем: предотвращает "too many connections" при масштабировании
+```
+
+---
+
+### Порядок выполнения Фазы 1
+
+| # | Задача | Время | Статус |
+|---|--------|-------|--------|
+| 1 | A1 — Queue Worker → Cron Jobs | 2–3 ч | 🔴 Блокер |
+| 2 | A2 — Баг £ символа | 30 мин | 🔴 Блокер |
+| 3 | E1 — Neon pooling | 30 мин | Сразу после |
+| 4 | D1 — Rate limiting | 2 ч | Безопасность |
+| 5 | D2 — Sentry | 1 ч | Мониторинг |
+| 6 | B1 — Payments страница | 1 день | Функционал |
+| 7 | B2 — Audit Log страница | 1 день | Функционал |
+| 8 | C1 — Telegram боты | 1–2 ч | Интеграции |
+| 9 | C2 — Email Resend | 2 ч | Интеграции |
+
+**Итого Фаза 1: ~5–6 дней**
+
+---
+
+### Env переменные — всё что нужно добавить в Vercel
+
+| Переменная | Для чего | Статус |
+|------------|----------|--------|
+| `DIRECT_URL` | Neon прямой URL для миграций | ❌ Нет |
+| `CRON_SECRET` | Защита cron endpoints | ❌ Нет |
+| `UPSTASH_REDIS_REST_URL` | Rate limiting | ❌ Нет |
+| `UPSTASH_REDIS_REST_TOKEN` | Rate limiting | ❌ Нет |
+| `SENTRY_DSN` | Error monitoring | ❌ Нет |
+| `SENTRY_AUTH_TOKEN` | Source maps | ❌ Нет |
+| `RESEND_API_KEY` | Email | ❌ Нет |
+| `EMAIL_FROM` | Email from address | ❌ Нет |
+| `TELEGRAM_DIVA_BOT_TOKEN` | DivaReceptionBot | ❌ Нет |
+| `TELEGRAM_KESHA_BOT_TOKEN` | KeshaZeroGapBot | ❌ Нет |
+| `TELEGRAM_ADMIN_CHAT_ID` | Куда слать алерты | ❌ Нет |
+
+---
+
+## 5. ФАЗА 2 — Загрузка анкет моделей
+
+**Цель:** первые реальные модели в БД → весь фронт оживает автоматически.
+
+### F1 · Quick Upload — довести до production-ready
+**Время:** 2–3 дня
+
+```
+Текущее состояние:
+  - /admin/models/new — полная форма ✅
+  - Quick Upload modal — существует ✅
+  - E2E флоу — не протестирован ❌
+
+Что доделать:
+  1. Загрузка фото → R2 bucket → URL в модели
+     Структура: r2/models/{id}/cover.jpg
+                r2/models/{id}/gallery/{n}.jpg
+                r2/models/{id}/members/  ← для закрытого кабинета (Фаза 4)
+
+  2. Quick Upload: PDF/DOCX анкета → Claude AI автозаполняет поля
+     API: POST /api/v1/models/quick-upload
+     Сохранить оригинал анкеты в R2: r2/models/{id}/docs/application.pdf
+
+  3. Валидация:
+     - Обязательные: Name, Age, Nationality
+     - Фото: JPG/PNG/WebP, макс 10MB
+     - Возраст: >= 18
+
+  4. После Save:
+     - Модель появляется в /admin/models
+     - Запускается seed SEO страниц
+     - Telegram уведомление менеджеру
+
+  5. E2E тест:
+     Загрузить анкету → AI заполнил → добавили фото →
+     Save → модель в БД → фото в R2 → видна в Availability
+```
+
+### F2 · Seed тестовых данных
+**Время:** 1–2 ч
+
+```
+Создать scripts/seed-test-data.ts:
+  - 5 тестовых моделей (Active статус)
+  - 3 лида
+  - 2 клиента
+  - 3 бронирования
+
+После seed:
+  npx tsx scripts/seed-seo-pages.ts  ← SEO Health заполнится
+  Проверить все разделы бэк офиса с реальными данными
+```
+
+---
+
+## 6. ФАЗА 3 — Публичный фронт
+
+**Цель:** живой публичный сайт подключён к реальным данным из БД.
+
+### Текущее состояние фронта
+
+**Что уже есть и работает:**
+- Главная `/` — дизайн готов, hero section без фото (левая половина чёрная)
+- Companions `/london-escorts` — страница есть, 0 данных
+- Join `/join` — 5-шаговая форма заявки модели ✅
+- Footer с SEO ссылками по районам Лондона ✅
+- SEO мета теги, OG, canonical, robots ✅
+- 9 geo страниц `/escorts-in/[city]` — структура есть
+
+**Что нужно доделать (код):**
+```
+1. About /about                     ← 404, создать страницу
+2. Contact /contact                 ← 404, создать страницу
+3. Book Now кнопка в nav            ← ведёт на /book (404)
+   Исправить href на /contact ИЛИ создать /book страницу
+4. Hero section фото                ← подключить из R2 когда будут модели
+5. FAQ /faq                         ← проверить что работает
+6. Services /services               ← проверить что работает
+```
+
+**Что оживёт автоматически после Фазы 2:**
+- Featured Companions на главной
+- Полный каталог /london-escorts
+- Geo страницы /escorts-in/[city]
+- Профили /companions/[slug]
+
+### Будущие страницы (Sprint 15+):
+```
+/companions/[slug]   ← публичные профили моделей
+sitemap.xml          ← автогенерация из БД
+schema.org           ← структурированные данные
+Stripe               ← онлайн оплата
+```
+
+---
+
+## 7. ФАЗА 4 — Members кабинет
+
+**Цель:** закрытый портал для VIP клиентов с расширенным доступом.
+
+### Структура
+
+```
+/members              ← landing + форма входа
+/members/dashboard    ← главная кабинета (protected)
+/members/companions   ← расширенный каталог с полными фото
+/members/book         ← онлайн бронирование
+/members/bookings     ← история бронирований
+/members/profile      ← настройки аккаунта
+```
+
+### Уровни доступа
+
+| Tier | Доступ | Цена |
+|------|--------|------|
+| Silver | Каталог + обложки фото + заявка на бронирование | £50/мес |
+| Gold | Всё + все фото + онлайн бронирование + история | £150/мес |
+| Platinum | Всё + прямые контакты + dedicated manager | by invite |
+
+### Технические требования
+
+```
+Auth: отдельный NextAuth provider для members
+      JWT в httpOnly cookie, 30 дней
+      Нет пересечения с /admin
+
+Новые Prisma модели:
+  Member { id, email, passwordHash, name, phone, tier, status,
+           approvedAt, approvedBy, stripeId, createdAt }
+  MemberBooking { id, memberId, modelId, date, duration,
+                  type, address, status, adminNotes, createdAt }
+
+Enum MemberTier: SILVER | GOLD | PLATINUM
+Enum MemberStatus: PENDING | ACTIVE | SUSPENDED
+
+R2 структура фото:
+  r2/models/{id}/cover.jpg        ← все видят
+  r2/models/{id}/gallery/         ← только авторизованные Gold+
+  r2/models/{id}/members/         ← приватные (Presigned URLs 1ч)
+
+Связь с бэк офисом:
+  - Регистрация → Client запись в /admin/clients
+  - MemberBooking → Booking с флагом source: "member_portal"
+  - Управление → новый раздел /admin/members
+
+API:
+  /api/v1/members/auth
+  /api/v1/members/companions
+  /api/v1/members/bookings
+
+Дизайн: стиль публичного сайта (чёрный фон, золото, serif)
+        НЕ как /admin
+```
+
+### Что добавить в бэк офис для Members (в рамках Фазы 1)
+
+```
+/admin/members       ← новый раздел (список members, одобрение, тир, статус)
+                       Добавить в sidebar после Applications
+```
+
+---
+
+## 8. Что убрать из технического долга (не делать сейчас)
+
+| Пункт | Причина |
+|-------|---------|
+| Redis кеш Dashboard | Страницы 400ms, данных нет. Делать при 1000+ записей |
+| SWR замена fetch | Нет пользователей. Делать перед Фазой 3 |
+| SSE Real-time | Решается Cron Jobs (A1). SSE — после запуска |
+| Composite DB indexes | Пустая БД. Делать при 500+ записях |
+| Cursor pagination | Нет данных. Делать при 500+ записях |
+| Weekly R2 backup | Neon делает автобэкапы |
+| Staging environment | Нужен когда появится команда разработчиков |
+| Uptime monitoring BetterStack | Заменяется Sentry (D2) |
+
+---
+
+## 9. Структура файлов — ключевые пути
+
+```
+src/
+  app/
+    admin/
+      dashboard/page.tsx
+      models/
+        page.tsx
+        new/page.tsx
+        [id]/page.tsx
+      bookings/page.tsx
+      clients/page.tsx
+      leads/page.tsx
+      pricing/page.tsx          ← баг £
+      membership/page.tsx       ← баг £
+      payments/page.tsx         ← Coming Soon → сделать (B1)
+      audit-log/page.tsx        ← Coming Soon → сделать (B2)
+      jobs/page.tsx
+      settings/page.tsx
+      members/page.tsx          ← новый (для Фазы 4)
+    api/
+      v1/
+        models/route.ts
+        clients/route.ts
+        bookings/route.ts
+        payments/route.ts       ← создать (B1)
+        members/                ← создать (Фаза 4)
+      cron/
+        notification-dispatch/route.ts  ← создать (A1)
+        fraud-scan/route.ts             ← создать (A1)
+        operations-feed/route.ts        ← создать (A1)
+        lost-revenue/route.ts           ← создать (A1)
+        demand-stats/route.ts           ← создать (A1)
+      telegram/
+        diva/route.ts           ← создать (C1)
+        kesha/route.ts          ← создать (C1)
+    (public)/
+      page.tsx                  ← главная
+      london-escorts/page.tsx   ← companions
+      about/page.tsx            ← создать (Фаза 3)
+      contact/page.tsx          ← создать (Фаза 3)
+      join/page.tsx
+      members/                  ← создать (Фаза 4)
+  lib/
+    telegram.ts                 ← создать (C1)
+    email.ts                    ← создать (C2)
+    ratelimit.ts                ← создать (D1)
+    audit.ts                    ← создать (B2)
+  prisma/
+    schema.prisma               ← добавить directUrl, Payment, AuditLog, Member
+scripts/
+  seed-seo-pages.ts             ← уже есть, исправлен
+  seed-test-data.ts             ← создать (F2)
+vercel.json                     ← создать cron schedule (A1)
+```
+
+---
+
+## 10. Контакты команды
+
+| Роль | Контакт |
+|------|---------|
+| Owner / Dev | Adel |
+| Director | Tommy · @Tommy_Fridman · +44 78 6465 8711 |
+| Reception | Lukas, Sasha, Adam, Donald |
+| Reception Bot | @Kesha_Reminder_bot (Railway) |
+
+---
+
+*Документ актуален на март 2026. Обновлять после каждой завершённой фазы.*
+```
