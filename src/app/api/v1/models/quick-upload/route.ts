@@ -471,13 +471,15 @@ export async function POST(request: NextRequest) {
         wardrobe: aiParsed?.wardrobe || [],
 
         // Contact
-        phone: aiParsed?.phone || null,
+        phone: aiParsed?.phone || aiParsed?.whatsapp_number || null,
         phone2: aiParsed?.phone2 || null,
         email: aiParsed?.email || null,
-        whatsapp: aiParsed?.whatsapp ?? false,
-        telegram: aiParsed?.telegram ?? false,
-        viber: aiParsed?.viber ?? false,
-        signal: aiParsed?.signal ?? false,
+        telegramTag: typeof aiParsed?.telegram === 'string' ? aiParsed.telegram : null,
+        telegramPhone: typeof aiParsed?.whatsapp === 'string' ? aiParsed.whatsapp : null,
+        whatsapp: aiParsed?.whatsapp ? true : false,
+        telegram: aiParsed?.telegram ? true : false,
+        viber: aiParsed?.viber ? true : false,
+        signal: aiParsed?.signal ? true : false,
 
         // Payment methods
         paymentCash: aiParsed?.payment_methods?.some(m => m === 'cash') ?? false,

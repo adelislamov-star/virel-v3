@@ -80,32 +80,7 @@ export function BookingWidget({
           )}
         </div>
 
-        {hasAnyPrice ? (
-          <>
-            {incallRates.length > 0 && (
-              <>
-                <div className="bw-section-label">Incall</div>
-                {incallRates.map(r => (
-                  <div key={`in-${r.label}`} className="bw-rate-row">
-                    <span className="bw-rate-label">{r.label}</span>
-                    <span className="bw-rate-price">£{r.incallPrice!.toLocaleString('en-GB')}</span>
-                  </div>
-                ))}
-              </>
-            )}
-            {outcallRates.length > 0 && (
-              <>
-                <div className="bw-section-label">Outcall</div>
-                {outcallRates.map(r => (
-                  <div key={`out-${r.label}`} className="bw-rate-row">
-                    <span className="bw-rate-label">{r.label}</span>
-                    <span className="bw-rate-price">£{r.outcallPrice!.toLocaleString('en-GB')}</span>
-                  </div>
-                ))}
-              </>
-            )}
-          </>
-        ) : (
+        {!hasAnyPrice && (
           <p className="bw-no-price">Contact us for pricing</p>
         )}
 
