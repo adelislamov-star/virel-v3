@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!model) return {}
   const ogImage = model.media?.[0]?.url
   return {
-    title: model.seoTitle ?? `${model.name} | Virel London`,
+    title: model.seoTitle ?? model.name,
     description: model.seoDescription
       ?? `Book ${model.name}${model.tagline ? ` — ${model.tagline}` : ''}. London companion agency.`,
     openGraph: {
@@ -82,8 +82,8 @@ export default async function ModelProfilePage({ params }: Props) {
       media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
       primaryLocation: true,
       modelRates: {
-        include: { callRateMaster: true },
-        orderBy: { callRateMaster: { sortOrder: 'asc' } },
+        where: { isActive: true },
+        orderBy: [{ durationType: 'asc' }, { callType: 'asc' }],
       },
       modelLocations: {
         include: { district: true },
@@ -103,24 +103,49 @@ export default async function ModelProfilePage({ params }: Props) {
   let rawMinPrice: number | null = null
   try {
     const raw: any[] = await prisma.$queryRaw`
-      SELECT MIN(LEAST(COALESCE(incall_price, 999999), COALESCE(outcall_price, 999999))) as min_price
+      SELECT MIN(price) as min_price
       FROM model_rates
       WHERE model_id = ${model.id}
+        AND is_active = true
+        AND price > 0
     `
-    if (raw[0]?.min_price && Number(raw[0].min_price) < 999999) {
+    if (raw[0]?.min_price && Number(raw[0].min_price) > 0) {
       rawMinPrice = Number(raw[0].min_price)
     }
   } catch {}
 
-  // Build rates from new schema (modelRates with callRateMaster)
-  const widgetRates = model.modelRates.map((mr: any) => ({
-    label: mr.callRateMaster.label,
-    durationMin: mr.callRateMaster.durationMin,
-    incallPrice: mr.incallPrice ? Number(mr.incallPrice) : null,
-    outcallPrice: mr.outcallPrice ? Number(mr.outcallPrice) : null,
-  }))
+  // Duration labels & sort order
+  const DURATION_INFO: Record<string, { label: string; durationMin: number; sort: number }> = {
+    '30min': { label: '30 Minutes', durationMin: 30, sort: 1 },
+    '45min': { label: '45 Minutes', durationMin: 45, sort: 2 },
+    '1hour': { label: '1 Hour', durationMin: 60, sort: 3 },
+    '90min': { label: '90 Minutes', durationMin: 90, sort: 4 },
+    '2hours': { label: '2 Hours', durationMin: 120, sort: 5 },
+    '3hours': { label: '3 Hours', durationMin: 180, sort: 6 },
+    '4hours': { label: '4 Hours', durationMin: 240, sort: 7 },
+    'overnight': { label: 'Overnight', durationMin: 540, sort: 8 },
+    'extra_hour': { label: 'Extra Hour', durationMin: 60, sort: 9 },
+  }
 
-  // Build rates table from Prisma modelRates
+  // Pivot flat rates into incall/outcall per duration
+  const pivotMap = new Map<string, { incallPrice: number | null; outcallPrice: number | null }>()
+  for (const mr of model.modelRates as any[]) {
+    if (!pivotMap.has(mr.durationType)) {
+      pivotMap.set(mr.durationType, { incallPrice: null, outcallPrice: null })
+    }
+    const entry = pivotMap.get(mr.durationType)!
+    if (mr.callType === 'incall') entry.incallPrice = Number(mr.price)
+    if (mr.callType === 'outcall') entry.outcallPrice = Number(mr.price)
+  }
+
+  const widgetRates = Array.from(pivotMap.entries())
+    .map(([dt, prices]) => {
+      const info = DURATION_INFO[dt] || { label: dt, durationMin: 0, sort: 99 }
+      return { label: info.label, durationMin: info.durationMin, sort: info.sort, incallPrice: prices.incallPrice, outcallPrice: prices.outcallPrice }
+    })
+    .sort((a, b) => a.sort - b.sort)
+
+  // Build rates table from pivoted data
   const ratesTable = widgetRates.map((r: any) => ({
     label: r.label,
     incall: r.incallPrice,
@@ -206,7 +231,7 @@ export default async function ModelProfilePage({ params }: Props) {
       include: {
         stats: true,
         media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-        modelRates: { include: { callRateMaster: true }, orderBy: { callRateMaster: { durationMin: 'asc' } }, take: 1 },
+        modelRates: { where: { isActive: true, price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
       },
       take: 3,
       orderBy: { createdAt: 'desc' },
@@ -218,7 +243,7 @@ export default async function ModelProfilePage({ params }: Props) {
         include: {
           stats: true,
           media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-          modelRates: { include: { callRateMaster: true }, orderBy: { callRateMaster: { durationMin: 'asc' } }, take: 1 },
+          modelRates: { where: { isActive: true, price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
         },
         take: 3 - similarModels.length,
         orderBy: { createdAt: 'desc' },
@@ -232,9 +257,11 @@ export default async function ModelProfilePage({ params }: Props) {
     const simIds = similarModels.map((m: any) => m.id)
     if (simIds.length > 0) {
       const simRates: any[] = await prisma.$queryRaw`
-        SELECT model_id, MIN(LEAST(COALESCE(incall_price, 999999), COALESCE(outcall_price, 999999))) as min_price
+        SELECT model_id, MIN(price) as min_price
         FROM model_rates
         WHERE model_id = ANY(${simIds}::text[])
+          AND is_active = true
+          AND price > 0
         GROUP BY model_id
       `
       for (const r of simRates) similarPrices[r.model_id] = Number(r.min_price)
@@ -571,8 +598,8 @@ export default async function ModelProfilePage({ params }: Props) {
             <div className="similar-grid">
               {similarModels.map((sim: any) => {
                 const simPhoto = sim.media[0]?.url ?? null
-                const simPrice = sim.modelRates?.[0]?.incallPrice
-                  ? Number(sim.modelRates[0].incallPrice)
+                const simPrice = sim.modelRates?.[0]?.price
+                  ? Number(sim.modelRates[0].price)
                   : similarPrices[sim.id] ?? null
 
                 return (

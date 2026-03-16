@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
   if (!district) return {}
   return {
-    title: district.seoTitle || `Companions in ${district.name} | Virel London`,
+    title: district.seoTitle || `Companions in ${district.name}`,
     description: district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
     alternates: { canonical: `https://virel-v3.vercel.app/london/${slug}/` },
   }
@@ -57,8 +57,8 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
           take: 1,
         },
         modelRates: {
-          include: { callRateMaster: true },
-          orderBy: { callRateMaster: { sortOrder: 'asc' } },
+          where: { isActive: true, price: { gt: 0 } },
+          orderBy: { price: 'asc' },
           take: 1,
         },
       },
@@ -75,7 +75,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
   if (!district) notFound()
 
   const minPrice = models.reduce((min, m) => {
-    const p = m.modelRates?.[0]?.incallPrice
+    const p = m.modelRates?.[0]?.price
     return p && (min === 0 || p < min) ? p : min
   }, 0)
 
@@ -154,7 +154,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
                 isVerified={m.isVerified}
                 isExclusive={m.isExclusive}
                 districtName={m.modelLocations?.[0]?.district?.name}
-                minIncallPrice={m.modelRates?.[0]?.incallPrice}
+                minIncallPrice={m.modelRates?.[0]?.price}
               />
             ))}
           </div>

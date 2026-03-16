@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!hub) return {}
   const wordCount = hub.description?.split(' ').length ?? 0
   return {
-    title: hub.seoTitle || `Companions near ${hub.name} Station | Virel London`,
+    title: hub.seoTitle || `Companions near ${hub.name} Station`,
     description: hub.seoDescription || `Find premium companions near ${hub.name} Station in London. Verified escorts available for incall and outcall.`,
     alternates: { canonical: `https://virel-v3.vercel.app/london/${slug}/${station}/` },
     robots: wordCount < 50 ? { index: false, follow: true } : { index: true, follow: true },
@@ -63,8 +63,8 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
         take: 1,
       },
       modelRates: {
-        include: { callRateMaster: true },
-        orderBy: { callRateMaster: { sortOrder: 'asc' } },
+        where: { isActive: true, price: { gt: 0 } },
+        orderBy: { price: 'asc' },
         take: 1,
       },
     },
@@ -131,7 +131,7 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
                 isVerified={m.isVerified}
                 isExclusive={m.isExclusive}
                 districtName={m.modelLocations?.[0]?.district?.name}
-                minIncallPrice={m.modelRates?.[0]?.incallPrice}
+                minIncallPrice={m.modelRates?.[0]?.price}
               />
             ))}
           </div>
