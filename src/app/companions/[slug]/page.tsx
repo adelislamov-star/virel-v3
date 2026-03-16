@@ -96,21 +96,6 @@ export default async function ModelProfilePage({ params }: Props) {
 
   if (!model) notFound()
 
-  // Raw SQL fallback for min price only
-  let rawMinPrice: number | null = null
-  try {
-    const raw: any[] = await prisma.$queryRaw`
-      SELECT MIN(price) as min_price
-      FROM model_rates
-      WHERE model_id = ${model.id}
-        AND is_active = true
-        AND price > 0
-    `
-    if (raw[0]?.min_price && Number(raw[0].min_price) > 0) {
-      rawMinPrice = Number(raw[0].min_price)
-    }
-  } catch {}
-
   // Duration labels & sort order
   const DURATION_INFO: Record<string, { label: string; durationMin: number; sort: number }> = {
     '30min': { label: '30 Minutes', durationMin: 30, sort: 1 },
@@ -131,8 +116,8 @@ export default async function ModelProfilePage({ params }: Props) {
       pivotMap.set(mr.durationType, { incallPrice: null, outcallPrice: null })
     }
     const entry = pivotMap.get(mr.durationType)!
-    if (mr.callType === 'incall') entry.incallPrice = Number(mr.price)
-    if (mr.callType === 'outcall') entry.outcallPrice = Number(mr.price)
+    if (mr.incallPrice != null) entry.incallPrice = Number(mr.incallPrice)
+    if (mr.outcallPrice != null) entry.outcallPrice = Number(mr.outcallPrice)
   }
 
   const widgetRates = Array.from(pivotMap.entries())
@@ -154,7 +139,7 @@ export default async function ModelProfilePage({ params }: Props) {
     ...widgetRates.map((r: any) => r.incallPrice).filter(Boolean),
     ...widgetRates.map((r: any) => r.outcallPrice).filter(Boolean),
   ]
-  const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : rawMinPrice
+  const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : null
 
   // Photos
   const primaryPhoto = model.media.find((m: any) => m.isPrimary)?.url || model.media[0]?.url || null
@@ -254,14 +239,13 @@ export default async function ModelProfilePage({ params }: Props) {
     const simIds = similarModels.map((m: any) => m.id)
     if (simIds.length > 0) {
       const simRates: any[] = await prisma.$queryRaw`
-        SELECT model_id, MIN(price) as min_price
+        SELECT model_id, LEAST(MIN(incall_price), MIN(outcall_price)) as min_price
         FROM model_rates
         WHERE model_id = ANY(${simIds}::text[])
-          AND is_active = true
-          AND price > 0
+          AND (incall_price > 0 OR outcall_price > 0)
         GROUP BY model_id
       `
-      for (const r of simRates) similarPrices[r.model_id] = Number(r.min_price)
+      for (const r of simRates) if (r.min_price) similarPrices[r.model_id] = Number(r.min_price)
     }
   } catch {}
 
