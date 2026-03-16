@@ -85,8 +85,6 @@ export default async function CompanionsPage({
           take: 1,
         },
         modelRates: {
-          where: { price: { gt: 0 } },
-          orderBy: { price: 'asc' },
           take: 1,
         },
       },
@@ -252,8 +250,8 @@ export default async function CompanionsPage({
                 {filteredModels.map((model: any) => {
                   const photo = model.media[0]?.url
                   const district = model.modelLocations?.[0]?.district?.name ?? null
-                  const incallPrice = model.modelRates?.[0]?.price
-                    ? Number(model.modelRates[0].price)
+                  const incallPrice = model.modelRates?.[0]?.incallPrice
+                    ? Number(model.modelRates[0].incallPrice)
                     : minPrices[model.id] ?? null
 
                   return (

@@ -81,9 +81,7 @@ export default async function ModelProfilePage({ params }: Props) {
       stats: true,
       media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
       primaryLocation: true,
-      modelRates: {
-        orderBy: [{ durationType: 'asc' }, { callType: 'asc' }],
-      },
+      modelRates: true,
       modelLocations: {
         include: { district: true },
         orderBy: { isPrimary: 'desc' },
@@ -230,7 +228,7 @@ export default async function ModelProfilePage({ params }: Props) {
       include: {
         stats: true,
         media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-        modelRates: { where: { price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
+        modelRates: { take: 1 },
       },
       take: 3,
       orderBy: { createdAt: 'desc' },
@@ -242,7 +240,7 @@ export default async function ModelProfilePage({ params }: Props) {
         include: {
           stats: true,
           media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-          modelRates: { where: { price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
+          modelRates: { take: 1 },
         },
         take: 3 - similarModels.length,
         orderBy: { createdAt: 'desc' },
@@ -597,8 +595,8 @@ export default async function ModelProfilePage({ params }: Props) {
             <div className="similar-grid">
               {similarModels.map((sim: any) => {
                 const simPhoto = sim.media[0]?.url ?? null
-                const simPrice = sim.modelRates?.[0]?.price
-                  ? Number(sim.modelRates[0].price)
+                const simPrice = sim.modelRates?.[0]?.incallPrice
+                  ? Number(sim.modelRates[0].incallPrice)
                   : similarPrices[sim.id] ?? null
 
                 return (

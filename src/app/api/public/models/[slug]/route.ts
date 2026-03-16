@@ -44,10 +44,7 @@ export async function GET(
             smokingStatus: true,
           },
         },
-        modelRates: {
-          where: {},
-          orderBy: [{ durationType: 'asc' }, { callType: 'asc' }],
-        },
+        modelRates: true,
         modelLocations: {
           include: {
             district: { select: { id: true, name: true, slug: true } },
