@@ -1,6 +1,6 @@
 // v2 - anketa file fix
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 
 interface PhotoFile { file: File; previewUrl: string; id: string }
@@ -63,8 +63,50 @@ export default function QuickUploadPage() {
   const [parseError, setParseError] = useState<ParseError>(null)
   const [acceptedOpen, setAcceptedOpen] = useState(false)
   const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; name: string; publicCode: string } | null>(null)
+  const [draftRestored, setDraftRestored] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const DRAFT_KEY = 'virel_quick_upload_draft'
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        const d = JSON.parse(saved)
+        if (d.name) setManualName(d.name)
+        if (d.parsedForm && Object.keys(d.parsedForm).length > 0) {
+          setParsedForm(d.parsedForm)
+          setStage('preview')
+        }
+        setDraftRestored(true)
+      }
+    } catch {}
+  }, [])
+
+  // Save draft on name/parsedForm changes
+  useEffect(() => {
+    if (manualName || Object.keys(parsedForm).length > 0) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ name: manualName, parsedForm }))
+    }
+  }, [manualName, parsedForm])
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setDraftRestored(false)
+    setStage('drop')
+    setPhotos([])
+    setSortedPhotos([])
+    setAnketaText('')
+    setAnketaFileRef(null)
+    setParsedForm({})
+    setManualName('')
+    setProgress([])
+    setParseError(null)
+    setAcceptedOpen(false)
+    setDuplicateInfo(null)
+  }
 
   const log = (msg: string) => setProgress(p => [...p, msg])
 
@@ -216,6 +258,8 @@ export default function QuickUploadPage() {
 
       log(`✅ Uploaded ${data.summary?.photos || 0} photos`)
       log('🎉 Done!')
+      localStorage.removeItem(DRAFT_KEY)
+      setDraftRestored(false)
       setDoneUrl(`/admin/models/${data.modelId}`)
       setStage('done')
     } catch (e: any) {
@@ -235,6 +279,23 @@ export default function QuickUploadPage() {
         <span style={{ color: '#888' }}>/</span>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>⚡ Quick Upload</h1>
       </div>
+
+      {/* ── DRAFT RESTORED BANNER ──────────────────────────────────── */}
+      {draftRestored && (stage === 'drop' || stage === 'preview') && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: '#1e293b', border: '1px solid #334155', borderRadius: 10,
+          padding: '10px 16px', marginBottom: 16, fontSize: 13,
+        }}>
+          <span style={{ color: '#94a3b8' }}>💾 Draft restored</span>
+          <button
+            onClick={clearDraft}
+            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}
+          >
+            Clear draft
+          </button>
+        </div>
+      )}
 
       {/* ── DROP / PREVIEW ─────────────────────────────────────────────── */}
       {(stage === 'drop' || stage === 'preview') && (
