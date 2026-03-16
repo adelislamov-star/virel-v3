@@ -61,6 +61,7 @@ export default function QuickUploadPage() {
   const [aiSorting, setAiSorting] = useState(false)
   const [aiParsing, setAiParsing] = useState(false)
   const [parseError, setParseError] = useState<ParseError>(null)
+  const [acceptedOpen, setAcceptedOpen] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -306,21 +307,77 @@ export default function QuickUploadPage() {
               <p style={{ margin: '6px 0 0', fontSize: 11, color: '#888' }}>You can still create the profile manually — fill in the name and upload photos.</p>
             </div>
           )}
-          {!aiParsing && Object.values(parsedForm).some(v => v && typeof v === 'string' && v.length > 0) && (
-            <div style={{ background: '#1a2e1a', border: '1px solid #166534', borderRadius: 10, padding: 14, marginBottom: 20 }}>
-              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 12, color: '#4ade80' }}>✅ Parsed from anketa</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 4 }}>
-                {Object.entries(parsedForm)
-                  .filter(([k, v]) => v && typeof v === 'string' && v.length > 0 && k !== 'notesInternal')
-                  .map(([k, v]) => (
-                    <div key={k} style={{ fontSize: 11 }}>
-                      <span style={{ color: '#6b7280' }}>{k}: </span>
-                      <span style={{ fontWeight: 500 }}>{String(v).slice(0, 35)}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
+          {!aiParsing && Object.keys(parsedForm).length > 0 && (() => {
+            // ── Warnings ──
+            const warnings: { label: string; detail: string }[] = []
+            const noContact = !parsedForm.phone && !parsedForm.telegram && !parsedForm.whatsapp && !parsedForm.email
+            if (noContact) warnings.push({ label: 'Contact not found in anketa', detail: 'Phone / email will be empty — add manually after creation' })
+            const noLocation = !parsedForm.primaryLocationId && !parsedForm.nearestStation && !parsedForm.tubeStation
+            if (noLocation) warnings.push({ label: 'Location not matched', detail: 'Location will be empty — set it manually after creation' })
+            const noRates = !parsedForm.rates || (Array.isArray(parsedForm.rates) && parsedForm.rates.length === 0)
+            if (noRates) warnings.push({ label: 'No rates found in anketa', detail: 'Rates will be empty — add manually after creation' })
+            const lowQualityCount = sortedPhotos.filter((p: any) => p.lowQuality).length
+            if (lowQualityCount > 0) warnings.push({ label: `${lowQualityCount} photo${lowQualityCount > 1 ? 's' : ''} flagged as low quality`, detail: 'Consider replacing them after creation' })
+
+            // ── Accepted fields ──
+            const accepted = Object.entries(parsedForm)
+              .filter(([k, v]) => {
+                if (k === 'notesInternal' || k === 'bio') return false
+                if (v == null || v === '') return false
+                if (Array.isArray(v) && v.length === 0) return false
+                return true
+              })
+
+            return (
+              <>
+                {/* Block 1 — Needs attention */}
+                {warnings.length > 0 && (
+                  <div style={{ background: '#2e2a1a', border: '1px solid #a16207', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                    <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 12, color: '#fbbf24' }}>⚠️ Needs attention</p>
+                    {warnings.map((w, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: i < warnings.length - 1 ? 8 : 0 }}>
+                        <span style={{ fontSize: 14, lineHeight: '18px', flexShrink: 0 }}>⚠️</span>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#fde68a' }}>{w.label}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#a8a29e' }}>{w.detail}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Block 2 — Accepted by AI */}
+                {accepted.length > 0 && (
+                  <div style={{ background: '#1a2e1a', border: '1px solid #166534', borderRadius: 10, padding: 14, marginBottom: 20 }}>
+                    <button
+                      type="button"
+                      onClick={() => setAcceptedOpen(o => !o)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%', textAlign: 'left',
+                        display: 'flex', alignItems: 'center', gap: 6,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 12, color: '#4ade80' }}>
+                        ✅ Accepted by AI {acceptedOpen ? '▴' : '▾'} ({accepted.length} fields)
+                      </span>
+                    </button>
+                    {acceptedOpen && (
+                      <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 4 }}>
+                        {accepted.map(([k, v]) => (
+                          <div key={k} style={{ fontSize: 11 }}>
+                            <span style={{ color: '#6b7280' }}>{k}: </span>
+                            <span style={{ fontWeight: 500, color: '#d1d5db' }}>
+                              {Array.isArray(v) ? v.map(x => typeof x === 'object' ? JSON.stringify(x) : x).join(', ') : String(v).slice(0, 40)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )
+          })()}
 
           {/* Name field — always visible, always interactive */}
           <div style={{ marginBottom: 20 }}>
@@ -385,7 +442,7 @@ export default function QuickUploadPage() {
               View Profile →
             </a>
             <button
-              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null) }}
+              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null); setAcceptedOpen(false) }}
               style={{ border: '1px solid #444', background: '#1e1e2e', color: '#ccc', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
             >
               Add Another
