@@ -16,6 +16,14 @@ interface Props { params: { slug: string } }
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://virel-v3.vercel.app'
 
+function formatServiceName(raw: string): string {
+  if (!raw) return ''
+  if (/[A-Z]/.test(raw) || raw.includes(' ')) return raw
+  const acronyms = ['b2b', 'owc', 'gfe', 'fk', 'dfk', 'owo', 'pse', 'bdsm', '69']
+  if (acronyms.includes(raw.toLowerCase())) return raw.toUpperCase()
+  return raw.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 async function getProfileData(slug: string) {
   try {
     const model = await prisma.model.findUnique({
@@ -58,7 +66,7 @@ async function getProfileData(slug: string) {
     const services = model.services.map((ms) => ({
       serviceId: ms.serviceId,
       slug: ms.service?.slug ?? '',
-      name: ms.service?.publicName ?? ms.service?.name ?? ms.service?.slug ?? '',
+      name: formatServiceName(ms.service?.publicName ?? ms.service?.name ?? ms.service?.slug ?? ''),
       isExtra: ms.isExtra ?? false,
       isDoublePrice: ms.isDoublePrice ?? false,
       isPOA: ms.isPOA ?? false,

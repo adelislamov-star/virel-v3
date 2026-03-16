@@ -1,6 +1,13 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
+function formatServiceName(raw: string): string {
+  if (!raw) return ''
+  if (/[A-Z]/.test(raw) || raw.includes(' ')) return raw
+  const acronyms = ['b2b', 'owc', 'gfe', 'fk', 'dfk', 'owo', 'pse', 'bdsm', '69']
+  if (acronyms.includes(raw.toLowerCase())) return raw.toUpperCase()
+  return raw.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
 export const runtime = 'nodejs'
 export const revalidate = 0
 export async function GET(
@@ -59,7 +66,7 @@ export async function GET(
     const services = model.services.map((ms) => ({
       serviceId: ms.serviceId,
       slug: ms.service?.slug ?? '',
-      name: ms.service?.publicName ?? ms.service?.name ?? ms.service?.slug ?? '',
+      name: formatServiceName(ms.service?.publicName ?? ms.service?.name ?? ms.service?.slug ?? ''),
       isExtra: ms.isExtra ?? false,
       isDoublePrice: ms.isDoublePrice ?? false,
       isPOA: ms.isPOA ?? false,
