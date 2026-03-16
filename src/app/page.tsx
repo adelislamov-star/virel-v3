@@ -37,8 +37,8 @@ export default async function HomePage() {
           take: 1,
         },
         modelRates: {
-          include: { callRateMaster: true },
-          orderBy: { callRateMaster: { durationMin: 'asc' } },
+          where: { price: { gt: 0 } },
+          orderBy: { price: 'asc' },
           take: 1,
         },
       },
@@ -63,9 +63,11 @@ export default async function HomePage() {
     const modelIds = featuredModels.map((m: any) => m.id)
     if (modelIds.length > 0) {
       const rates: any[] = await prisma.$queryRaw`
-        SELECT model_id, MIN(LEAST(COALESCE(incall_price, 999999), COALESCE(outcall_price, 999999))) as min_price
+        SELECT model_id, MIN(price) as min_price
         FROM model_rates
         WHERE model_id = ANY(${modelIds}::text[])
+          AND is_active = true
+          AND price > 0
         GROUP BY model_id
       `
       for (const r of rates) {
@@ -281,8 +283,8 @@ export default async function HomePage() {
               {featuredModels.slice(0, 6).map((model: any) => {
                 const photo = model.media[0]?.url
                 const district = model.modelLocations?.[0]?.district?.name ?? model.primaryLocation?.title ?? null
-                const incallPrice = model.modelRates?.[0]?.incallPrice
-                  ? Number(model.modelRates[0].incallPrice)
+                const incallPrice = model.modelRates?.[0]?.price
+                  ? Number(model.modelRates[0].price)
                   : minPrices[model.id] ?? null
 
                 return (

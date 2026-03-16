@@ -61,8 +61,8 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
             take: 1,
           },
           modelRates: {
-            include: { callRateMaster: true },
-            orderBy: { callRateMaster: { sortOrder: 'asc' } },
+            where: { price: { gt: 0 } },
+            orderBy: { price: 'asc' },
             take: 1,
           },
         },
@@ -155,7 +155,7 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
                 isVerified={m.isVerified}
                 isExclusive={m.isExclusive}
                 districtName={m.modelLocations?.[0]?.district?.name}
-                minIncallPrice={m.modelRates?.[0]?.incallPrice}
+                minIncallPrice={m.modelRates?.[0]?.price}
               />
             ))}
           </div>

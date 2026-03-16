@@ -57,7 +57,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
           take: 1,
         },
         modelRates: {
-          where: { isActive: true, price: { gt: 0 } },
+          where: { price: { gt: 0 } },
           orderBy: { price: 'asc' },
           take: 1,
         },

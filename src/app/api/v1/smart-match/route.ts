@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       where,
       include: {
         stats: true,
-        modelRates: { include: { callRateMaster: true } },
+        modelRates: true,
         modelLocations: { include: { district: true } },
         services: { include: { service: true } },
       },
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Filter by budget (with 30% margin)
     const filtered = budget
       ? candidates.filter((m) =>
-          m.modelRates.some((r) => r.incallPrice && r.incallPrice <= budget * 1.3),
+          m.modelRates.some((r) => r.price > 0 && r.price <= budget * 1.3),
         )
       : candidates;
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       tagline: m.tagline,
       services: m.services.map((ms) => ms.service.title).join(', '),
       districts: m.modelLocations.map((ml) => ml.district.name).join(', '),
-      lowestPrice: Math.min(...m.modelRates.filter((r) => r.incallPrice).map((r) => r.incallPrice!)),
+      lowestPrice: m.modelRates.filter((r) => r.price > 0).length > 0 ? Math.min(...m.modelRates.filter((r) => r.price > 0).map((r) => r.price)) : 0,
     }));
 
     const prompt = `Given these companion profiles and client requirements: ${JSON.stringify({ experience, appearance, nationality, budget, duration, occasion })},

@@ -63,7 +63,7 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
         take: 1,
       },
       modelRates: {
-        where: { isActive: true, price: { gt: 0 } },
+        where: { price: { gt: 0 } },
         orderBy: { price: 'asc' },
         take: 1,
       },

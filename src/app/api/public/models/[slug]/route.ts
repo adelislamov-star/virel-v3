@@ -45,8 +45,8 @@ export async function GET(
           },
         },
         modelRates: {
-          include: { callRateMaster: { select: { label: true, durationMin: true, sortOrder: true } } },
-          orderBy: { callRateMaster: { sortOrder: 'asc' } },
+          where: {},
+          orderBy: [{ durationType: 'asc' }, { callType: 'asc' }],
         },
         modelLocations: {
           include: {

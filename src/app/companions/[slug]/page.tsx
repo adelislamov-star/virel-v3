@@ -82,7 +82,6 @@ export default async function ModelProfilePage({ params }: Props) {
       media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
       primaryLocation: true,
       modelRates: {
-        where: { isActive: true },
         orderBy: [{ durationType: 'asc' }, { callType: 'asc' }],
       },
       modelLocations: {
@@ -231,7 +230,7 @@ export default async function ModelProfilePage({ params }: Props) {
       include: {
         stats: true,
         media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-        modelRates: { where: { isActive: true, price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
+        modelRates: { where: { price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
       },
       take: 3,
       orderBy: { createdAt: 'desc' },
@@ -243,7 +242,7 @@ export default async function ModelProfilePage({ params }: Props) {
         include: {
           stats: true,
           media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-          modelRates: { where: { isActive: true, price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
+          modelRates: { where: { price: { gt: 0 } }, orderBy: { price: 'asc' }, take: 1 },
         },
         take: 3 - similarModels.length,
         orderBy: { createdAt: 'desc' },

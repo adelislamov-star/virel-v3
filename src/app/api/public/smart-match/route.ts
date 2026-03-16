@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       where,
       include: {
         stats: true,
-        modelRates: { include: { callRateMaster: true } },
+        modelRates: true,
         modelLocations: { include: { district: true } },
         services: { include: { service: true } },
         media: { where: { isPrimary: true }, select: { url: true }, take: 1 },
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const filtered = budget
       ? candidates.filter((m) =>
-          m.modelRates.some((r) => r.incallPrice && r.incallPrice <= budget * 1.3),
+          m.modelRates.some((r) => r.price > 0 && r.price <= budget * 1.3),
         )
       : candidates;
 
