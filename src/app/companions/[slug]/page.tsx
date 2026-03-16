@@ -81,7 +81,9 @@ export default async function ModelProfilePage({ params }: Props) {
       stats: true,
       media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
       primaryLocation: true,
-      modelRates: true,
+      modelRates: {
+        include: { callRate: true },
+      },
       modelLocations: {
         include: { district: true },
         orderBy: { isPrimary: 'desc' },
@@ -96,50 +98,22 @@ export default async function ModelProfilePage({ params }: Props) {
 
   if (!model) notFound()
 
-  // Duration labels & sort order
-  const DURATION_INFO: Record<string, { label: string; durationMin: number; sort: number }> = {
-    '30min': { label: '30 Minutes', durationMin: 30, sort: 1 },
-    '45min': { label: '45 Minutes', durationMin: 45, sort: 2 },
-    '1hour': { label: '1 Hour', durationMin: 60, sort: 3 },
-    '90min': { label: '90 Minutes', durationMin: 90, sort: 4 },
-    '2hours': { label: '2 Hours', durationMin: 120, sort: 5 },
-    '3hours': { label: '3 Hours', durationMin: 180, sort: 6 },
-    '4hours': { label: '4 Hours', durationMin: 240, sort: 7 },
-    'overnight': { label: 'Overnight', durationMin: 540, sort: 8 },
-    'extra_hour': { label: 'Extra Hour', durationMin: 60, sort: 9 },
-  }
-
-  // Pivot flat rates into incall/outcall per duration
-  const pivotMap = new Map<string, { incallPrice: number | null; outcallPrice: number | null }>()
-  for (const mr of model.modelRates as any[]) {
-    if (!pivotMap.has(mr.durationType)) {
-      pivotMap.set(mr.durationType, { incallPrice: null, outcallPrice: null })
-    }
-    const entry = pivotMap.get(mr.durationType)!
-    if (mr.incallPrice != null) entry.incallPrice = Number(mr.incallPrice)
-    if (mr.outcallPrice != null) entry.outcallPrice = Number(mr.outcallPrice)
-  }
-
-  const widgetRates = Array.from(pivotMap.entries())
-    .map(([dt, prices]) => {
-      const info = DURATION_INFO[dt] || { label: dt, durationMin: 0, sort: 99 }
-      return { label: info.label, durationMin: info.durationMin, sort: info.sort, incallPrice: prices.incallPrice, outcallPrice: prices.outcallPrice }
-    })
-    .sort((a, b) => a.sort - b.sort)
-
-  // Build rates table from pivoted data
-  const ratesTable = widgetRates
-    .filter((r: any) => r.incallPrice != null || r.outcallPrice != null)
-    .map((r: any) => ({
-      label: r.label,
-      incall: r.incallPrice,
-      outcall: r.outcallPrice,
+  // Build rates table directly from modelRates + callRate master
+  const ratesTable = (model.modelRates as any[])
+    .filter((mr: any) => mr.incallPrice != null || mr.outcallPrice != null)
+    .map((mr: any) => ({
+      label: mr.callRate?.label ?? '—',
+      durationMin: mr.callRate?.durationMin ?? 0,
+      sort: mr.callRate?.sortOrder ?? 99,
+      incall: mr.incallPrice != null ? Number(mr.incallPrice) : null,
+      outcall: mr.outcallPrice != null ? Number(mr.outcallPrice) : null,
     }))
+    .sort((a: any, b: any) => a.sort - b.sort)
 
   // Min price
   const allPrices = [
-    ...widgetRates.map((r: any) => r.incallPrice).filter(Boolean),
-    ...widgetRates.map((r: any) => r.outcallPrice).filter(Boolean),
+    ...ratesTable.map((r: any) => r.incall).filter((v: any) => v != null),
+    ...ratesTable.map((r: any) => r.outcall).filter((v: any) => v != null),
   ]
   const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : null
 
@@ -395,9 +369,9 @@ export default async function ModelProfilePage({ params }: Props) {
               isVerified={model.isVerified}
               isExclusive={model.isExclusive}
               lastActiveAt={model.lastActiveAt?.toISOString() ?? null}
-              rates={widgetRates.length > 0 ? widgetRates : ratesTable.map((r, i) => ({
+              rates={ratesTable.map((r: any) => ({
                 label: r.label,
-                durationMin: (i + 1) * 60,
+                durationMin: r.durationMin,
                 incallPrice: r.incall,
                 outcallPrice: r.outcall,
               }))}
