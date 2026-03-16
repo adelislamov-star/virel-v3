@@ -162,3 +162,64 @@ html {
   .cookie-btns { width:100%; }
   .cookie-btn { flex:1; }
 }
+
+/* ── HOME PAGE ── */
+.home-root { font-family:'DM Sans',sans-serif; background:#0A0A0A; min-height:100vh; overflow-x:hidden; }
+
+/* Hero */
+.hero-split { display:grid; grid-template-columns:1.1fr .9fr; min-height:92vh; }
+.hero-photo { position:relative; overflow:hidden; }
+.hero-photo-overlay { position:absolute; inset:0; background:linear-gradient(to right,transparent 60%,#0A0A0A 100%); }
+.hero-text { display:flex; flex-direction:column; justify-content:center; padding:60px 60px 60px 40px; }
+
+/* Trust bar */
+.trust-bar-desktop { display:flex; justify-content:center; align-items:center; gap:20px; padding:20px 40px; border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06); font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:#606060; }
+.trust-bar-desktop .sep { color:#333; }
+.trust-bar-mobile { display:none; }
+
+/* Sections & grids */
+.section { max-width:1280px; margin:0 auto; padding:80px 40px; }
+.featured-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:40px; }
+.services-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:40px; }
+.districts-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:40px; }
+
+/* Service card */
+.svc-card { display:block; padding:32px 24px; border:1px solid rgba(255,255,255,0.06); text-decoration:none; transition:all .3s; }
+.svc-card:hover { border-color:rgba(197,165,114,0.3); transform:translateY(-2px); }
+.svc-card-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; color:#FAFAFA; margin:0 0 8px; }
+.svc-card-desc { font-size:12px; color:#606060; line-height:1.5; margin:0; }
+
+/* District card */
+.dist-card { display:block; padding:20px 16px; border:1px solid rgba(255,255,255,0.06); text-decoration:none; text-align:center; transition:all .3s; }
+.dist-card:hover { border-color:rgba(197,165,114,0.3); }
+.dist-name { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:#FAFAFA; margin:0; }
+.dist-count { font-size:11px; color:#606060; margin:6px 0 0; }
+
+/* Smart match & social proof */
+.smart-match { text-align:center; padding:80px 40px; border-top:1px solid rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.04); }
+.social-proof { text-align:center; padding:80px 40px; }
+
+/* Final CTA */
+.final-cta { text-align:center; padding:80px 40px; border-top:1px solid rgba(255,255,255,0.04); }
+.final-cta-buttons { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+
+/* Buttons */
+.btn-primary { display:inline-block; padding:15px 36px; background:#C5A572; color:#0A0A0A; font-size:11px; font-weight:500; letter-spacing:.15em; text-transform:uppercase; text-decoration:none; transition:all .2s; }
+.btn-primary:hover { background:#d4b87a; }
+.btn-secondary { display:inline-block; padding:15px 36px; border:1px solid #333; color:#808080; font-size:11px; letter-spacing:.15em; text-transform:uppercase; text-decoration:none; transition:all .2s; }
+.btn-secondary:hover { border-color:#C5A572; color:#C5A572; }
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .hero-split { grid-template-columns:1fr; min-height:auto; }
+  .hero-photo { height:55vh; }
+  .hero-photo-overlay { background:linear-gradient(to bottom,transparent 50%,#0A0A0A 100%); }
+  .hero-text { padding:32px 24px 48px; }
+  .trust-bar-desktop { display:none; }
+  .trust-bar-mobile { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:20px 24px; border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#606060; text-align:center; }
+  .section { padding:48px 20px; }
+  .featured-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+  .services-grid { grid-template-columns:1fr 1fr; }
+  .districts-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
+  .smart-match, .social-proof, .final-cta { padding:48px 20px; }
+}
