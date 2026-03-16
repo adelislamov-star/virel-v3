@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 
 interface Rate {
   label: string
@@ -17,21 +18,21 @@ interface BookingWidgetProps {
   rates: Rate[]
 }
 
-function isActiveToday(lastActiveAt: string | null): boolean {
-  if (!lastActiveAt) return false
-  const today = new Date()
-  const last = new Date(lastActiveAt)
-  return (
-    last.getDate() === today.getDate() &&
-    last.getMonth() === today.getMonth() &&
-    last.getFullYear() === today.getFullYear()
-  )
-}
-
 export function BookingWidget({
   modelName, modelSlug, availability,
   isVerified, isExclusive, lastActiveAt, rates,
 }: BookingWidgetProps) {
+  const [activeToday, setActiveToday] = useState(false)
+  useEffect(() => {
+    if (!lastActiveAt) return
+    const today = new Date()
+    const last = new Date(lastActiveAt)
+    setActiveToday(
+      last.getDate() === today.getDate() &&
+      last.getMonth() === today.getMonth() &&
+      last.getFullYear() === today.getFullYear()
+    )
+  }, [lastActiveAt])
   const incallRates = rates.filter(r => r.incallPrice != null && r.incallPrice > 0)
   const outcallRates = rates.filter(r => r.outcallPrice != null && r.outcallPrice > 0)
   const hasAnyPrice = incallRates.length > 0 || outcallRates.length > 0
@@ -75,7 +76,7 @@ export function BookingWidget({
           {isExclusive && <span className="bw-badge bw-badge-e">★ Exclusive</span>}
           {isVerified && <span className="bw-badge bw-badge-v">✓ Verified Photos</span>}
           <span className="bw-badge bw-badge-g">✓ Genuine Photos</span>
-          {isActiveToday(lastActiveAt) && (
+          {activeToday && (
             <span className="bw-badge bw-badge-active"><span className="bw-active-dot" /> Active Today</span>
           )}
         </div>
