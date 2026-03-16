@@ -128,11 +128,13 @@ export default async function ModelProfilePage({ params }: Props) {
     .sort((a, b) => a.sort - b.sort)
 
   // Build rates table from pivoted data
-  const ratesTable = widgetRates.map((r: any) => ({
-    label: r.label,
-    incall: r.incallPrice,
-    outcall: r.outcallPrice,
-  }))
+  const ratesTable = widgetRates
+    .filter((r: any) => r.incallPrice != null || r.outcallPrice != null)
+    .map((r: any) => ({
+      label: r.label,
+      incall: r.incallPrice,
+      outcall: r.outcallPrice,
+    }))
 
   // Min price
   const allPrices = [
@@ -484,8 +486,8 @@ export default async function ModelProfilePage({ params }: Props) {
                     {ratesTable.map(row => (
                       <tr key={row.label}>
                         <td>{row.label}</td>
-                        <td>{row.incall != null && row.incall > 0 ? `£${Number(row.incall).toLocaleString('en-GB')}` : 'On request'}</td>
-                        <td>{row.outcall != null && row.outcall > 0 ? `£${Number(row.outcall).toLocaleString('en-GB')}` : 'On request'}</td>
+                        <td>{row.incall != null ? `£${Number(row.incall).toLocaleString('en-GB')}` : '—'}</td>
+                        <td>{row.outcall != null ? `£${Number(row.outcall).toLocaleString('en-GB')}` : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -495,13 +497,23 @@ export default async function ModelProfilePage({ params }: Props) {
           )}
 
           {/* SERVICES */}
-          {regularServices.length > 0 && (
+          {model.services.filter((ms: any) => !ms.isExtra).length > 0 && (
             <>
               <p className="section-label">Services</p>
               <div className="svc-tags">
-                {regularServices.map((s: string) => (
-                  <span key={s} className="svc-tag">{s}</span>
-                ))}
+                {model.services
+                  .filter((ms: any) => !ms.isExtra)
+                  .map((ms: any) => (
+                    <Link
+                      key={ms.service?.slug ?? ms.serviceId}
+                      href={`/services/${ms.service?.slug ?? ''}`}
+                      className="svc-tag"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      {SERVICE_REMAP[ms.service?.title] ?? ms.service?.publicName ?? ms.service?.title ?? ms.service?.slug}
+                    </Link>
+                  ))
+                }
               </div>
             </>
           )}
