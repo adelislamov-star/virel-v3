@@ -16,17 +16,6 @@ export function Header() {
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       fontFamily: 'DM Sans, sans-serif',
     }}>
-      <style>{`
-        .h-link { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#6b6560; text-decoration:none; transition:color .2s; }
-        .h-link:hover { color:#ddd5c8; }
-        .h-book { font-size:11px; letter-spacing:.14em; text-transform:uppercase; background:#C5A572; color:#000; padding:9px 24px; text-decoration:none; font-weight:500; transition:all .2s; }
-        .h-book:hover { background:#d4b87a; }
-        @media (max-width: 768px) {
-          .desktop-nav { display: none !important; }
-          .mobile-burger { display: block !important; }
-        }
-      `}</style>
-
       <nav style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 22, fontWeight: 300, color: '#f0e8dc', textDecoration: 'none', letterSpacing: '.08em' }}>
           Virel

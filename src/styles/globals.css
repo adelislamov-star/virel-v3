@@ -79,3 +79,86 @@ html {
   outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
+
+/* ===== ModelCard (.mc-*) ===== */
+.mc-card { position:relative; aspect-ratio:3/4; overflow:hidden; background:#111; display:block; text-decoration:none; }
+.mc-card img { width:100%; height:100%; object-fit:cover; transition:transform 1s cubic-bezier(.25,.46,.45,.94); filter:grayscale(10%); }
+.mc-card:hover img { transform:scale(1.06); filter:grayscale(0%); }
+.mc-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,0,0,.3) 40%,transparent 70%); }
+.mc-content { position:absolute; bottom:0; left:0; right:0; padding:28px 24px; }
+.mc-avail { display:inline-flex; align-items:center; gap:6px; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#4ade80; margin-bottom:10px; }
+.mc-avail-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; }
+.mc-name { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; color:#fff; margin:0 0 4px; }
+.mc-tagline { font-size:11px; letter-spacing:.08em; color:rgba(255,255,255,.45); text-transform:uppercase; margin:0 0 10px; line-height:1.4; }
+.mc-district { font-size:11px; letter-spacing:.06em; color:rgba(255,255,255,.4); margin:0 0 4px; }
+.mc-price { font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:#C5A572; margin:6px 0 0; }
+.mc-badges { display:flex; gap:6px; margin-top:10px; }
+.mc-badge { font-size:9px; letter-spacing:.12em; text-transform:uppercase; padding:3px 8px; border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.6); }
+.mc-badge-excl { border-color:rgba(197,165,114,.4); color:#C5A572; }
+.mc-placeholder { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg,#0f0f0f,#1a1a1a); }
+
+/* ===== CompanionGallery (.cg-*) ===== */
+.cg-main { position:relative; width:100%; aspect-ratio:3/4; overflow:hidden; background:#111; }
+.cg-thumbs { display:flex; gap:8px; margin-top:12px; overflow-x:auto; scrollbar-width:none; }
+.cg-thumbs::-webkit-scrollbar { display:none; }
+.cg-thumb { flex-shrink:0; width:72px; height:96px; overflow:hidden; cursor:pointer; opacity:0.5; transition:opacity .2s; border:2px solid transparent; }
+.cg-thumb.active { opacity:1; border-color:rgba(197,165,114,.5); }
+.cg-thumb:hover { opacity:0.85; }
+.cg-thumb img { width:100%; height:100%; object-fit:cover; }
+
+/* ===== BookingWidget (.bw-*) ===== */
+.bw-root { position:sticky; top:80px; font-family:'DM Sans',sans-serif; }
+.bw-name { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; color:#f5f0e8; margin:0 0 8px; }
+.bw-badges { display:flex; gap:8px; margin-bottom:24px; }
+.bw-badge { font-size:9px; letter-spacing:.14em; text-transform:uppercase; padding:4px 10px; }
+.bw-badge-v { border:1px solid rgba(74,222,128,.3); color:#4ade80; }
+.bw-badge-e { border:1px solid rgba(197,165,114,.4); color:#C5A572; }
+.bw-badge-g { border:1px solid rgba(255,255,255,.15); color:#808080; }
+.bw-badge-active { border:1px solid rgba(74,222,128,.3); color:#4ade80; display:flex; align-items:center; gap:4px; }
+.bw-active-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:bw-pulse 2s infinite; }
+@keyframes bw-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.bw-section-label { font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#808080; margin:24px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.07); }
+.bw-rate-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.bw-rate-label { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:300; color:rgba(232,224,212,.8); }
+.bw-rate-price { font-size:14px; color:#C5A572; letter-spacing:.03em; }
+.bw-avail { display:flex; align-items:center; gap:8px; margin:24px 0; font-size:12px; letter-spacing:.08em; color:#4ade80; }
+.bw-avail-dot { width:8px; height:8px; border-radius:50%; background:#4ade80; }
+.bw-no-price { font-size:13px; color:#808080; font-style:italic; margin:16px 0; }
+.bw-btn { display:block; width:100%; padding:15px; text-align:center; font-size:11px; letter-spacing:.15em; text-transform:uppercase; text-decoration:none; cursor:pointer; border:none; font-family:inherit; margin-bottom:8px; transition:all .2s; box-sizing:border-box; }
+.bw-btn-primary { background:#C5A572; color:#0A0A0A; font-weight:500; }
+.bw-btn-primary:hover { background:#d4b87a; }
+.bw-btn-secondary { background:transparent; border:1px solid #333; color:#808080; }
+.bw-btn-secondary:hover { border-color:#C5A572; color:#C5A572; }
+
+/* ===== Header (.h-*) ===== */
+.h-link { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#6b6560; text-decoration:none; transition:color .2s; }
+.h-link:hover { color:#ddd5c8; }
+.h-book { font-size:11px; letter-spacing:.14em; text-transform:uppercase; background:#C5A572; color:#000; padding:9px 24px; text-decoration:none; font-weight:500; transition:all .2s; }
+.h-book:hover { background:#d4b87a; }
+@media (max-width: 768px) {
+  .desktop-nav { display: none !important; }
+  .mobile-burger { display: block !important; }
+}
+
+/* ===== CookieBanner (.cookie-*) ===== */
+.cookie-banner {
+  position:fixed; bottom:0; left:0; right:0; z-index:9999;
+  background:rgba(10,10,10,0.97); border-top:1px solid rgba(255,255,255,0.08);
+  padding:20px 40px; display:flex; align-items:center; justify-content:space-between;
+  gap:24px; font-family:'DM Sans',sans-serif;
+  animation:cookieSlideUp .4s ease;
+}
+@keyframes cookieSlideUp { from{transform:translateY(100%)} to{transform:none} }
+.cookie-text { font-size:13px; color:#808080; line-height:1.6; max-width:680px; }
+.cookie-text a { color:#C5A572; text-decoration:underline; }
+.cookie-btns { display:flex; gap:10px; flex-shrink:0; }
+.cookie-btn { padding:10px 20px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; border:none; font-family:inherit; transition:all .2s; }
+.cookie-btn-accept { background:#C5A572; color:#0A0A0A; }
+.cookie-btn-accept:hover { background:#d4b87a; }
+.cookie-btn-essential { background:transparent; border:1px solid #333; color:#808080; }
+.cookie-btn-essential:hover { border-color:#C5A572; color:#C5A572; }
+@media(max-width:640px){
+  .cookie-banner { flex-direction:column; padding:20px 24px; gap:16px; }
+  .cookie-btns { width:100%; }
+  .cookie-btn { flex:1; }
+}

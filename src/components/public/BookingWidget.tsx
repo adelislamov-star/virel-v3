@@ -45,31 +45,6 @@ export function BookingWidget({
     : '/contact'
 
   return (
-    <>
-      <style>{`
-        .bw-root { position:sticky; top:80px; font-family:'DM Sans',sans-serif; }
-        .bw-name { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; color:#f5f0e8; margin:0 0 8px; }
-        .bw-badges { display:flex; gap:8px; margin-bottom:24px; }
-        .bw-badge { font-size:9px; letter-spacing:.14em; text-transform:uppercase; padding:4px 10px; }
-        .bw-badge-v { border:1px solid rgba(74,222,128,.3); color:#4ade80; }
-        .bw-badge-e { border:1px solid rgba(197,165,114,.4); color:#C5A572; }
-        .bw-badge-g { border:1px solid rgba(255,255,255,.15); color:#808080; }
-        .bw-badge-active { border:1px solid rgba(74,222,128,.3); color:#4ade80; display:flex; align-items:center; gap:4px; }
-        .bw-active-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:bw-pulse 2s infinite; }
-        @keyframes bw-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .bw-section-label { font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#808080; margin:24px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.07); }
-        .bw-rate-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
-        .bw-rate-label { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:300; color:rgba(232,224,212,.8); }
-        .bw-rate-price { font-size:14px; color:#C5A572; letter-spacing:.03em; }
-        .bw-avail { display:flex; align-items:center; gap:8px; margin:24px 0; font-size:12px; letter-spacing:.08em; color:#4ade80; }
-        .bw-avail-dot { width:8px; height:8px; border-radius:50%; background:#4ade80; }
-        .bw-no-price { font-size:13px; color:#808080; font-style:italic; margin:16px 0; }
-        .bw-btn { display:block; width:100%; padding:15px; text-align:center; font-size:11px; letter-spacing:.15em; text-transform:uppercase; text-decoration:none; cursor:pointer; border:none; font-family:inherit; margin-bottom:8px; transition:all .2s; box-sizing:border-box; }
-        .bw-btn-primary { background:#C5A572; color:#0A0A0A; font-weight:500; }
-        .bw-btn-primary:hover { background:#d4b87a; }
-        .bw-btn-secondary { background:transparent; border:1px solid #333; color:#808080; }
-        .bw-btn-secondary:hover { border-color:#C5A572; color:#C5A572; }
-      `}</style>
       <div className="bw-root">
         <h2 className="bw-name">{modelName}</h2>
         <div className="bw-badges">
@@ -105,6 +80,5 @@ export function BookingWidget({
           </p>
         </div>
       </div>
-    </>
   )
 }

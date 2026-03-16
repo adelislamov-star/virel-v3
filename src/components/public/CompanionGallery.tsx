@@ -27,16 +27,6 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
   }
 
   return (
-    <>
-      <style>{`
-        .cg-main { position:relative; width:100%; aspect-ratio:3/4; overflow:hidden; background:#111; }
-        .cg-thumbs { display:flex; gap:8px; margin-top:12px; overflow-x:auto; scrollbar-width:none; }
-        .cg-thumbs::-webkit-scrollbar { display:none; }
-        .cg-thumb { flex-shrink:0; width:72px; height:96px; overflow:hidden; cursor:pointer; opacity:0.5; transition:opacity .2s; border:2px solid transparent; }
-        .cg-thumb.active { opacity:1; border-color:rgba(197,165,114,.5); }
-        .cg-thumb:hover { opacity:0.85; }
-        .cg-thumb img { width:100%; height:100%; object-fit:cover; }
-      `}</style>
       <div>
         <div className="cg-main">
           <Image
@@ -68,6 +58,5 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
           </div>
         )}
       </div>
-    </>
   )
 }
