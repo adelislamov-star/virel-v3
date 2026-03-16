@@ -1,5 +1,5 @@
 // @ts-nocheck
-export const revalidate = 0
+export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
@@ -21,14 +21,6 @@ async function getProfile(slug: string) {
   if (!res.ok) return null
   const json = await res.json()
   return json.success ? json.data : null
-}
-
-export async function generateStaticParams() {
-  const models = await prisma.model.findMany({
-    where: { status: 'active', deletedAt: null },
-    select: { slug: true },
-  })
-  return models.map((m) => ({ slug: m.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
