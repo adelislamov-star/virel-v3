@@ -37,6 +37,16 @@ const nextConfig = {
         destination: '/companions/:slug',
         permanent: true,
       },
+      // Admin URL migrations
+      { source: '/admin/fraud',                       destination: '/admin/fraud-monitor',    permanent: true },
+      { source: '/admin/analytics/model-performance', destination: '/admin/model-performance', permanent: true },
+      { source: '/admin/analytics/owner',             destination: '/admin/owner-analytics',  permanent: true },
+      { source: '/admin/analytics/unit-economics',    destination: '/admin/unit-economics',   permanent: true },
+      { source: '/admin/seo',                         destination: '/admin/seo-health',       permanent: true },
+      { source: '/admin/masters/services',            destination: '/admin/services',         permanent: true },
+      { source: '/admin/masters/call-rates',          destination: '/admin/call-rates',       permanent: true },
+      { source: '/admin/masters/locations',           destination: '/admin/locations',        permanent: true },
+      { source: '/admin/sla',                         destination: '/admin/sla-monitor',      permanent: true },
     ]
   },
 }
