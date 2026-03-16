@@ -268,7 +268,11 @@ export default function QuickUploadPage() {
     }
   }
 
-  const canCreate = manualName.trim().length > 0 && !aiSorting && !aiParsing
+  const canCreate =
+    manualName.trim().length > 0 &&
+    !aiSorting &&
+    !aiParsing &&
+    !(draftRestored && sortedPhotos.length === 0)
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -466,6 +470,13 @@ export default function QuickUploadPage() {
               }}
             />
           </div>
+
+          {/* Draft photo warning */}
+          {draftRestored && sortedPhotos.length === 0 && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400" style={{ marginBottom: 12 }}>
+              ⚠️ Photos were not restored from draft — please re-upload your photos before creating the profile.
+            </div>
+          )}
 
           {/* Create button */}
           <button
