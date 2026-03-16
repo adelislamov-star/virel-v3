@@ -82,7 +82,7 @@ export default async function ModelProfilePage({ params }: Props) {
       media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
       primaryLocation: true,
       modelRates: {
-        include: { callRate: true },
+        include: { callRateMaster: true },
       },
       modelLocations: {
         include: { district: true },
@@ -102,9 +102,9 @@ export default async function ModelProfilePage({ params }: Props) {
   const ratesTable = (model.modelRates as any[])
     .filter((mr: any) => mr.incallPrice != null || mr.outcallPrice != null)
     .map((mr: any) => ({
-      label: mr.callRate?.label ?? '—',
-      durationMin: mr.callRate?.durationMin ?? 0,
-      sort: mr.callRate?.sortOrder ?? 99,
+      label: mr.callRateMaster?.label ?? '—',
+      durationMin: mr.callRateMaster?.durationMin ?? 0,
+      sort: mr.callRateMaster?.sortOrder ?? 99,
       incall: mr.incallPrice != null ? Number(mr.incallPrice) : null,
       outcall: mr.outcallPrice != null ? Number(mr.outcallPrice) : null,
     }))
