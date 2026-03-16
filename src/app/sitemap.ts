@@ -29,7 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...models.map(m => ({ url: `${BASE}/companions/${m.slug}`, lastModified: m.updatedAt, priority: 0.8 as const })),
     ...services.map(s => ({ url: `${BASE}/services/${s.slug}`, lastModified: s.updatedAt, priority: 0.7 as const })),
     ...districts.map(d => ({ url: `${BASE}/london/${d.slug}-escorts/`, lastModified: d.updatedAt, priority: 0.7 as const })),
-    ...hubs.map(h => ({ url: `${BASE}/london/${h.district.slug}-escorts/${h.slug}-station/`, priority: 0.5 as const })),
+    ...hubs.map(h => {
+      const hubSuffix = h.slug.endsWith('-station') ? '' : '-station'
+      return { url: `${BASE}/london/${h.district.slug}-escorts/${h.slug}${hubSuffix}/`, priority: 0.5 as const }
+    }),
     ...posts.map(p => ({ url: `${BASE}/blog/${(p as any).slug}`, lastModified: (p as any).updatedAt, priority: 0.6 as const })),
   ]
 }

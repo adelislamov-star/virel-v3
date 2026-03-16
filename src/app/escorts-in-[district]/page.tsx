@@ -77,8 +77,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: info.title,
     description: info.description,
-    robots: { index: true, follow: true },
-    alternates: { canonical: `/escorts-in-${params.district}` },
+    robots: { index: false, follow: true },
+    alternates: { canonical: `https://virel-v3.vercel.app/london/${params.district}-escorts/` },
     openGraph: { title: info.title, description: info.description },
   }
 }
