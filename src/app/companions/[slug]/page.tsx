@@ -16,15 +16,109 @@ interface Props { params: { slug: string } }
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://virel-v3.vercel.app'
 
-async function getProfile(slug: string) {
-  const res = await fetch(`${BASE_URL}/api/v1/public/profile/${slug}`, { cache: 'no-store' })
-  if (!res.ok) return null
-  const json = await res.json()
-  return json.success ? json.data : null
+async function getProfileData(slug: string) {
+  try {
+    const model = await prisma.model.findUnique({
+      where: { slug, status: 'active', deletedAt: null },
+      include: {
+        stats: true,
+        media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
+        modelRates: {
+          include: { callRateMaster: true },
+          orderBy: { callRateMaster: { sortOrder: 'asc' } },
+        },
+        services: {
+          where: { isEnabled: true, service: { isPublic: true } },
+          include: { service: true },
+          orderBy: { service: { sortOrder: 'asc' } },
+        },
+        modelLocations: {
+          include: { district: true },
+          orderBy: { isPrimary: 'desc' },
+        },
+      },
+    })
+    if (!model) return null
+    const primaryPhoto = model.media.find((m) => m.isPrimary)?.url ?? model.media[0]?.url ?? null
+    const galleryUrls = model.media.filter((m) => m.isPublic && m.url !== primaryPhoto).map((m) => m.url)
+    const rates = model.modelRates
+      .filter((mr) => mr.incallPrice != null || mr.outcallPrice != null)
+      .map((mr) => ({
+        label: mr.callRateMaster?.label ?? '—',
+        sortOrder: mr.callRateMaster?.sortOrder ?? 99,
+        incall: mr.incallPrice != null ? Number(mr.incallPrice) : null,
+        outcall: mr.outcallPrice != null ? Number(mr.outcallPrice) : null,
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    const allPrices = [
+      ...rates.map((r) => r.incall).filter((v): v is number => v != null),
+      ...rates.map((r) => r.outcall).filter((v): v is number => v != null),
+    ]
+    const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : null
+    const services = model.services.map((ms) => ({
+      serviceId: ms.serviceId,
+      slug: ms.service?.slug ?? '',
+      name: ms.service?.publicName ?? ms.service?.name ?? ms.service?.slug ?? '',
+      isExtra: ms.isExtra ?? false,
+      isDoublePrice: ms.isDoublePrice ?? false,
+      isPOA: ms.isPOA ?? false,
+      extraPrice: ms.extraPrice != null ? Number(ms.extraPrice) : null,
+    }))
+    const districts = model.modelLocations.map((ml) => ({
+      name: ml.district?.name ?? '',
+      slug: ml.district?.slug ?? '',
+      isPrimary: ml.isPrimary,
+    }))
+    const primaryDistrict = districts.find((d) => d.isPrimary)?.name ?? districts[0]?.name ?? null
+    return {
+      id: model.id,
+      name: model.name,
+      slug: model.slug,
+      tagline: model.tagline,
+      bio: model.bio,
+      seoTitle: model.seoTitle,
+      seoDescription: model.seoDescription,
+      availability: model.availability,
+      isVerified: model.isVerified,
+      isExclusive: model.isExclusive,
+      lastActiveAt: model.lastActiveAt?.toISOString() ?? null,
+      nearestStation: model.nearestStation,
+      telegramTag: model.telegram ? (model as any).telegramPhone ?? null : null,
+      whatsapp: model.whatsapp ?? null,
+      primaryPhoto,
+      galleryUrls,
+      rates,
+      lowestPrice,
+      services,
+      districts,
+      primaryDistrict,
+      stats: model.stats ? {
+        age: model.stats.age,
+        height: model.stats.height,
+        weight: model.stats.weight,
+        bustSize: model.stats.bustSize,
+        bustType: model.stats.bustType,
+        eyeColour: model.stats.eyeColour,
+        hairColour: model.stats.hairColour,
+        nationality: model.stats.nationality,
+        ethnicity: (model as any).ethnicity,
+        languages: model.stats.languages,
+        dressSize: model.stats.dressSize,
+        feetSize: model.stats.feetSize,
+        smokingStatus: model.stats.smokingStatus,
+        tattooStatus: model.stats.tattooStatus,
+        measurements: (model as any).measurements,
+        orientation: model.stats.orientation,
+      } : null,
+    }
+  } catch (e) {
+    console.error('[getProfileData] error:', e)
+    return null
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const profile = await getProfile(params.slug)
+  const profile = await getProfileData(params.slug)
   if (!profile) return {}
   return {
     title: profile.seoTitle ?? profile.name,
@@ -38,7 +132,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ModelProfilePage({ params }: Props) {
-  const profile = await getProfile(params.slug)
+  const profile = await getProfileData(params.slug)
   if (!profile) notFound()
 
   // Similar companions
