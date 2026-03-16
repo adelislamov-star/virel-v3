@@ -277,7 +277,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = POSTS.find(p => p.slug === params.slug)
   if (!post) return { title: 'Not Found', robots: { index: false, follow: false } }
   return {
-    title: `${post.title} | Virel Blog`,
+    title: post.title,
     description: post.excerpt,
     robots: { index: true, follow: true },
     alternates: { canonical: `https://virel-v3.vercel.app/blog/${params.slug}` },

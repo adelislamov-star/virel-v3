@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!service) return {}
   const displayName = service.publicName || service.title || service.name
   return {
-    title: service.seoTitle || `${displayName} London | Virel`,
+    title: service.seoTitle || `${displayName} London`,
     description: service.seoDescription || `${displayName} service with premium London companions. Browse verified escorts offering ${displayName}.`,
     alternates: { canonical: `https://virel-v3.vercel.app/services/${slug}` },
   }

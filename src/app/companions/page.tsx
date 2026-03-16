@@ -11,11 +11,11 @@ import { prisma } from '@/lib/db/client'
 import { Prisma } from '@prisma/client'
 
 export const metadata: Metadata = {
-  title: 'London Companions | Virel Agency',
+  title: 'London Companions',
   description: 'Browse our exclusive selection of London companions.',
   alternates: { canonical: 'https://virel-v3.vercel.app/companions' },
   openGraph: {
-    title: 'London Companions | Virel Agency',
+    title: 'London Companions',
     description: 'Browse our exclusive selection of London companions.',
     url: 'https://virel-v3.vercel.app/companions',
     siteName: 'Virel',

@@ -7,7 +7,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'Blog | Virel London Escorts',
+  title: 'Blog',
   description: 'Guides, tips, and insights from Virel — London\'s premier escort agency. Discover the best districts, hotels, and everything you need to know.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://virel-v3.vercel.app/blog' },
