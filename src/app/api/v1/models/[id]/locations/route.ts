@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { logAudit } from '@/lib/audit';
 import { requireRole, isActor } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
 
@@ -64,6 +65,15 @@ export async function POST(
       entityId: modelId,
       req: request,
     });
+
+    try {
+      const m = await prisma.model.findUnique({ where: { id: modelId }, select: { slug: true } })
+      if (m?.slug) {
+        revalidatePath(`/companions/${m.slug}`)
+        revalidatePath('/companions')
+        revalidatePath('/')
+      }
+    } catch {}
 
     return NextResponse.json({ success: true, message: 'Locations updated' });
   } catch (error) {
