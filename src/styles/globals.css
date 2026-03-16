@@ -243,3 +243,42 @@ html {
   .districts-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
   .smart-match, .social-proof, .final-cta { padding:48px 20px; }
 }
+
+/* ===== Profile Page ===== */
+.profile-root { font-family:'DM Sans',sans-serif; background:#0a0a0a; color:#e8e0d4; min-height:100vh; }
+.breadcrumb { padding:20px 80px; font-size:11px; letter-spacing:.1em; color:#3a3530; }
+.breadcrumb a { color:#3a3530; text-decoration:none; transition:color .2s; }
+.breadcrumb a:hover { color:#ddd5c8; }
+.profile-main { display:grid; grid-template-columns:60% 40%; gap:0; padding:0 80px 80px; }
+@media(max-width:900px) { .profile-main { grid-template-columns:1fr; padding:0 24px 40px; } }
+.profile-sidebar { }
+.section-label { font-size:9px; letter-spacing:.3em; text-transform:uppercase; color:rgba(232,224,212,0.45); margin-bottom:24px; margin-top:60px; }
+.bio-text { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:300; line-height:1.7; color:#e8e0d4; border-left:1px solid rgba(255,255,255,0.07); padding-left:28px; }
+.about-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid rgba(255,255,255,0.07); }
+.about-cell { background:#111111; padding:18px 20px; }
+.about-lbl { font-size:8px; letter-spacing:.22em; text-transform:uppercase; color:#5a5450; margin-bottom:5px; }
+.about-val { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; color:#e8e0d4; }
+.loc-block { padding:24px; background:#111111; border:1px solid rgba(255,255,255,0.07); }
+.loc-main { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:300; color:#e8e0d4; margin:0 0 8px; }
+.loc-station { font-size:12px; color:rgba(232,224,212,0.45); }
+.svc-tags { display:flex; flex-wrap:wrap; gap:8px; }
+.svc-tag { display:inline-block; padding:6px 14px; border:1px solid #2A2A2A; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#808080; }
+.extras-list { display:flex; flex-wrap:wrap; gap:8px; }
+.extra-item { font-size:12px; color:rgba(232,224,212,0.45); padding:6px 14px; border:1px solid rgba(255,255,255,0.07); }
+.extra-price { color:#b8965a; margin-left:4px; }
+.rates-table { width:100%; border-collapse:collapse; }
+.rates-table thead th { padding:12px 0; text-align:left; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#808080; font-weight:400; border-bottom:1px solid #2A2A2A; }
+.rates-table thead th:not(:first-child) { text-align:right; padding-left:16px; }
+.rates-table tbody td { padding:14px 0; border-bottom:1px solid #1A1A1A; }
+.rates-table tbody td:first-child { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; color:#e8e0d4; }
+.rates-table tbody td:not(:first-child) { text-align:right; font-size:14px; color:#C5A572; letter-spacing:.04em; padding-left:16px; }
+.similar-section { padding:80px 80px; border-top:1px solid #1A1A1A; }
+.similar-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:40px; }
+@media(max-width:900px) { .similar-section { padding:60px 24px; } .similar-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:600px) { .similar-grid { grid-template-columns:1fr; } }
+.disclaimer { text-align:center; padding:48px 80px; border-top:1px solid rgba(255,255,255,0.07); font-size:12px; color:#3a3530; letter-spacing:.04em; line-height:1.8; }
+@media(max-width:600px) { .disclaimer { padding:40px 24px; } }
+.back-link { display:block; text-align:center; padding:48px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#5a5450; text-decoration:none; transition:color .2s; }
+.back-link:hover { color:#f5f0e8; }
+.content-sections { padding:0 80px 80px; max-width:900px; }
+@media(max-width:900px) { .content-sections { padding:0 24px 60px; } }
