@@ -7,7 +7,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export async function generateStaticParams() {
   const services = await prisma.service.findMany({

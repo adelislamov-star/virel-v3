@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db/client'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Companion Services London | Virel',
