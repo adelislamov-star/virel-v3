@@ -157,6 +157,51 @@ export function normalizeAge(raw: string | number | null | undefined): number | 
  * "300"     → 300
  * "$350"    → 350  (assume GBP equivalent)
  */
+/**
+ * Smoking → display value
+ * "no"         → "Non-Smoker"
+ * "occasional" → "Occasional"
+ * "yes"        → "Regular"
+ */
+export function normalizeSmoking(raw: string | boolean | null | undefined): string | null {
+  if (raw == null) return null
+  if (typeof raw === 'boolean') return raw ? 'Regular' : 'Non-Smoker'
+  const v = String(raw).toLowerCase().trim()
+  if (!v) return null
+  if (['no', 'non-smoker', 'nonsmoker', 'non smoker', 'false'].includes(v)) return 'Non-Smoker'
+  if (['occasional', 'sometimes', 'social'].includes(v)) return 'Occasional'
+  if (['yes', 'regular', 'smoker', 'true'].includes(v)) return 'Regular'
+  return null
+}
+
+/**
+ * Bust type → display value
+ * "natural"  → "Natural"
+ * "silicone" → "Enhanced"
+ */
+export function normalizeBustType(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const v = String(raw).toLowerCase().trim()
+  if (['natural', 'nat', 'real'].includes(v)) return 'Natural'
+  if (['silicone', 'enhanced', 'augmented', 'implants', 'fake'].includes(v)) return 'Enhanced'
+  return raw.charAt(0).toUpperCase() + raw.slice(1)
+}
+
+/**
+ * Tattoo → display value
+ * "none" → "None"
+ * "small" → "Small"
+ */
+export function normalizeTattoo(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const v = String(raw).toLowerCase().trim()
+  if (['none', 'no', 'n/a', ''].includes(v)) return 'None'
+  if (['small', 'tiny', 'discreet'].includes(v)) return 'Small'
+  if (['medium', 'moderate', 'some'].includes(v)) return 'Medium'
+  if (['large', 'many', 'heavily tattooed', 'full'].includes(v)) return 'Large'
+  return raw.charAt(0).toUpperCase() + raw.slice(1)
+}
+
 export function normalizePrice(raw: string | number | null | undefined): number | null {
   if (raw == null) return null
   const s = String(raw).trim()

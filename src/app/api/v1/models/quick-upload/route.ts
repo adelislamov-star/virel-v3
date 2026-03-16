@@ -15,7 +15,7 @@ import { parseProfileDocument } from '@/lib/parsing/parse-profile-document'
 import { randomUUID, createHash } from 'crypto'
 import { requireRole, isActor } from '@/lib/auth'
 import Anthropic from '@anthropic-ai/sdk'
-import { normalizePhone, normalizeHeight, normalizeWeight, normalizeAge, normalizePrice } from '@/lib/normalize-anketa'
+import { normalizePhone, normalizeHeight, normalizeWeight, normalizeAge, normalizePrice, normalizeSmoking, normalizeBustType, normalizeTattoo } from '@/lib/normalize-anketa'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -383,6 +383,122 @@ function buildNotesInternal(ai: AIParsedProfile | null, regex: any): string | nu
   return lines.length > 0 ? lines.join(' | ') : null
 }
 
+// ─── Convert parse-anketa flat fields → AIParsedProfile ───
+
+function convertClientFields(raw: Record<string, any>): AIParsedProfile {
+  // If it already has `rates` as an object → it's already in AIParsedProfile format
+  if (raw.rates && typeof raw.rates === 'object' && !Array.isArray(raw.rates)) {
+    // Still normalize services field names
+    if (raw.services && Array.isArray(raw.services)) {
+      raw.services = raw.services.map((s: any) => ({
+        name: s.name || s.code || '',
+        enabled: s.enabled ?? true,
+        extra_price: s.extra_price ?? s.extraPrice ?? null,
+      }))
+    }
+    return raw as AIParsedProfile
+  }
+
+  // Build nested rates from flat fields (rate30min, rate1hIn, rate1hOut, etc.)
+  const rates: Record<string, { incall: number | null; outcall: number | null }> = {}
+  const rateMap: Record<string, { key: string; type: 'incall' | 'outcall' | 'both' }> = {
+    rate30min: { key: '30min', type: 'incall' },
+    rate30minIn: { key: '30min', type: 'incall' },
+    rate30minOut: { key: '30min', type: 'outcall' },
+    rate45min: { key: '45min', type: 'incall' },
+    rate45minIn: { key: '45min', type: 'incall' },
+    rate45minOut: { key: '45min', type: 'outcall' },
+    rate1hIn: { key: '1hour', type: 'incall' },
+    rate1h: { key: '1hour', type: 'incall' },
+    rate1hOut: { key: '1hour', type: 'outcall' },
+    rate90minIn: { key: '90min', type: 'incall' },
+    rate90min: { key: '90min', type: 'incall' },
+    rate90minOut: { key: '90min', type: 'outcall' },
+    rate2hIn: { key: '2hours', type: 'incall' },
+    rate2h: { key: '2hours', type: 'incall' },
+    rate2hOut: { key: '2hours', type: 'outcall' },
+    rate3hIn: { key: '3hours', type: 'incall' },
+    rate3h: { key: '3hours', type: 'incall' },
+    rate3hOut: { key: '3hours', type: 'outcall' },
+    rate4hIn: { key: '4hours', type: 'incall' },
+    rate4h: { key: '4hours', type: 'incall' },
+    rate4hOut: { key: '4hours', type: 'outcall' },
+    rateExtraHour: { key: 'extra_hour', type: 'incall' },
+    rateOvernight: { key: 'overnight', type: 'incall' },
+    rateOvernightIn: { key: 'overnight', type: 'incall' },
+    rateOvernightOut: { key: 'overnight', type: 'outcall' },
+  }
+
+  for (const [field, { key, type }] of Object.entries(rateMap)) {
+    const val = raw[field]
+    if (val == null || val === '' || val === '0') continue
+    const price = normalizePrice(val)
+    if (price == null) continue
+    if (!rates[key]) rates[key] = { incall: null, outcall: null }
+    if (type === 'incall') rates[key].incall = price
+    else rates[key].outcall = price
+  }
+
+  // Convert services from { code: "OWO", extraPrice: 50 } → { name: "OWO", enabled: true, extra_price: 50 }
+  let services: AIParsedProfile['services'] = null
+  if (raw.services && Array.isArray(raw.services)) {
+    services = raw.services.map((s: any) => ({
+      name: s.name || s.code || '',
+      enabled: s.enabled ?? true,
+      extra_price: s.extra_price ?? s.extraPrice ?? null,
+    }))
+  }
+
+  return {
+    name: raw.name || null,
+    age: raw.age ? parseInt(raw.age) : null,
+    height_cm: raw.height ? parseInt(raw.height) : null,
+    weight_kg: raw.weight ? parseInt(raw.weight) : null,
+    nationality: raw.nationality || null,
+    ethnicity: raw.ethnicity || null,
+    languages: raw.languages || [],
+    hair_colour: raw.hairColour || raw.hair_colour || null,
+    hair_length: raw.hairLength || raw.hair_length || null,
+    eye_colour: raw.eyesColour || raw.eye_colour || null,
+    bust_size: raw.breastSize || raw.bust_size || null,
+    bust_type: raw.breastType || raw.bust_type || null,
+    dress_size: raw.dressSizeUK || raw.dress_size || null,
+    shoe_size: raw.feetSizeUK || raw.shoe_size || null,
+    measurements: raw.measurements || null,
+    orientation: raw.orientation || null,
+    smokes: raw.smokingStatus != null
+      ? (raw.smokingStatus === 'yes' || raw.smokingStatus === true)
+      : (raw.smokes ?? null),
+    tattoo: raw.tattooStatus || raw.tattoo || null,
+    piercings: raw.piercingTypes || raw.piercings || null,
+    works_with_couples: raw.workWithCouples ?? raw.works_with_couples ?? null,
+    serves_women: raw.workWithWomen ?? raw.serves_women ?? null,
+    dinner_dates: raw.dinner_dates ?? null,
+    travel_companion: raw.travel_companion ?? null,
+    bio_text: raw.bio_text || raw.bio || null,
+    bio: raw.bio || null,
+    notesInternal: raw.notesInternal || null,
+    tagline: raw.tagline || null,
+    education: raw.education || null,
+    travel: raw.travel || null,
+    availability: raw.availability || null,
+    phone: raw.phone || null,
+    phone2: raw.phone2 || null,
+    email: raw.email || null,
+    whatsapp: raw.whatsapp ?? false,
+    telegram: raw.telegram ?? false,
+    viber: raw.viber ?? false,
+    signal: raw.signal ?? false,
+    address: raw.addressStreet || raw.address || null,
+    postcode: raw.addressPostcode || raw.postcode || null,
+    tube_station: raw.tubeStation || raw.tube_station || null,
+    wardrobe: raw.wardrobe || null,
+    rates: Object.keys(rates).length > 0 ? rates : null,
+    services,
+    payment_methods: raw.payment_methods || null,
+  }
+}
+
 // ─── POST Handler ───
 
 export async function POST(request: NextRequest) {
@@ -423,11 +539,14 @@ export async function POST(request: NextRequest) {
     const parsedFieldsRaw = formData.get('parsedFields')
     if (parsedFieldsRaw && typeof parsedFieldsRaw === 'string') {
       try {
-        clientParsed = JSON.parse(parsedFieldsRaw) as AIParsedProfile
+        const raw = JSON.parse(parsedFieldsRaw)
+        // Convert parse-anketa flat format → AIParsedProfile format
+        clientParsed = convertClientFields(raw)
         console.log('[quick-upload] Client pre-parsed fields received:', {
           name: clientParsed.name,
           hasPhone: !!clientParsed.phone,
           hasRates: !!clientParsed.rates,
+          rateKeys: clientParsed.rates ? Object.keys(clientParsed.rates).length : 0,
           services: clientParsed.services?.length || 0,
         })
       } catch (e) {
@@ -536,9 +655,7 @@ export async function POST(request: NextRequest) {
 
     const publicCode = `${name.toUpperCase().replace(/[^A-Z0-9]/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
 
-    const smokingVal = aiParsed?.smokes != null
-      ? (aiParsed.smokes ? 'yes' : 'no')
-      : (regexParsed?.smokes ? 'yes' : regexParsed?.smokes === false ? 'no' : null)
+    const smokingVal = normalizeSmoking(aiParsed?.smokes) || normalizeSmoking(regexParsed?.smokes) || null
 
     const model = await prisma.model.create({
       data: {
@@ -600,7 +717,7 @@ export async function POST(request: NextRequest) {
             height: normalizeHeight(aiParsed?.height_cm) || normalizeHeight(regexParsed?.heightCm) || null,
             weight: normalizeWeight(aiParsed?.weight_kg) || normalizeWeight(regexParsed?.weightKg) || null,
             bustSize: aiParsed?.bust_size || regexParsed?.bustSize || null,
-            bustType: aiParsed?.bust_type || null,
+            bustType: normalizeBustType(aiParsed?.bust_type) || null,
             dressSize: aiParsed?.dress_size || regexParsed?.dressSize || null,
             feetSize: aiParsed?.shoe_size || regexParsed?.shoeSize || null,
             eyeColour: aiParsed?.eye_colour || regexParsed?.eyeColour || null,
@@ -609,7 +726,7 @@ export async function POST(request: NextRequest) {
             orientation: aiParsed?.orientation || regexParsed?.orientation || null,
             languages: aiParsed?.languages || regexParsed?.languages || [],
             smokingStatus: smokingVal,
-            tattooStatus: aiParsed?.tattoo || null,
+            tattooStatus: normalizeTattoo(aiParsed?.tattoo) || 'None',
             piercingStatus: aiParsed?.piercings || regexParsed?.piercings || null,
           },
         },
@@ -647,7 +764,7 @@ export async function POST(request: NextRequest) {
               modelId: model.id,
               serviceId,
               isEnabled: true,
-              extraPrice: svc.extra_price ?? null,
+              extraPrice: svc.extra_price ?? (svc as any).extraPrice ?? null,
             },
           })
           linkedServices++
@@ -697,13 +814,14 @@ export async function POST(request: NextRequest) {
         modelId, dt, ct
       )
       await prisma.$executeRawUnsafe(
-        `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
-         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'GBP', true)`,
+        `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active, created_at, updated_at)
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'GBP', true, now(), now())`,
         modelId, dt, ct, price
       )
     }
 
     const aiRates = aiParsed?.rates
+    console.log('[quick-upload] Step 3: aiRates available:', !!aiRates, aiRates ? Object.keys(aiRates) : 'none')
     if (aiRates) {
       for (const [duration, val] of Object.entries(aiRates)) {
         if (!val) continue
