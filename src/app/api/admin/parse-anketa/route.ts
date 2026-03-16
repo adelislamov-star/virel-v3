@@ -149,6 +149,57 @@ Field rules:
       fields = JSON.parse(match[0])
     }
 
+    // ── Build notesInternal from raw extracted data ──
+    const factLines: string[] = []
+    if (fields.name) factLines.push(`Name: ${fields.name}`)
+    if (fields.age) factLines.push(`Age: ${fields.age}`)
+    if (fields.nationality) factLines.push(`Nationality: ${fields.nationality}`)
+    if (fields.phone || fields.phone2) {
+      const phones = [fields.phone, fields.phone2].filter(Boolean).join(', ')
+      factLines.push(`Phone: ${phones}`)
+    }
+    if (fields.email) factLines.push(`Email: ${fields.email}`)
+    if (fields.addressPostcode || fields.tubeStation) {
+      const loc = [fields.addressPostcode, fields.tubeStation].filter(Boolean).join(', ')
+      factLines.push(`Location: ${loc}`)
+    }
+    if (fields.languages?.length) factLines.push(`Languages: ${fields.languages.join(', ')}`)
+    if (fields.height) factLines.push(`Height: ${fields.height}cm`)
+    if (fields.weight) factLines.push(`Weight: ${fields.weight}kg`)
+    if (fields.breastSize) factLines.push(`Bust: ${fields.breastSize} ${fields.breastType || ''}`.trim())
+    if (fields.orientation) factLines.push(`Orientation: ${fields.orientation}`)
+    if (fields.smokingStatus) factLines.push(`Smoking: ${fields.smokingStatus}`)
+    if (fields.tattooStatus && fields.tattooStatus !== 'none') factLines.push(`Tattoo: ${fields.tattooStatus}`)
+    if (fields.rate1hIn) factLines.push(`1h incall: £${fields.rate1hIn}`)
+    if (fields.rate1hOut) factLines.push(`1h outcall: £${fields.rate1hOut}`)
+    if (fields.rateOvernight) factLines.push(`Overnight: £${fields.rateOvernight}`)
+    fields.notesInternal = factLines.join(' | ')
+
+    // ── Generate public bio via separate AI call ──
+    try {
+      const bioResponse = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: `You write elegant, professional bios for a high-end London companion agency website. Rules:
+- 150–200 words, third person ("She is…", "Her…")
+- Literary, warm, alluring tone — never vulgar
+- Mention personality, appearance highlights, interests, what makes her special
+- NEVER include: phone numbers, email, address, postcode, prices, rates, specific services
+- NEVER use explicit sexual language
+- Return ONLY the bio text, no quotes, no markdown`,
+        messages: [{
+          role: 'user',
+          content: `Write a website bio for this companion based on the following profile data:\n\nName: ${fields.name || 'Unknown'}\nAge: ${fields.age || 'N/A'}\nNationality: ${fields.nationality || 'N/A'}\nLanguages: ${fields.languages?.join(', ') || 'English'}\nHeight: ${fields.height ? fields.height + 'cm' : 'N/A'}\nHair: ${fields.hairColour || 'N/A'}\nEyes: ${fields.eyesColour || 'N/A'}\nOrientation: ${fields.orientation || 'N/A'}\nBreast: ${fields.breastSize || 'N/A'} ${fields.breastType || ''}\nTattoo: ${fields.tattooStatus || 'N/A'}\nPiercing: ${fields.piercingTypes || 'N/A'}`
+        }]
+      })
+      const bioText = bioResponse.content[0].type === 'text' ? bioResponse.content[0].text.trim() : ''
+      if (bioText.length > 50) {
+        fields.bio = bioText
+      }
+    } catch (e) {
+      console.error('[parse-anketa] Bio generation failed (non-fatal):', e)
+    }
+
     return NextResponse.json({ success: true, fields })
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })

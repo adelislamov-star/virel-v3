@@ -66,41 +66,57 @@ export default function QuickUploadPage() {
 
   const log = (msg: string) => setProgress(p => [...p, msg])
 
-  // ── Ingest files (await text reading) ─────────────────────────────────────
+  // ── Ingest files (parallel AI calls) ──────────────────────────────────────
   const ingestFiles = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList)
     const imgFiles: PhotoFile[] = []
+    let anketaFile: File | null = null
 
-    // Read all files in parallel
-    await Promise.all(files.map(async f => {
+    // Classify files synchronously
+    for (const f of files) {
       if (f.type.startsWith('image/')) {
         imgFiles.push({ file: f, previewUrl: URL.createObjectURL(f), id: uid() })
       } else if (isAnketaFile(f)) {
-        try {
-          setAnketaText(f.name)
-          setAnketaFileRef(f)
-          setAiParsing(true)
-          setParseError(null)
-          setStage('preview')
-          const parsed = await parseAnketaWithAI(f)
-          setParsedForm(parsed)
-          if (parsed.name) setManualName(parsed.name)
-          setAiParsing(false)
-        } catch (e: any) {
-          console.error('[quick-upload] Anketa parse failed:', e)
-          setAiParsing(false)
-          setParseError({ message: e.message || 'Failed to parse document' })
-        }
+        anketaFile = f
       }
-    }))
+    }
+
+    setStage('preview')
+
+    // Launch both AI calls in parallel
+    const promises: Promise<void>[] = []
+
+    if (anketaFile) {
+      const file = anketaFile
+      setAnketaText(file.name)
+      setAnketaFileRef(file)
+      setAiParsing(true)
+      setParseError(null)
+      promises.push(
+        parseAnketaWithAI(file)
+          .then(parsed => {
+            setParsedForm(parsed)
+            if (parsed.name) setManualName(parsed.name)
+            setAiParsing(false)
+          })
+          .catch((e: any) => {
+            console.error('[quick-upload] Anketa parse failed:', e)
+            setAiParsing(false)
+            setParseError({ message: e.message || 'Failed to parse document' })
+          })
+      )
+    }
 
     if (imgFiles.length > 0) {
       setPhotos(imgFiles)
-      setStage('preview')
-      doAiSort(imgFiles)
-    } else if (anketaText || Object.keys(parsedForm).length > 0) {
-      // Only text, no photos — still go to preview
-      setStage('preview')
+      promises.push(doAiSort(imgFiles))
+    }
+
+    await Promise.all(promises)
+
+    if (imgFiles.length === 0 && !anketaFile) {
+      // Nothing useful dropped
+      setStage('drop')
     }
   }
 
@@ -169,6 +185,11 @@ export default function QuickUploadPage() {
       } else {
         const nameBlob = new Blob([`Name: ${finalName}`], { type: 'text/plain' })
         formData.append('files', new File([nameBlob], 'profile.txt', { type: 'text/plain' }))
+      }
+
+      // Send client-side parsed fields as fallback for server-side AI parse
+      if (Object.keys(parsedForm).length > 0) {
+        formData.append('parsedFields', JSON.stringify({ ...parsedForm, name: finalName }))
       }
 
       log(`📤 Uploading ${sortedPhotos.length} photos (server-side with watermark)...`)

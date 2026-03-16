@@ -15,6 +15,7 @@ import { parseProfileDocument } from '@/lib/parsing/parse-profile-document'
 import { randomUUID, createHash } from 'crypto'
 import { requireRole, isActor } from '@/lib/auth'
 import Anthropic from '@anthropic-ai/sdk'
+import { normalizePhone, normalizeHeight, normalizeWeight, normalizeAge, normalizePrice } from '@/lib/normalize-anketa'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -94,6 +95,8 @@ interface AIParsedProfile {
   dinner_dates: boolean | null
   travel_companion: boolean | null
   bio_text: string | null
+  bio: string | null
+  notesInternal: string | null
   tagline: string | null
   education: string | null
   travel: string | null
@@ -345,6 +348,41 @@ function mapRatesToRows(rates: Record<string, { incall: number | null; outcall: 
   return rows
 }
 
+// ─── Build notesInternal from raw data ───
+
+function buildNotesInternal(ai: AIParsedProfile | null, regex: any): string | null {
+  // If client already sent a proper notesInternal (from parse-anketa), use it
+  if (ai?.notesInternal && typeof ai.notesInternal === 'string' && ai.notesInternal.length > 10) {
+    return ai.notesInternal
+  }
+
+  // Otherwise, build from raw parsed fields
+  const lines: string[] = []
+  const name = ai?.name || regex?.name
+  if (name) lines.push(`Name: ${name}`)
+  if (ai?.age || regex?.age) lines.push(`Age: ${ai?.age || regex?.age}`)
+  if (ai?.nationality || regex?.nationality) lines.push(`Nationality: ${ai?.nationality || regex?.nationality}`)
+  const phones = [ai?.phone, ai?.phone2].filter(Boolean)
+  if (phones.length) lines.push(`Phone: ${phones.join(', ')}`)
+  if (ai?.email) lines.push(`Email: ${ai.email}`)
+  const loc = [ai?.postcode || regex?.address?.postcode, ai?.tube_station || regex?.address?.tubeStation].filter(Boolean)
+  if (loc.length) lines.push(`Location: ${loc.join(', ')}`)
+  if (ai?.languages?.length) lines.push(`Languages: ${ai.languages.join(', ')}`)
+  if (ai?.height_cm) lines.push(`Height: ${ai.height_cm}cm`)
+  if (ai?.weight_kg) lines.push(`Weight: ${ai.weight_kg}kg`)
+  if (ai?.bust_size) lines.push(`Bust: ${ai.bust_size} ${ai.bust_type || ''}`.trim())
+  if (ai?.orientation) lines.push(`Orientation: ${ai.orientation}`)
+  if (ai?.smokes != null) lines.push(`Smoking: ${ai.smokes ? 'yes' : 'no'}`)
+  if (ai?.tattoo && ai.tattoo !== 'None') lines.push(`Tattoo: ${ai.tattoo}`)
+  if (ai?.rates) {
+    const r = ai.rates as Record<string, { incall?: number | null; outcall?: number | null }>
+    if (r['1hour']?.incall) lines.push(`1h incall: £${r['1hour'].incall}`)
+    if (r['1hour']?.outcall) lines.push(`1h outcall: £${r['1hour'].outcall}`)
+    if (r['overnight']?.incall) lines.push(`Overnight: £${r['overnight'].incall}`)
+  }
+  return lines.length > 0 ? lines.join(' | ') : null
+}
+
 // ─── POST Handler ───
 
 export async function POST(request: NextRequest) {
@@ -380,6 +418,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Maximum 10 photos allowed' }, { status: 400 })
     }
 
+    // ── Read client-side pre-parsed fields (fallback) ──
+    let clientParsed: AIParsedProfile | null = null
+    const parsedFieldsRaw = formData.get('parsedFields')
+    if (parsedFieldsRaw && typeof parsedFieldsRaw === 'string') {
+      try {
+        clientParsed = JSON.parse(parsedFieldsRaw) as AIParsedProfile
+        console.log('[quick-upload] Client pre-parsed fields received:', {
+          name: clientParsed.name,
+          hasPhone: !!clientParsed.phone,
+          hasRates: !!clientParsed.rates,
+          services: clientParsed.services?.length || 0,
+        })
+      } catch (e) {
+        console.error('[quick-upload] Failed to parse client parsedFields:', e)
+      }
+    }
+
     console.log(`[quick-upload] Files: ${imageFiles.length} images, ${docFiles.length} documents`)
 
     // ── Extract text from documents ──
@@ -404,10 +459,17 @@ export async function POST(request: NextRequest) {
 
     if (documentText.trim()) {
       aiParsed = await parseDocumentWithAI(documentText)
-      if (!aiParsed) {
+      if (!aiParsed && clientParsed) {
+        console.log('[quick-upload] AI parse failed → using client pre-parsed fields')
+        aiParsed = clientParsed
+      } else if (!aiParsed) {
         console.log('[quick-upload] AI parse failed → falling back to regex parser')
         usedFallback = true
       }
+    } else if (clientParsed) {
+      // No document file but client sent pre-parsed fields
+      console.log('[quick-upload] No document text, using client pre-parsed fields')
+      aiParsed = clientParsed
     }
 
     // Regex fallback
@@ -455,24 +517,24 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         publicCode,
-        status: 'active',
+        status: 'draft',
 
         // Bio & Marketing
-        notesInternal: aiParsed?.bio_text || null,
-        bio: aiParsed?.bio_text || null,
+        notesInternal: buildNotesInternal(aiParsed, regexParsed),
+        bio: aiParsed?.bio || aiParsed?.bio_text || null,
         tagline: aiParsed?.tagline || null,
         availability: aiParsed?.availability || 'Advanced Notice',
         education: aiParsed?.education || null,
         travel: aiParsed?.travel || null,
-        ageForWeb: aiParsed?.age || regexParsed?.age || null,
+        ageForWeb: normalizeAge(aiParsed?.age) || normalizeAge(regexParsed?.age) || null,
         ethnicity: aiParsed?.ethnicity || null,
         hairLength: aiParsed?.hair_length || null,
         measurements: aiParsed?.measurements || null,
         wardrobe: aiParsed?.wardrobe || [],
 
         // Contact
-        phone: aiParsed?.phone || aiParsed?.whatsapp_number || null,
-        phone2: aiParsed?.phone2 || null,
+        phone: normalizePhone(aiParsed?.phone || (aiParsed as any)?.whatsapp_number),
+        phone2: normalizePhone(aiParsed?.phone2),
         email: aiParsed?.email || null,
         telegramTag: typeof aiParsed?.telegram === 'string' ? aiParsed.telegram : null,
         telegramPhone: typeof aiParsed?.whatsapp === 'string' ? aiParsed.whatsapp : null,
@@ -506,9 +568,9 @@ export async function POST(request: NextRequest) {
         // Stats
         stats: {
           create: {
-            age: aiParsed?.age || regexParsed?.age || null,
-            height: aiParsed?.height_cm || regexParsed?.heightCm || null,
-            weight: aiParsed?.weight_kg || regexParsed?.weightKg || null,
+            age: normalizeAge(aiParsed?.age) || normalizeAge(regexParsed?.age) || null,
+            height: normalizeHeight(aiParsed?.height_cm) || normalizeHeight(regexParsed?.heightCm) || null,
+            weight: normalizeWeight(aiParsed?.weight_kg) || normalizeWeight(regexParsed?.weightKg) || null,
             bustSize: aiParsed?.bust_size || regexParsed?.bustSize || null,
             bustType: aiParsed?.bust_type || null,
             dressSize: aiParsed?.dress_size || regexParsed?.dressSize || null,
@@ -584,68 +646,56 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[quick-upload] Step 2: Linked ${linkedServices} services`)
 
-    // Step 3: Insert rates via Prisma (ModelRate -> CallRateMaster)
+    // Step 3: Insert rates directly into model_rates (duration_type + call_type + price)
     console.log('[quick-upload] Step 3: Inserting rates...')
     let insertedRates = 0
 
-    const rateMasters = await prisma.callRateMaster.findMany({
-      where: { isActive: true },
-      select: { id: true, label: true, durationMin: true },
-    })
-    // Build lookup map with multiple key variants for each master
-    // AI returns: "30min", "1hour", "2hours", "overnight", "extra_hour"
-    // DB labels:  "30 min", "1 Hour", "2 Hours", "Overnight (9 hrs)", "Extra Hour"
-    const masterByLabel = new Map<string, string>()
-    const aiKeyAliases: Record<number, string[]> = {
-      30: ['30min', '30 min', '30 minutes'],
-      45: ['45min', '45 min', '45 minutes'],
-      60: ['1hour', '1 hour', '60min', '60 min'],
-      90: ['90min', '90 min', '90 minutes', '1.5hours'],
-      120: ['2hours', '2 hours', '120min'],
-      180: ['3hours', '3 hours', '180min'],
-      540: ['overnight', 'overnight (9 hrs)', 'overnight (9hrs)'],
+    // Build lookup map from AI keys to duration_type values
+    const aiKeyToDuration: Record<string, string> = {
+      '30min': '30min', '30 min': '30min', '30 minutes': '30min',
+      '45min': '45min', '45 min': '45min', '45 minutes': '45min',
+      '1hour': '1hour', '1 hour': '1hour', '60min': '1hour', '60 min': '1hour',
+      '90min': '90min', '90 min': '90min', '90 minutes': '90min', '1.5hours': '90min',
+      '2hours': '2hours', '2 hours': '2hours', '120min': '2hours',
+      '3hours': '3hours', '3 hours': '3hours', '180min': '3hours',
+      '4hours': '4hours', '4 hours': '4hours', '240min': '4hours',
+      'overnight': 'overnight', 'overnight (9 hrs)': 'overnight', 'overnight (9hrs)': 'overnight',
+      'extra_hour': 'extra_hour', 'extra hour': 'extra_hour', 'extra': 'extra_hour',
     }
-    for (const m of rateMasters) {
-      // Exact label match
-      masterByLabel.set(m.label.toLowerCase(), m.id)
-      // Duration-based aliases
-      const aliases = aiKeyAliases[m.durationMin] || []
-      for (const alias of aliases) {
-        masterByLabel.set(alias, m.id)
-      }
-      // "Extra Hour" special case
-      if (m.label.toLowerCase().includes('extra')) {
-        masterByLabel.set('extra_hour', m.id)
-        masterByLabel.set('extra hour', m.id)
-        masterByLabel.set('extra', m.id)
-      }
+
+    const upsertRate = async (modelId: string, dt: string, ct: string, price: number) => {
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM model_rates WHERE model_id = $1 AND duration_type = $2 AND call_type = $3 AND location_id IS NULL`,
+        modelId, dt, ct
+      )
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active)
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'GBP', true)`,
+        modelId, dt, ct, price
+      )
     }
 
     const aiRates = aiParsed?.rates
     if (aiRates) {
       for (const [duration, val] of Object.entries(aiRates)) {
         if (!val) continue
-        const masterId = masterByLabel.get(duration.toLowerCase())
-        if (!masterId) { console.log('[quick-upload] No master for ' + duration); continue }
+        const dt = aiKeyToDuration[duration.toLowerCase()]
+        if (!dt) { console.log('[quick-upload] No duration type for ' + duration); continue }
+        const v = val as { incall?: number | string; outcall?: number | string }
         try {
-          await prisma.modelRate.upsert({
-            where: { modelId_callRateMasterId: { modelId: model.id, callRateMasterId: masterId } },
-            update: { incallPrice: val.incall ?? null, outcallPrice: val.outcall ?? null },
-            create: { modelId: model.id, callRateMasterId: masterId, incallPrice: val.incall ?? null, outcallPrice: val.outcall ?? null },
-          })
-          insertedRates++
+          const incallPrice = normalizePrice(v.incall)
+          const outcallPrice = normalizePrice(v.outcall)
+          if (incallPrice != null) { await upsertRate(model.id, dt, 'incall', incallPrice); insertedRates++ }
+          if (outcallPrice != null) { await upsertRate(model.id, dt, 'outcall', outcallPrice); insertedRates++ }
         } catch (e) { console.error('[quick-upload] Rate upsert failed ' + duration, e) }
       }
     } else if (regexParsed?.rates?.length) {
       for (const rate of regexParsed.rates) {
-        const masterId = masterByLabel.get(rate.duration.toLowerCase())
-        if (!masterId) continue
+        const dt = aiKeyToDuration[rate.duration.toLowerCase()]
+        if (!dt) continue
         try {
-          await prisma.modelRate.upsert({
-            where: { modelId_callRateMasterId: { modelId: model.id, callRateMasterId: masterId } },
-            update: { incallPrice: rate.callType === 'incall' ? rate.price : undefined, outcallPrice: rate.callType === 'outcall' ? rate.price : undefined },
-            create: { modelId: model.id, callRateMasterId: masterId, incallPrice: rate.callType === 'incall' ? rate.price : null, outcallPrice: rate.callType === 'outcall' ? rate.price : null },
-          })
+          const ratePrice = normalizePrice(rate.price) ?? rate.price
+          await upsertRate(model.id, dt, rate.callType || 'incall', ratePrice)
           insertedRates++
         } catch (e) { console.error('[quick-upload] Regex rate upsert failed ' + rate.duration, e) }
       }
@@ -695,6 +745,154 @@ export async function POST(request: NextRequest) {
       console.log('[quick-upload] Step 5: Work preferences saved')
     } catch (e) {
       console.error('[quick-upload] Step 5: Work prefs insert failed:', e)
+    }
+
+    // Step 5.5: Match location (district + transport hub + primaryLocationId)
+    console.log('[quick-upload] Step 5.5: Matching location...')
+    try {
+      const stationName = tubeStation || aiParsed?.tube_station || null
+      const modelPostcode = postcode || aiParsed?.postcode || null
+
+      if (stationName) {
+        // Try to find matching transport hub by station name
+        const stationLower = stationName.toLowerCase().trim()
+        const hub = await prisma.transportHub.findFirst({
+          where: {
+            isActive: true,
+            OR: [
+              { name: { equals: stationName, mode: 'insensitive' } },
+              { slug: stationLower.replace(/\s+/g, '-') },
+            ],
+          },
+          include: { district: true },
+        })
+
+        if (hub) {
+          console.log(`[quick-upload] Step 5.5: Matched hub "${hub.name}" → district "${hub.district.name}"`)
+
+          // Find or match a Location for primaryLocationId
+          // Try district name first, then "London" fallback
+          let location = await prisma.location.findFirst({
+            where: {
+              status: 'active',
+              OR: [
+                { title: { equals: hub.district.name, mode: 'insensitive' } },
+                { slug: hub.district.slug },
+              ],
+            },
+          })
+          if (!location) {
+            location = await prisma.location.findFirst({
+              where: { status: 'active', title: { contains: 'London', mode: 'insensitive' } },
+            })
+          }
+
+          // Update model with primaryLocationId
+          if (location) {
+            await prisma.model.update({
+              where: { id: model.id },
+              data: { primaryLocationId: location.id },
+            })
+            console.log(`[quick-upload] Step 5.5: Set primaryLocationId → "${location.title}"`)
+          }
+
+          // Create ModelLocation record linking model to district
+          const defaultWalkingMinutes = hub.walkingMinutes || 5
+          try {
+            await prisma.modelLocation.create({
+              data: {
+                modelId: model.id,
+                districtId: hub.district.id,
+                isPrimary: true,
+                transportHubId: hub.id,
+                walkingMinutes: defaultWalkingMinutes,
+              },
+            })
+            console.log(`[quick-upload] Step 5.5: ModelLocation created (district: ${hub.district.name}, hub: ${hub.name}, walk: ${defaultWalkingMinutes}min)`)
+          } catch (e: any) {
+            if (e.code !== 'P2002') {
+              console.error('[quick-upload] Step 5.5: ModelLocation create failed:', e)
+            }
+          }
+
+          // Add note if walking minutes is a default estimate
+          if (!modelPostcode) {
+            await prisma.model.update({
+              where: { id: model.id },
+              data: {
+                notesInternal: [model.notesInternal, 'Walking minutes: estimated (default), needs verification'].filter(Boolean).join('\n'),
+              },
+            })
+          }
+        } else {
+          // No hub match — try matching district directly by station name
+          const district = await prisma.district.findFirst({
+            where: {
+              isActive: true,
+              OR: [
+                { name: { equals: stationName, mode: 'insensitive' } },
+                { slug: stationLower.replace(/\s+/g, '-') },
+              ],
+            },
+          })
+
+          if (district) {
+            console.log(`[quick-upload] Step 5.5: Matched district directly "${district.name}" (no hub)`)
+
+            let location = await prisma.location.findFirst({
+              where: {
+                status: 'active',
+                OR: [
+                  { title: { equals: district.name, mode: 'insensitive' } },
+                  { slug: district.slug },
+                ],
+              },
+            })
+            if (!location) {
+              location = await prisma.location.findFirst({
+                where: { status: 'active', title: { contains: 'London', mode: 'insensitive' } },
+              })
+            }
+
+            if (location) {
+              await prisma.model.update({
+                where: { id: model.id },
+                data: { primaryLocationId: location.id },
+              })
+              console.log(`[quick-upload] Step 5.5: Set primaryLocationId → "${location.title}"`)
+            }
+
+            try {
+              await prisma.modelLocation.create({
+                data: {
+                  modelId: model.id,
+                  districtId: district.id,
+                  isPrimary: true,
+                  walkingMinutes: 5,
+                },
+              })
+              console.log(`[quick-upload] Step 5.5: ModelLocation created (district: ${district.name}, walk: 5min default)`)
+            } catch (e: any) {
+              if (e.code !== 'P2002') {
+                console.error('[quick-upload] Step 5.5: ModelLocation create failed:', e)
+              }
+            }
+
+            await prisma.model.update({
+              where: { id: model.id },
+              data: {
+                notesInternal: [model.notesInternal, 'Walking minutes: estimated (default 5min), needs verification'].filter(Boolean).join('\n'),
+              },
+            })
+          } else {
+            console.log(`[quick-upload] Step 5.5: No district/hub match for "${stationName}"`)
+          }
+        }
+      } else {
+        console.log('[quick-upload] Step 5.5: No station name to match')
+      }
+    } catch (e) {
+      console.error('[quick-upload] Step 5.5: Location matching failed (non-fatal):', e)
     }
 
     // Step 6: Upload photos to R2
