@@ -9,7 +9,7 @@ type Stage = 'drop' | 'preview' | 'uploading' | 'duplicate' | 'done' | 'error'
 type ParseError = { message: string } | null
 
 function uid() { return Math.random().toString(36).slice(2) }
-
+h
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((res, rej) => {
     const r = new FileReader()
@@ -268,7 +268,7 @@ export default function QuickUploadPage() {
     }
   }
 
-  const canCreate = manualName.trim().length > 0 && !aiSorting
+  const canCreate = manualName.trim().length > 0 && !aiSorting && !aiParsing
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
