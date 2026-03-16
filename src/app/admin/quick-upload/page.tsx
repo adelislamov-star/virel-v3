@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 interface PhotoFile { file: File; previewUrl: string; id: string }
 interface SortedPhoto extends PhotoFile { sortOrder: number; isPrimary: boolean; role: string }
-type Stage = 'drop' | 'preview' | 'uploading' | 'done' | 'error'
+type Stage = 'drop' | 'preview' | 'uploading' | 'duplicate' | 'done' | 'error'
 type ParseError = { message: string } | null
 
 function uid() { return Math.random().toString(36).slice(2) }
@@ -62,6 +62,7 @@ export default function QuickUploadPage() {
   const [aiParsing, setAiParsing] = useState(false)
   const [parseError, setParseError] = useState<ParseError>(null)
   const [acceptedOpen, setAcceptedOpen] = useState(false)
+  const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; name: string; publicCode: string } | null>(null)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -162,46 +163,53 @@ export default function QuickUploadPage() {
     }
   }
 
+  // ── Build FormData (reused for create and force-create) ──
+  const buildUploadFormData = () => {
+    const finalName = manualName.trim()
+    const formData = new FormData()
+    sortedPhotos.forEach((photo) => formData.append('files', photo.file))
+    if (anketaFileRef) {
+      formData.append('files', anketaFileRef)
+    } else {
+      const nameBlob = new Blob([`Name: ${finalName}`], { type: 'text/plain' })
+      formData.append('files', new File([nameBlob], 'profile.txt', { type: 'text/plain' }))
+    }
+    if (Object.keys(parsedForm).length > 0) {
+      formData.append('parsedFields', JSON.stringify({ ...parsedForm, name: finalName }))
+    }
+    return formData
+  }
+
   // ── Create profile ─────────────────────────────────────────────────────────
-  const handleCreate = async () => {
+  const handleCreate = async (force = false) => {
     const finalName = manualName.trim()
     if (!finalName) { alert('Enter model name'); return }
 
     setStage('uploading')
     setProgress([])
+    setDuplicateInfo(null)
 
     try {
       log('📝 Creating profile...')
-
-      const formData = new FormData()
-      // Add all photo files
-      sortedPhotos.forEach((photo) => {
-        formData.append('files', photo.file)
-      })
-
-      // Send the original anketa file so the server can parse it,
-      // or fall back to a text stub with just the name
-      if (anketaFileRef) {
-        formData.append('files', anketaFileRef)
-      } else {
-        const nameBlob = new Blob([`Name: ${finalName}`], { type: 'text/plain' })
-        formData.append('files', new File([nameBlob], 'profile.txt', { type: 'text/plain' }))
-      }
-
-      // Send client-side parsed fields as fallback for server-side AI parse
-      if (Object.keys(parsedForm).length > 0) {
-        formData.append('parsedFields', JSON.stringify({ ...parsedForm, name: finalName }))
-      }
+      const formData = buildUploadFormData()
 
       log(`📤 Uploading ${sortedPhotos.length} photos (server-side with watermark)...`)
 
-      const res = await fetch('/api/v1/models/quick-upload', {
+      const url = force ? '/api/v1/models/quick-upload?force=true' : '/api/v1/models/quick-upload'
+      const res = await fetch(url, {
         method: 'POST',
         credentials: 'include',
         body: formData,
       })
 
       const data = await res.json()
+
+      if (res.status === 409 && data.duplicate) {
+        setDuplicateInfo(data.existing)
+        setStage('duplicate')
+        return
+      }
+
       if (!data.success) {
         throw new Error(data.error || `Upload failed (${res.status})`)
       }
@@ -400,7 +408,7 @@ export default function QuickUploadPage() {
 
           {/* Create button */}
           <button
-            onClick={handleCreate}
+            onClick={() => handleCreate()}
             disabled={!canCreate}
             style={{
               background: canCreate ? '#6366f1' : '#e5e7eb',
@@ -431,6 +439,37 @@ export default function QuickUploadPage() {
         </div>
       )}
 
+      {/* ── DUPLICATE ──────────────────────────────────────────────── */}
+      {stage === 'duplicate' && duplicateInfo && (
+        <div style={{ background: '#2e2a1a', border: '1px solid #a16207', borderRadius: 16, padding: 32, textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fbbf24', marginBottom: 8 }}>Possible duplicate</h2>
+          <p style={{ color: '#d1d5db', marginBottom: 4 }}>
+            A profile with a similar name or phone already exists:
+          </p>
+          <p style={{ color: '#fff', fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
+            {duplicateInfo.name}
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: 12, marginBottom: 28 }}>
+            Code: {duplicateInfo.publicCode}
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button
+              onClick={() => handleCreate(true)}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Create Anyway
+            </button>
+            <a
+              href={`/admin/models/${duplicateInfo.id}`}
+              style={{ background: '#1e1e2e', color: '#ccc', border: '1px solid #444', borderRadius: 10, padding: '12px 28px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}
+            >
+              Open Existing
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* ── DONE ──────────────────────────────────────────────────────── */}
       {stage === 'done' && (
         <div style={{ textAlign: 'center', padding: '60px 32px' }}>
@@ -442,7 +481,7 @@ export default function QuickUploadPage() {
               View Profile →
             </a>
             <button
-              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null); setAcceptedOpen(false) }}
+              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null); setAcceptedOpen(false); setDuplicateInfo(null) }}
               style={{ border: '1px solid #444', background: '#1e1e2e', color: '#ccc', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
             >
               Add Another

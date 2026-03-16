@@ -496,11 +496,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ─── DUPLICATE CHECK ───
+    const force = request.nextUrl.searchParams.get('force') === 'true'
+    const parsedName = aiParsed?.name || regexParsed?.name || 'New Model'
+    const parsedPhone = normalizePhone(aiParsed?.phone || (aiParsed as any)?.whatsapp_number)
+
+    if (!force) {
+      const nameMatch = await prisma.model.findFirst({
+        where: { name: { contains: parsedName, mode: 'insensitive' }, deletedAt: null },
+        select: { id: true, name: true, publicCode: true },
+      })
+
+      const phoneMatch = parsedPhone
+        ? await prisma.model.findFirst({
+            where: { phone: parsedPhone, deletedAt: null },
+            select: { id: true, name: true, publicCode: true },
+          })
+        : null
+
+      if (nameMatch || phoneMatch) {
+        const existing = (nameMatch || phoneMatch)!
+        return NextResponse.json({
+          success: false,
+          duplicate: true,
+          existing: { id: existing.id, name: existing.name, publicCode: existing.publicCode },
+        }, { status: 409 })
+      }
+    }
+
     // ─── DATABASE SAVE CHAIN ───
 
     // Step 1: Create model
     console.log('[quick-upload] Step 1: Creating model...')
-    const name = aiParsed?.name || regexParsed?.name || 'New Model'
+    const name = parsedName
     let slug = slugify(name)
     if (!slug) slug = 'model'
     const existing = await prisma.model.findUnique({ where: { slug } })
