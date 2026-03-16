@@ -44,6 +44,8 @@ export default function ModelEditPage() {
 
   const [deleting, setDeleting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [publishAudit, setPublishAudit] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [model, setModel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,14 @@ export default function ModelEditPage() {
   }, [modelId]);
 
   useEffect(() => { loadModel(); }, [loadModel]);
+
+  useEffect(() => {
+    if (!modelId) return;
+    fetch(`/api/v1/models/${modelId}/publish-check`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(j => { if (j.success) setPublishAudit(j.data); })
+      .catch(() => {});
+  }, [modelId, model]);
 
   async function deleteModel() {
     if (!confirm(`DELETE "${model?.name}"?\n\nThis will permanently remove the profile and ALL photos from storage.`)) return;
@@ -188,6 +198,50 @@ export default function ModelEditPage() {
           </Button>
         </div>
       </div>
+
+      {/* Publish Readiness */}
+      {publishAudit && (
+        <div style={{
+          background: publishAudit.ready ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
+          border: `1px solid ${publishAudit.ready ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
+          borderRadius: 12,
+          padding: '16px 20px',
+          marginBottom: 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontWeight: 600, color: publishAudit.ready ? '#10b981' : '#f59e0b', fontSize: 14 }}>
+              {publishAudit.ready ? '✅ Ready to publish' : `⚠️ Profile incomplete — ${publishAudit.score}% ready`}
+            </span>
+            <span style={{ fontSize: 12, color: '#71717a' }}>
+              {publishAudit.checks.filter((c: any) => c.passed).length}/{publishAudit.checks.length} checks passed
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+            {publishAudit.checks.map((check: any) => (
+              <div key={check.key} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8,
+                padding: '8px 10px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: 8,
+                border: `1px solid ${check.passed ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              }}>
+                <span style={{ fontSize: 13, marginTop: 1 }}>{check.passed ? '✅' : '❌'}</span>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: check.passed ? '#d4d4d8' : '#f87171' }}>
+                    {check.label}
+                  </div>
+                  {check.passed && check.dbCount > 1 && (
+                    <div style={{ fontSize: 11, color: '#71717a' }}>{check.dbCount} items</div>
+                  )}
+                  {!check.passed && (
+                    <div style={{ fontSize: 11, color: '#a1a1aa' }}>{check.hint}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Section: Basic Info (existing component) */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">

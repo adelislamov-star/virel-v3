@@ -50,6 +50,25 @@ export async function PATCH(
       );
     }
 
+    if (newStatus === 'active') {
+      const { auditModelReadiness } = await import('@/lib/publish-validation')
+      const audit = await auditModelReadiness(id)
+      if (!audit.ready) {
+        const failed = audit.checks.filter(c => !c.passed).map(c => c.hint).join(' | ')
+        return NextResponse.json(
+          {
+            error: {
+              code: 'NOT_READY_TO_PUBLISH',
+              message: `Profile incomplete. Fix these issues before publishing: ${failed}`,
+              score: audit.score,
+              checks: audit.checks,
+            }
+          },
+          { status: 422 }
+        )
+      }
+    }
+
     if (ModelProfileStateMachine.requiresReason(newStatus) && !data.reason) {
       return NextResponse.json(
         { error: { code: 'REASON_REQUIRED', message: `Reason is required for transition to ${newStatus}` } },

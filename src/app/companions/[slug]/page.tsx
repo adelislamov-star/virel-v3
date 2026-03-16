@@ -226,18 +226,21 @@ export default async function ModelProfilePage({ params }: Props) {
             <p className="section-label">Details</p>
             <div className="about-grid">
               {[
-                profile.stats.age && { label: 'Age', value: `${profile.stats.age}` },
-                profile.stats.height && { label: 'Height', value: `${profile.stats.height} cm` },
-                profile.stats.bustSize && { label: 'Bust', value: `${profile.stats.bustSize}${profile.stats.bustType ? ` (${profile.stats.bustType})` : ''}` },
-                profile.stats.eyeColour && { label: 'Eyes', value: profile.stats.eyeColour },
-                profile.stats.hairColour && { label: 'Hair', value: profile.stats.hairColour },
-                profile.stats.nationality && { label: 'Nationality', value: profile.stats.nationality },
-                profile.stats.ethnicity && { label: 'Ethnicity', value: profile.stats.ethnicity },
+                profile.stats.age            && { label: 'Age',          value: `${profile.stats.age}` },
+                profile.stats.height         && { label: 'Height',       value: `${profile.stats.height} cm` },
+                profile.stats.weight         && { label: 'Weight',       value: `${profile.stats.weight} kg` },
+                profile.stats.bustSize       && { label: 'Bust',         value: `${profile.stats.bustSize}${profile.stats.bustType ? ` (${profile.stats.bustType})` : ''}` },
+                profile.stats.measurements   && { label: 'Measurements', value: profile.stats.measurements },
+                profile.stats.dressSize      && { label: 'Dress Size',   value: profile.stats.dressSize },
+                profile.stats.feetSize       && { label: 'Shoe Size',    value: profile.stats.feetSize },
+                profile.stats.eyeColour      && { label: 'Eyes',         value: profile.stats.eyeColour },
+                profile.stats.hairColour     && { label: 'Hair',         value: profile.stats.hairColour },
+                profile.stats.nationality    && { label: 'Nationality',  value: profile.stats.nationality },
+                profile.stats.ethnicity      && { label: 'Ethnicity',    value: profile.stats.ethnicity },
                 profile.stats.languages?.length && { label: 'Languages', value: profile.stats.languages.join(', ') },
-                profile.stats.measurements && { label: 'Measurements', value: profile.stats.measurements },
-                profile.stats.dressSize && { label: 'Dress Size', value: profile.stats.dressSize },
-                profile.stats.feetSize && { label: 'Shoe Size', value: profile.stats.feetSize },
-                profile.stats.smokingStatus && { label: 'Smoking', value: profile.stats.smokingStatus },
+                profile.stats.orientation    && { label: 'Orientation',  value: profile.stats.orientation },
+                profile.stats.smokingStatus  && { label: 'Smoking',      value: profile.stats.smokingStatus },
+                profile.stats.tattooStatus   && { label: 'Tattoos',      value: profile.stats.tattooStatus },
               ].filter(Boolean).map((s: any) => (
                 <div key={s.label} className="about-cell">
                   <p className="about-lbl">{s.label}</p>
