@@ -21,7 +21,6 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <main style={{ background: '#080808', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');`}</style>
       <Header />
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '80px 40px 120px' }}>
         <nav style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', marginBottom: 48 }}>

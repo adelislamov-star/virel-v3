@@ -77,7 +77,6 @@ export default function BlogPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .blog-root { font-family:'DM Sans',sans-serif; background:#080808; color:#ddd5c8; min-height:100vh; }
 
         .blog-hero { padding:80px 40px 60px; border-bottom:1px solid rgba(255,255,255,0.05); max-width:1280px; margin:0 auto; }

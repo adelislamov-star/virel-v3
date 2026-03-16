@@ -215,7 +215,6 @@ export default function JoinPage() {
 
   if (done) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400&display=swap');`}</style>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         <div style={{ width: 56, height: 56, border: '1px solid #c9a84c', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', color: '#c9a84c', fontSize: 22 }}>✓</div>
         <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px' }}>Application Received</h1>
@@ -232,7 +231,6 @@ export default function JoinPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#e8e0d4', fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');
         * { box-sizing: border-box; }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         .join-back-btn { padding:14px 28px; border:1px solid rgba(255,255,255,0.1); background:none; color:#6b6560; font-size:11px; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; font-family:inherit; transition:border-color .2s, color .2s; }

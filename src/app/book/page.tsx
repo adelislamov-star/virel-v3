@@ -7,6 +7,17 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 
+const DURATION_LABELS: Record<string, { label: string; durationMin: number; sort: number }> = {
+  '30min': { label: '30 Minutes', durationMin: 30, sort: 1 },
+  '45min': { label: '45 Minutes', durationMin: 45, sort: 2 },
+  '1hour': { label: '1 Hour', durationMin: 60, sort: 3 },
+  '90min': { label: '90 Minutes', durationMin: 90, sort: 4 },
+  '2hours': { label: '2 Hours', durationMin: 120, sort: 5 },
+  '3hours': { label: '3 Hours', durationMin: 180, sort: 6 },
+  '4hours': { label: '4 Hours', durationMin: 240, sort: 7 },
+  'overnight': { label: 'Overnight', durationMin: 540, sort: 8 },
+  'extra_hour': { label: 'Extra Hour', durationMin: 60, sort: 9 },
+}
 const OCCASIONS = ['Leisure', 'Birthday', 'Anniversary', 'Business', 'Other']
 const CURRENCIES = ['GBP', 'EUR', 'USD', 'AED']
 const CURRENCY_SYMBOLS: Record<string, string> = { GBP: '£', EUR: '€', USD: '$', AED: 'AED ' }
@@ -100,17 +111,17 @@ function BookingContent() {
 
   // Computed prices
   const basePrice = selectedRate
-    ? (callType === 'incall' ? selectedRate.incallPrice : selectedRate.outcallPrice) || 0
+    ? (selectedRate.price || 0)
     : 0
   const extrasTotal = selectedExtras.reduce((sum: number, e: any) => sum + (e.extraPrice || 0), 0)
   const grandTotal = basePrice + extrasTotal
 
   const cs = CURRENCY_SYMBOLS[currency] || '£'
 
-  // Available rates for selected model
+  // Available rates for selected model (filter by callType since each row is incall or outcall)
   const availableRates = modelDetail?.modelRates
-    ?.filter((r: any) => callType === 'incall' ? r.incallPrice > 0 : r.outcallPrice > 0)
-    ?.sort((a: any, b: any) => (a.callRateMaster?.sortOrder || 0) - (b.callRateMaster?.sortOrder || 0)) || []
+    ?.filter((r: any) => r.callType === callType && r.price > 0)
+    ?.sort((a: any, b: any) => (DURATION_LABELS[a.durationType]?.sort || 99) - (DURATION_LABELS[b.durationType]?.sort || 99)) || []
 
   // Available extras
   const availableExtras = modelDetail?.services
@@ -181,7 +192,7 @@ function BookingContent() {
           districtId: districtId || null,
           callType,
           date: date && time ? new Date(`${date}T${time}`).toISOString() : new Date(`${date}T12:00`).toISOString(),
-          duration: selectedRate?.callRateMaster?.durationMin || 60,
+          duration: DURATION_LABELS[selectedRate?.durationType]?.durationMin || 60,
           hotelName: hotelName || null,
           roomNumber: roomNumber || null,
           address: address || null,
@@ -349,8 +360,8 @@ function BookingContent() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(modelDetail ? availableRates : callRates).map((rate: any) => {
                   const r = modelDetail ? rate : rate
-                  const label = modelDetail ? rate.callRateMaster?.label : rate.label
-                  const price = modelDetail ? (callType === 'incall' ? rate.incallPrice : rate.outcallPrice) : null
+                  const label = modelDetail ? (DURATION_LABELS[rate.durationType]?.label || rate.durationType) : rate.label
+                  const price = modelDetail ? rate.price : null
                   const id = modelDetail ? rate.id : rate.id
                   return (
                     <label key={id} style={{
@@ -525,7 +536,7 @@ function BookingContent() {
                 {selectedModel && <SummaryRow label="Companion" value={selectedModel.name} />}
                 {selectedModel2 && <SummaryRow label="Duo Partner" value={selectedModel2.name} />}
                 {date && <SummaryRow label="Date" value={`${new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${time ? ` at ${time}` : ''}`} />}
-                {selectedRate && <SummaryRow label="Duration" value={selectedRate.callRateMaster?.label || selectedRate.label} />}
+                {selectedRate && <SummaryRow label="Duration" value={DURATION_LABELS[selectedRate.durationType]?.label || selectedRate.label || selectedRate.durationType} />}
                 <SummaryRow label="Type" value={callType === 'incall' ? 'Incall' : 'Outcall'} />
                 {callType === 'outcall' && hotelName && <SummaryRow label="Location" value={`${hotelName}${roomNumber ? `, Room ${roomNumber}` : ''}`} />}
                 {occasion && <SummaryRow label="Occasion" value={occasion} />}
@@ -598,7 +609,7 @@ export default function BookPage() {
 
 const serif = 'Cormorant Garamond, serif'
 const rootStyle: React.CSSProperties = { background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }
-const fontImport = `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');`
+const fontImport = ''
 const labelStyle: React.CSSProperties = { display: 'block', fontSize: 11, letterSpacing: '.15em', textTransform: 'uppercase', color: '#6b6560', marginBottom: 8 }
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',

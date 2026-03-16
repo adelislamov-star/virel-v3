@@ -287,4 +287,4 @@ export default function FindYourMatchPage() {
 
 const serif = 'Cormorant Garamond, serif'
 const rootStyle: React.CSSProperties = { background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }
-const fontImport = `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');`
+const fontImport = ''

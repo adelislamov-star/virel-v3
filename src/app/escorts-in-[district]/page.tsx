@@ -144,7 +144,6 @@ export default async function DistrictPage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .dst-root { font-family:'DM Sans',sans-serif; background:#080808; color:#ddd5c8; min-height:100vh; }
         .model-card { text-decoration:none; display:block; overflow:hidden; position:relative; }
         .model-card img { width:100%; aspect-ratio:3/4; object-fit:cover; transition:transform .6s; }

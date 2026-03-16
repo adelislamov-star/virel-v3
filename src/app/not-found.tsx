@@ -6,7 +6,6 @@ export default function NotFound() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');
         .nf-root { font-family:'DM Sans',sans-serif; background:#0A0A0A; color:#ddd5c8; min-height:100vh; display:flex; flex-direction:column; }
         .nf-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:120px 24px; text-align:center; }
         .nf-title { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,8vw,96px); font-weight:300; color:#f5f0e8; margin:0 0 16px; }

@@ -103,7 +103,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+      <style>{`
         .dist-link { display:block; padding:16px 20px; border:1px solid rgba(255,255,255,0.07); text-decoration:none; color:#ddd5c8; font-size:14px; transition:border-color .25s; }
         .dist-link:hover { border-color:rgba(197,165,114,0.4); }
         .dist-cta { display:inline-block; padding:16px 40px; background:#C5A572; color:#0A0A0A; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:background .25s; font-family:inherit; }

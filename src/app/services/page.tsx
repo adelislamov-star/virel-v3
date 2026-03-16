@@ -48,7 +48,6 @@ export default async function ServicesPage() {
   return (
     <main style={{ background: '#080808', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .svc-card { display:block; padding:24px 28px; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.02); text-decoration:none; transition:border-color .25s, background .25s; }
         .svc-card:hover { border-color:rgba(201,168,76,0.35); background:rgba(201,168,76,0.04); }
         .svc-card:hover .svc-name { color:#c9a84c; }

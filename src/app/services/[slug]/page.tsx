@@ -103,7 +103,7 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+      <style>{`
         .svc-rel { display:block; padding:20px 24px; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.02); text-decoration:none; transition:border-color .25s; }
         .svc-rel:hover { border-color:rgba(197,165,114,0.35); }
         .svc-cta { display:inline-block; padding:16px 40px; border:1px solid rgba(197,165,114,0.4); color:#C5A572; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:all .25s; font-family:inherit; }

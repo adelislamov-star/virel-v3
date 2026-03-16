@@ -112,8 +112,6 @@ export default async function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeSchema) }} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
-
         .home-root { font-family: 'DM Sans', sans-serif; background: #0A0A0A; color: #ddd5c8; }
 
         /* ── HERO ── */

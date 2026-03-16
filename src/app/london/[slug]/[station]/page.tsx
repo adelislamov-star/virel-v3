@@ -81,7 +81,7 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+      <style>{`
         .hub-cta { display:inline-block; padding:16px 40px; border:1px solid rgba(197,165,114,0.4); color:#C5A572; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:all .25s; font-family:inherit; }
         .hub-cta:hover { background:rgba(197,165,114,0.08); border-color:#C5A572; }
       `}</style>

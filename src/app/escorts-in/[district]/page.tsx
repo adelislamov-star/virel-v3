@@ -115,7 +115,6 @@ export default async function DistrictPage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .district-root { font-family: 'DM Sans', sans-serif; background: #080808; color: #ddd5c8; min-height: 100vh; }
 
         .district-hero { padding: 120px 80px 80px; border-bottom: 1px solid rgba(255,255,255,0.05); }
