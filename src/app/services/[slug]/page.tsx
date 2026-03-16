@@ -21,13 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const service = await prisma.service.findFirst({
     where: { slug, isActive: true, isPublic: true },
-    select: { publicName: true, title: true, name: true },
+    select: { publicName: true, title: true, name: true, seoTitle: true, seoDescription: true },
   })
   if (!service) return {}
   const displayName = service.publicName || service.title || service.name
   return {
-    title: `${displayName} London | Virel`,
-    description: `${displayName} service with premium London companions. Browse verified escorts offering ${displayName}.`,
+    title: service.seoTitle || `${displayName} London | Virel`,
+    description: service.seoDescription || `${displayName} service with premium London companions. Browse verified escorts offering ${displayName}.`,
     alternates: { canonical: `https://virel-v3.vercel.app/services/${slug}` },
   }
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { Prisma } from '@prisma/client';
+import { requireRole, isActor } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -77,6 +79,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
+    if (!isActor(auth)) return auth;
+
     const body = await request.json();
     const { title, name, category, description, publicName, isPublic, isPopular, isActive, sortOrder, defaultExtraPrice,
       seoTitle, seoDescription, seoKeywords, introText, fullDescription } = body;
@@ -130,6 +135,16 @@ export async function POST(request: NextRequest) {
 
     revalidatePath('/admin/services');
     revalidatePath('/services');
+
+    logAudit({
+      actorUserId: auth.userId,
+      action: 'CREATE',
+      entityType: 'Service',
+      entityId: service.id,
+      after: service,
+      req: request,
+    });
+
     return NextResponse.json({ success: true, data: { service } });
   } catch (error: unknown) {
     console.error('Create service error:', error);

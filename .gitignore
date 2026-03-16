@@ -47,3 +47,8 @@ check-table.js
 .env*.local
 nul
 .claude/worktrees/
+
+# Vercel env exports (contain secrets)
+.env.vercel-check
+.env.vercel-prod
+.env.vercel-*
