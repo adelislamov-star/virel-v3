@@ -197,6 +197,7 @@ model Model {
   payments               Payment[]
   complaintPatterns      ReviewComplaintPattern[]
   reviews                Review[]
+  quickUploadLogs        QuickUploadLog[]
 
   @@index([slug])
   @@index([status])
@@ -1774,27 +1775,31 @@ model CronLog {
 }
 
 model CallRateMaster {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
   label       String
   durationMin Int
-  sortOrder   Int         @default(0)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  modelRates  ModelRate[]
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   @@map("call_rate_masters")
 }
 
 model ModelRate {
-  id               String         @id @default(cuid())
-  modelId          String
-  callRateMasterId String
-  incallPrice      Float?
-  outcallPrice     Float?
-  callRateMaster   CallRateMaster @relation(fields: [callRateMasterId], references: [id])
-  model            Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  modelId      String   @map("model_id")
+  locationId   String?  @map("location_id")
+  durationType String   @map("duration_type")
+  callType     String   @map("call_type")
+  price        Float
+  taxiFee      Float?   @map("taxi_fee")
+  currency     String   @default("GBP")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  model        Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
-  @@unique([modelId, callRateMasterId])
+  @@unique([modelId, locationId, durationType, callType])
   @@map("model_rates")
 }
 
@@ -1969,4 +1974,19 @@ model model_work_preferences {
   work_with_women          Boolean @default(false)
   black_clients_welcome    Boolean @default(true)
   disabled_clients_welcome Boolean @default(true)
+}
+
+model QuickUploadLog {
+  id              String   @id @default(cuid())
+  modelId         String   @map("model_id")
+  aiParsedFields  Json?    @map("ai_parsed_fields")
+  operatorEdits   Json?    @map("operator_edits")
+  finalFields     Json?    @map("final_fields")
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  model           Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@index([createdAt])
+  @@map("quick_upload_logs")
 }

@@ -59,6 +59,24 @@ export async function ensureExtensionTables(): Promise<void> {
       )
     `)
 
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS quick_upload_logs (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        model_id TEXT NOT NULL REFERENCES models(id) ON DELETE CASCADE,
+        ai_parsed_fields JSONB,
+        operator_edits JSONB,
+        final_fields JSONB,
+        created_by TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `)
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_quick_upload_logs_model ON quick_upload_logs(model_id)
+    `).catch(() => {})
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_quick_upload_logs_created ON quick_upload_logs(created_at)
+    `).catch(() => {})
+
     // Ensure extraPrice column exists on model_services
     await prisma.$executeRawUnsafe(`
       ALTER TABLE model_services ADD COLUMN IF NOT EXISTS "extraPrice" DOUBLE PRECISION

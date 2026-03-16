@@ -1016,6 +1016,33 @@ export async function POST(request: NextRequest) {
       revalidatePath(`/companions/${model.slug}`)
     }
 
+    // Step 8: Audit log
+    try {
+      await prisma.quickUploadLog.create({
+        data: {
+          modelId: model.id,
+          aiParsedFields: aiParsed as any,
+          operatorEdits: clientParsed as any,
+          finalFields: {
+            name: model.name,
+            slug: model.slug,
+            phone: model.phone,
+            bio: model.bio,
+            notesInternal: model.notesInternal,
+            primaryLocationId: model.primaryLocationId,
+            status: model.status,
+            services: linkedServices,
+            rates: insertedRates,
+            photos: uploadedPhotos,
+          },
+          createdBy: auth.email || null,
+        },
+      })
+      console.log('[quick-upload] Step 8: Audit log saved')
+    } catch (e) {
+      console.error('[quick-upload] Step 8: Audit log failed (non-fatal):', e)
+    }
+
     console.log('[quick-upload] === Quick Upload Complete ===')
 
     // Build extracted field summary
