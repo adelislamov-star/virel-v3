@@ -25,8 +25,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     select: { name: true, seoTitle: true, seoDescription: true },
   })
   if (!district) return {}
+  // Strip any existing brand suffix so layout template doesn't double it
+  const rawTitle = district.seoTitle || `Companions in ${district.name}`
+  const cleanTitle = rawTitle
+    .replace(/\s*\|\s*Virel London\s*$/i, '')
+    .replace(/\s*\|\s*Virel\s*$/i, '')
+    .trim()
   return {
-    title: district.seoTitle || `Companions in ${district.name}`,
+    title: cleanTitle,
     description: district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
     alternates: { canonical: `https://virel-v3.vercel.app/london/${slug}/` },
   }
