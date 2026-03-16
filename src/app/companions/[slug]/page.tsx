@@ -503,16 +503,17 @@ export default async function ModelProfilePage({ params }: Props) {
               <div className="svc-tags">
                 {model.services
                   .filter((ms: any) => !ms.isExtra)
-                  .map((ms: any) => (
-                    <Link
-                      key={ms.service?.slug ?? ms.serviceId}
-                      href={`/services/${ms.service?.slug ?? ''}`}
-                      className="svc-tag"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      {SERVICE_REMAP[ms.service?.title] ?? ms.service?.publicName ?? ms.service?.title ?? ms.service?.slug}
-                    </Link>
-                  ))
+                  .map((ms: any) => {
+                    const label = SERVICE_REMAP[ms.service?.title] ?? ms.service?.publicName ?? ms.service?.title ?? ms.service?.slug ?? ''
+                    const slug = ms.service?.slug ?? ''
+                    return slug ? (
+                      <Link key={ms.serviceId} href={`/services/${slug}`} className="svc-tag" style={{ textDecoration: 'none' }}>
+                        {label}
+                      </Link>
+                    ) : (
+                      <span key={ms.serviceId} className="svc-tag">{label}</span>
+                    )
+                  })
                 }
               </div>
             </>
