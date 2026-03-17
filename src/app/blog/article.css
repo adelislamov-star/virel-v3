@@ -65,6 +65,26 @@
 .article-placeholder p {
   margin: 0 0 20px;
 }
+.article-content {
+  font-size: 15px;
+  line-height: 1.9;
+}
+.article-content h2 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 300;
+  color: #f0e8dc;
+  margin: 52px 0 16px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.article-content p {
+  margin: 0 0 20px;
+  color: #a8a098;
+}
+.article-content > div:first-child p {
+  color: #c0b8b0;
+}
 .related-wrap {
   max-width: 1280px;
   margin: 0 auto;

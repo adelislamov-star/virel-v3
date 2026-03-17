@@ -93,18 +93,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="article-body">
           <p className="article-excerpt">{post.description}</p>
 
-          <div className="article-placeholder">
-            <h2>Introduction</h2>
-            <p>This article is currently being written by our editorial team. Check back soon for the full guide.</p>
-
-            <h2>What You&apos;ll Learn</h2>
-            <p>{post.description} We cover everything you need to know in this comprehensive guide.</p>
-
-            <h2>Why This Matters</h2>
-            <p>
-              At {siteConfig.name}, we believe in transparency and education. Our guides are written to help
-              you make informed decisions and get the most out of your experience in London.
-            </p>
+          <div className="article-content">
+            {post.content.map((section, i) => (
+              <div key={i}>
+                {section.heading && <h2>{section.heading}</h2>}
+                {section.body.map((para, j) => (
+                  <p key={j}>{para}</p>
+                ))}
+              </div>
+            ))}
           </div>
 
           <div style={{ marginTop: 60, paddingTop: 40, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 16 }}>
