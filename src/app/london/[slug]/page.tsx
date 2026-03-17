@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: cleanTitle,
     description: district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
-    alternates: { canonical: `https://virel-v3.vercel.app/london/${slug}/` },
+    alternates: { canonical: `${siteConfig.domain}/london/${slug}/` },
   }
 }
 
@@ -87,7 +88,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: `Virel — ${district.name}`,
+    name: `${siteConfig.name} — ${district.name}`,
     description: district.description || `Premium companions in ${district.name}, London.`,
     address: { '@type': 'PostalAddress', addressLocality: district.name, addressRegion: 'London', addressCountry: 'GB' },
   }
@@ -95,8 +96,8 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
-      { '@type': 'ListItem', position: 2, name: 'London', item: 'https://virel-v3.vercel.app/companions' },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+      { '@type': 'ListItem', position: 2, name: 'London', item: `${siteConfig.domain}/companions` },
       { '@type': 'ListItem', position: 3, name: district.name },
     ],
   }

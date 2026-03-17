@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { PanicButton } from '@/components/public/PanicButton'
+import { siteConfig } from '@/../config/site'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -18,7 +19,7 @@ export function Header() {
     }}>
       <nav style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 22, fontWeight: 300, color: '#f0e8dc', textDecoration: 'none', letterSpacing: '.08em' }}>
-          Virel
+          {siteConfig.name}
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 36 }} className="desktop-nav">

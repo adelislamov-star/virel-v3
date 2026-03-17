@@ -3,11 +3,12 @@ export const revalidate = 86400
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 
 export const metadata = {
-  title: 'FAQ | Virel London Escorts',
-  description: 'Frequently asked questions about booking a companion with Virel. Booking process, payments, privacy, cancellations and more.',
-  alternates: { canonical: 'https://virel-v3.vercel.app/faq' },
+  title: `FAQ | ${siteConfig.name} London Escorts`,
+  description: `Frequently asked questions about booking a companion with ${siteConfig.name}. Booking process, payments, privacy, cancellations and more.`,
+  alternates: { canonical: `${siteConfig.domain}/faq` },
 }
 
 const FAQS = [

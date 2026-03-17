@@ -7,17 +7,18 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 
 export const metadata = {
-  title: "Virel | London's Premier Companion Agency",
+  title: `${siteConfig.name} | ${siteConfig.tagline}`,
   description: "Discover London's most exclusive companions. Sophisticated, discreet, memorable.",
-  alternates: { canonical: 'https://virel-v3.vercel.app' },
+  alternates: { canonical: siteConfig.domain },
   openGraph: {
-    title: "Virel | London's Premier Companion Agency",
+    title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: "Discover London's most exclusive companions. Sophisticated, discreet, memorable.",
-    url: 'https://virel-v3.vercel.app',
-    siteName: 'Virel',
-    locale: 'en_GB',
+    url: siteConfig.domain,
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
     type: 'website',
   },
 }
@@ -80,33 +81,33 @@ export default async function HomePage() {
   const heroModel = featuredModels[0]
   const heroPhoto = heroModel?.media[0]?.url
   const allPrices = Object.values(minPrices)
-  const globalMinPrice = allPrices.length > 0 ? Math.min(...allPrices) : 300
+  const globalMinPrice = allPrices.length > 0 ? Math.min(...allPrices) : siteConfig.priceFrom
 
   const homeSchema = {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'Organization',
-        '@id': 'https://virel-v3.vercel.app/#organization',
-        name: 'Virel',
-        url: 'https://virel-v3.vercel.app',
-        description: "London's premier companion agency",
+        '@id': `${siteConfig.domain}/#organization`,
+        name: siteConfig.name,
+        url: siteConfig.domain,
+        description: siteConfig.tagline,
         areaServed: { '@type': 'City', name: 'London' },
       },
       {
         '@type': 'LocalBusiness',
-        '@id': 'https://virel-v3.vercel.app/#business',
-        name: 'Virel',
-        description: "London's premier companion agency",
-        url: 'https://virel-v3.vercel.app',
+        '@id': `${siteConfig.domain}/#business`,
+        name: siteConfig.name,
+        description: siteConfig.tagline,
+        url: siteConfig.domain,
         areaServed: { '@type': 'City', name: 'London' },
       },
       {
         '@type': 'WebSite',
-        '@id': 'https://virel-v3.vercel.app/#website',
-        url: 'https://virel-v3.vercel.app',
-        name: 'Virel',
-        publisher: { '@id': 'https://virel-v3.vercel.app/#organization' },
+        '@id': `${siteConfig.domain}/#website`,
+        url: siteConfig.domain,
+        name: siteConfig.name,
+        publisher: { '@id': `${siteConfig.domain}/#organization` },
       },
     ],
   }
@@ -146,7 +147,7 @@ export default async function HomePage() {
               color: '#C5A572',
               margin: '0 0 40px',
             }}>
-              From £{globalMinPrice.toLocaleString('en-GB')} per hour
+              From £{globalMinPrice.toLocaleString(siteConfig.lang)} per hour
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/companions" className="btn-primary">
@@ -354,7 +355,7 @@ export default async function HomePage() {
             <Link href="/companions" className="btn-primary">
               Browse Companions
             </Link>
-            <a href="https://t.me/virel_bookings" target="_blank" rel="noopener noreferrer" className="btn-secondary">
+            <a href={siteConfig.telegram} target="_blank" rel="noopener noreferrer" className="btn-secondary">
               Message on Telegram
             </a>
           </div>

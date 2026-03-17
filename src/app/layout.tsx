@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import '../styles/globals.css'
 import { CookieBanner } from '@/components/public/CookieBanner'
+import { siteConfig } from '@/../config/site'
 
-const BASE_URL = 'https://virel-v3.vercel.app'
+const BASE_URL = siteConfig.domain
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -10,8 +11,8 @@ export const metadata: Metadata = {
     google: 'MUip6cu8OH4oOYyaZKJIo5xoPElQToe0wMp-1J3JcAA',
   },
   title: {
-    default: 'Virel – Premium Companion Services in London',
-    template: '%s | Virel London',
+    default: `${siteConfig.name} – Premium Companion Services in London`,
+    template: `%s | ${siteConfig.name} London`,
   },
   description: 'Exclusive premium companion services in London. Discreet, professional, and elegant experiences with verified companions.',
   keywords: ['london escorts', 'escort agency london', 'premium companions london', 'virel'],
@@ -19,15 +20,15 @@ export const metadata: Metadata = {
   alternates: { canonical: BASE_URL },
   openGraph: {
     type: 'website',
-    locale: 'en_GB',
+    locale: siteConfig.locale,
     url: BASE_URL,
-    siteName: 'Virel',
-    title: 'Virel – Premium Companion Services in London',
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} – Premium Companion Services in London`,
     description: 'Exclusive premium companion services in London. Discreet, professional and elegant.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Virel – Premium Companion Services in London',
+    title: `${siteConfig.name} – Premium Companion Services in London`,
     description: 'Elite verified companions in London. Incall & outcall. Discreet.',
   },
 }
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const orgSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Virel',
+    name: siteConfig.name,
     url: BASE_URL,
     description: 'Premium escort agency in London. Verified, sophisticated companions for incall and outcall.',
     areaServed: { '@type': 'City', name: 'London', containedInPlace: { '@type': 'Country', name: 'United Kingdom' } },
@@ -44,7 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <html lang="en">
+    <html lang={siteConfig.lang}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

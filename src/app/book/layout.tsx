@@ -1,8 +1,9 @@
 import { Metadata } from 'next'
+import { siteConfig } from '@/../config/site'
 
 export const metadata: Metadata = {
   title: 'Book a Companion',
-  description: 'Book a companion in London with Virel. Simple, discreet, professional.',
+  description: `Book a companion in London with ${siteConfig.name}. Simple, discreet, professional.`,
   robots: 'noindex',
 }
 

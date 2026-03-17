@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { Resend } from 'resend'
+import { siteConfig } from '@/../config/site'
 
 export const runtime = 'nodejs';
 
@@ -173,12 +174,12 @@ function buildEmailHtml(data: any): string {
   </section>` : ''}
 
   <section>
-    <a href="${process.env.NEXT_PUBLIC_URL || 'https://virel-v3.vercel.app'}/admin/applications" class="cta">
+    <a href="${process.env.NEXT_PUBLIC_URL || siteConfig.domain}/admin/applications" class="cta">
       View in Admin Panel →
     </a>
   </section>
 
-  <footer>Virel Operations Platform — sent automatically on new application</footer>
+  <footer>${siteConfig.name} Operations Platform — sent automatically on new application</footer>
 </body>
 </html>
   `.trim()
@@ -243,7 +244,7 @@ export async function POST(request: NextRequest) {
     const resend = getResend()
     if (resend) {
       await resend.emails.send({
-        from: 'Virel Platform <noreply@virel.com>',
+        from: `${siteConfig.name} Platform <noreply@virel.com>`,
         to: MANAGER_EMAIL,
         subject: `New Application: ${body.name}`,
         html: buildEmailHtml(body),

@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: service.seoTitle || `${displayName} London`,
     description: service.seoDescription || `${displayName} service with premium London companions. Browse verified escorts offering ${displayName}.`,
-    alternates: { canonical: `https://virel-v3.vercel.app/services/${slug}` },
+    alternates: { canonical: `${siteConfig.domain}/services/${slug}` },
   }
 }
 
@@ -87,7 +88,7 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
     '@type': 'Service',
     name: displayName,
     description: service.introText || service.fullDescription || `${displayName} with premium London companions.`,
-    provider: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
+    provider: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
     areaServed: { '@type': 'City', name: 'London' },
   }
 
@@ -95,8 +96,8 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
-      { '@type': 'ListItem', position: 2, name: 'Services', item: 'https://virel-v3.vercel.app/services' },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+      { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteConfig.domain}/services` },
       { '@type': 'ListItem', position: 3, name: displayName },
     ],
   }

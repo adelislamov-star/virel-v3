@@ -5,11 +5,12 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 
 export const metadata: Metadata = {
-  title: 'About Virel | Premium Companion Agency London',
-  description: 'Virel is London\'s premier companion agency. Learn about our commitment to discretion, quality, and genuine connections.',
-  alternates: { canonical: 'https://virel-v3.vercel.app/about' },
+  title: `About ${siteConfig.name} | Premium Companion Agency London`,
+  description: `${siteConfig.name} is London's premier companion agency. Learn about our commitment to discretion, quality, and genuine connections.`,
+  alternates: { canonical: `${siteConfig.domain}/about` },
 }
 
 const VALUES = [

@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { siteConfig } from '@/../config/site';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@virel.com');
@@ -33,7 +34,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
       <div className="w-full max-w-md p-8 rounded-2xl border border-zinc-800/50 bg-zinc-900/50">
         <div className="text-center mb-8">
-          <h1 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">Virel</h1>
+          <h1 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">{siteConfig.name}</h1>
           <p className="text-xs text-zinc-600 mt-1">Operations Platform v3</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">

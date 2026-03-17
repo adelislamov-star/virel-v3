@@ -9,17 +9,18 @@ import { ModelCard } from '@/components/public/ModelCard'
 import { CompanionFilters } from '@/components/public/CompanionFilters'
 import { prisma } from '@/lib/db/client'
 import { Prisma } from '@prisma/client'
+import { siteConfig } from '@/../config/site'
 
 export const metadata: Metadata = {
   title: 'London Companions',
   description: 'Browse our exclusive selection of London companions.',
-  alternates: { canonical: 'https://virel-v3.vercel.app/companions' },
+  alternates: { canonical: `${siteConfig.domain}/companions` },
   openGraph: {
     title: 'London Companions',
     description: 'Browse our exclusive selection of London companions.',
-    url: 'https://virel-v3.vercel.app/companions',
-    siteName: 'Virel',
-    locale: 'en_GB',
+    url: `${siteConfig.domain}/companions`,
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
     type: 'website',
   },
 }
@@ -144,13 +145,13 @@ export default async function CompanionsPage({
   const catalogSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'London Companions — Virel',
-    url: 'https://virel-v3.vercel.app/companions',
+    name: `London Companions — ${siteConfig.name}`,
+    url: `${siteConfig.domain}/companions`,
     numberOfItems: totalCount,
     itemListElement: filteredModels.map((m: any, i: number) => ({
       '@type': 'ListItem',
       position: (page - 1) * PAGE_SIZE + i + 1,
-      url: `https://virel-v3.vercel.app/companions/${m.slug}`,
+      url: `${siteConfig.domain}/companions/${m.slug}`,
       name: m.name,
     })),
   }

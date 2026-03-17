@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
+import { siteConfig } from '@/../config/site'
 
 const SERVICES = [
   { slug: '69', label: '69' },
@@ -222,7 +223,7 @@ export default function JoinPage() {
           Thank you. Our team will carefully review your application and reach out shortly via your preferred contact.
         </p>
         <Link href="/" style={{ fontSize: 11, letterSpacing: '.18em', textTransform: 'uppercase', color: '#c9a84c', textDecoration: 'none', borderBottom: '1px solid rgba(201,168,76,0.3)', paddingBottom: 2 }}>
-          Return to Virel
+          Return to {siteConfig.name}
         </Link>
       </div>
     </div>

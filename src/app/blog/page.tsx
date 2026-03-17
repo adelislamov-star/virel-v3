@@ -5,12 +5,13 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: 'Guides, tips, and insights from Virel — London\'s premier escort agency. Discover the best districts, hotels, and everything you need to know.',
+  description: `Guides, tips, and insights from ${siteConfig.name} — London's premier escort agency. Discover the best districts, hotels, and everything you need to know.`,
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://virel-v3.vercel.app/blog' },
+  alternates: { canonical: `${siteConfig.domain}/blog` },
 }
 
 // Static blog posts — replace with DB later
@@ -130,7 +131,7 @@ export default function BlogPage() {
                 <h2 className="post-title">{post.title}</h2>
                 <p className="post-excerpt">{post.excerpt}</p>
                 <div className="post-meta">
-                  <span>{new Date(post.date).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}</span>
+                  <span>{new Date(post.date).toLocaleDateString(siteConfig.lang, { day:'numeric', month:'long', year:'numeric' })}</span>
                   <span>·</span>
                   <span>{post.readTime}</span>
                 </div>

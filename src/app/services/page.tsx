@@ -4,14 +4,15 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Companion Services London | Virel',
+  title: `Companion Services London | ${siteConfig.name}`,
   description: 'Explore our full range of companion services in London — GFE, massage, BDSM, fetish, roleplay and more.',
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://virel-v3.vercel.app/services' },
+  alternates: { canonical: `${siteConfig.domain}/services` },
 }
 
 const CATEGORY_LABELS: Record<string, string> = {

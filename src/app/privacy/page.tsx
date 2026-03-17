@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 
 export const metadata = {
-  title: 'Privacy Policy | Virel',
-  description: 'Privacy policy for Virel — how we handle your data and protect your confidentiality.',
+  title: `Privacy Policy | ${siteConfig.name}`,
+  description: `Privacy policy for ${siteConfig.name} — how we handle your data and protect your confidentiality.`,
   alternates: { canonical: '/privacy' },
   robots: { index: false },
 }
@@ -15,7 +16,7 @@ const sections = [
   { title: '3. Data Retention', body: 'Booking records are retained for operational purposes. You may request deletion of your data at any time by contacting us directly.' },
   { title: '4. Cookies', body: 'This website uses minimal cookies for essential functionality only. We do not use tracking or advertising cookies.' },
   { title: '5. Security', body: 'All data is stored securely. We use industry-standard encryption for data in transit. Access to client data is restricted to authorised personnel only.' },
-  { title: '6. Your Rights', body: 'You have the right to access, correct, or delete your personal data. To exercise these rights, contact us at bookings@virel.com.' },
+  { title: '6. Your Rights', body: `You have the right to access, correct, or delete your personal data. To exercise these rights, contact us at ${siteConfig.email}.` },
 ]
 
 export default function PrivacyPage() {

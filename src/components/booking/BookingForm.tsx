@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { sortRates, deduplicateByLabel } from '@/lib/sortRates'
 import { durationLabel } from '@/lib/durationLabel'
+import { siteConfig } from '@/../config/site'
 
 interface Rate {
   duration_type: string
@@ -297,7 +298,7 @@ function DurationSelector({
                 fontWeight: 300,
                 letterSpacing: '.02em',
               }}>
-                {price > 0 ? `£${price.toLocaleString('en-GB')}` : 'On request'}
+                {price > 0 ? `£${price.toLocaleString(siteConfig.lang)}` : 'On request'}
               </span>
             )}
           </div>
@@ -563,7 +564,7 @@ export function BookingForm({ model }: BookingFormProps) {
         For immediate assistance, reach out directly.
       </p>
       <a
-        href="https://t.me/virel_bookings"
+        href={siteConfig.telegram}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -727,7 +728,7 @@ export function BookingForm({ model }: BookingFormProps) {
             </span>
             {selectedPrice !== undefined && selectedPrice > 0 ? (
               <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#b8965a', whiteSpace: 'nowrap', marginLeft: 24 }}>
-                £{Number(selectedPrice).toLocaleString('en-GB')}
+                £{Number(selectedPrice).toLocaleString(siteConfig.lang)}
                 {serviceType === 'outcall' && <span style={{ fontSize: 13, opacity: .6, marginLeft: 6 }}>+ taxi</span>}
               </span>
             ) : (

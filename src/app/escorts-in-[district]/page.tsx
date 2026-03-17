@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 
 const DISTRICTS: Record<string, { title: string; h1: string; description: string; content: string }> = {
   'aldgate': { title: 'Escorts in Aldgate | Premium Companions', h1: 'Escorts in Aldgate', description: 'Premium companion services in Aldgate, London. Verified, discreet escorts available for incall and outcall.', content: 'Aldgate sits at the heart of the City of London, a dynamic blend of historic architecture and modern finance. Our Aldgate companions are sophisticated professionals who understand the demands of city life.\n\nWhether you\'re staying nearby or working in the area, our escorts provide a discreet, professional service tailored to your needs.' },
@@ -78,7 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: info.title,
     description: info.description,
     robots: { index: false, follow: true },
-    alternates: { canonical: `https://virel-v3.vercel.app/london/${params.district}-escorts/` },
+    alternates: { canonical: `${siteConfig.domain}/london/${params.district}-escorts/` },
     openGraph: { title: info.title, description: info.description },
   }
 }
@@ -118,7 +119,7 @@ export default async function DistrictPage({ params }: Props) {
         name: info.h1,
         description: info.description,
         areaServed: { '@type': 'Place', name: `${districtName}, London` },
-        provider: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
+        provider: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
       },
       {
         '@type': 'FAQPage',
@@ -130,9 +131,9 @@ export default async function DistrictPage({ params }: Props) {
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
-          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: 'https://virel-v3.vercel.app/companions' },
-          { '@type': 'ListItem', position: 3, name: info.h1, item: `https://virel-v3.vercel.app/escorts-in-${params.district}` },
+          { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: `${siteConfig.domain}/companions` },
+          { '@type': 'ListItem', position: 3, name: info.h1, item: `${siteConfig.domain}/escorts-in-${params.district}` },
         ],
       },
     ],

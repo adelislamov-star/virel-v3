@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { siteConfig } from '@/../config/site'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -30,13 +31,13 @@ export function Footer() {
 
           {/* Brand */}
           <div>
-            <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', marginBottom: 16, letterSpacing: '.04em' }}>Virel</p>
+            <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', marginBottom: 16, letterSpacing: '.04em' }}>{siteConfig.name}</p>
             <p style={{ fontSize: 13, color: '#4a4540', lineHeight: 1.8, maxWidth: 260 }}>
               Premium companion services in London. Discreet, sophisticated, and professional.
             </p>
             <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
-              <a href="https://t.me/virel_bookings" className="f-contact">Telegram</a>
-              <a href="mailto:bookings@virel.com" className="f-contact">Email</a>
+              <a href={siteConfig.telegram} className="f-contact">Telegram</a>
+              <a href={`mailto:${siteConfig.email}`} className="f-contact">Email</a>
             </div>
           </div>
 
@@ -82,8 +83,8 @@ export function Footer() {
           <div>
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Contact</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <li><a href="https://t.me/virel_bookings" className="f-link">Telegram</a></li>
-              <li><a href="mailto:bookings@virel.com" className="f-link" style={{ wordBreak: 'break-all' }}>bookings@virel.com</a></li>
+              <li><a href={siteConfig.telegram} className="f-link">Telegram</a></li>
+              <li><a href={`mailto:${siteConfig.email}`} className="f-link" style={{ wordBreak: 'break-all' }}>{siteConfig.email}</a></li>
               <li style={{ fontSize: 13, color: '#4a4540' }}>London, United Kingdom</li>
               <li style={{ fontSize: 13, color: '#4a4540' }}>Available 24/7</li>
             </ul>
@@ -97,7 +98,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="footer-bottom">
-          <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>&copy; {currentYear} Virel. All rights reserved. &middot; Adults only (18+)</p>
+          <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>&copy; {currentYear} {siteConfig.name}. All rights reserved. &middot; Adults only (18+)</p>
           <p style={{ fontSize: 11, color: '#2a2520', letterSpacing: '.06em' }}>
             <Link href="/privacy" className="f-link" style={{ fontSize: 11, color: '#2a2520' }}>Privacy</Link>
             {' · '}

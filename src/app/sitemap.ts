@@ -1,14 +1,14 @@
 import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 
-const BASE = 'https://virel-v3.vercel.app'
+const BASE = siteConfig.domain
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [models, services, districts, hubs, posts] = await Promise.all([
+  const [models, services, districts, posts] = await Promise.all([
     prisma.model.findMany({ where: { status: 'active', deletedAt: null }, select: { slug: true, updatedAt: true } }),
     prisma.service.findMany({ where: { isActive: true, isPublic: true }, select: { slug: true, updatedAt: true } }),
     prisma.district.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
-    prisma.transportHub.findMany({ where: { isActive: true }, include: { district: { select: { slug: true } } } }),
     prisma.blogPost.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }).catch(() => []),
   ])
 
@@ -29,10 +29,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...models.map(m => ({ url: `${BASE}/companions/${m.slug}`, lastModified: m.updatedAt, priority: 0.8 as const })),
     ...services.map(s => ({ url: `${BASE}/services/${s.slug}`, lastModified: s.updatedAt, priority: 0.7 as const })),
     ...districts.map(d => ({ url: `${BASE}/london/${d.slug}-escorts/`, lastModified: d.updatedAt, priority: 0.7 as const })),
-    ...hubs.map(h => {
-      const hubSuffix = h.slug.endsWith('-station') ? '' : '-station'
-      return { url: `${BASE}/london/${h.district.slug}-escorts/${h.slug}${hubSuffix}/`, priority: 0.5 as const }
-    }),
     ...posts.map(p => ({ url: `${BASE}/blog/${(p as any).slug}`, lastModified: (p as any).updatedAt, priority: 0.6 as const })),
   ]
 }

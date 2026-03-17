@@ -3,11 +3,12 @@ export const revalidate = 86400
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 
 export const metadata = {
-  title: 'Contact | Virel London Escorts',
-  description: 'Contact Virel for bookings, enquiries, or model applications. Available 24/7. Telegram, WhatsApp, or email.',
-  alternates: { canonical: 'https://virel-v3.vercel.app/contact' },
+  title: `Contact | ${siteConfig.name} London Escorts`,
+  description: `Contact ${siteConfig.name} for bookings, enquiries, or model applications. Available 24/7. Telegram, WhatsApp, or email.`,
+  alternates: { canonical: `${siteConfig.domain}/contact` },
 }
 
 export default function ContactPage() {
@@ -61,7 +62,7 @@ export default function ContactPage() {
           </p>
 
           <div className="c-channels">
-            <a href="https://t.me/virel_bookings" className="c-channel" target="_blank" rel="noopener">
+            <a href={siteConfig.telegram} className="c-channel" target="_blank" rel="noopener">
               <div className="c-channel-left">
                 <span className="c-channel-icon">✈</span>
                 <div>
@@ -86,12 +87,12 @@ export default function ContactPage() {
               <span className="c-channel-arrow">→</span>
             </a>
 
-            <a href="mailto:bookings@virel.com" className="c-channel">
+            <a href={`mailto:${siteConfig.email}`} className="c-channel">
               <div className="c-channel-left">
                 <span className="c-channel-icon">◈</span>
                 <div>
                   <p className="c-channel-name">Email</p>
-                  <p className="c-channel-detail">bookings@virel.com</p>
+                  <p className="c-channel-detail">{siteConfig.email}</p>
                 </div>
               </div>
               <span className="c-channel-arrow">→</span>

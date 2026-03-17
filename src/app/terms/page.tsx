@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 
 export const metadata = {
-  title: 'Terms of Service | Virel',
-  description: 'Terms of service for using Virel companion services in London.',
+  title: `Terms of Service | ${siteConfig.name}`,
+  description: `Terms of service for using ${siteConfig.name} companion services in London.`,
   alternates: { canonical: '/terms' },
   robots: { index: false },
 }

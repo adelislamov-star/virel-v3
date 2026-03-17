@@ -11,10 +11,11 @@ import { BookingWidget } from '@/components/public/BookingWidget'
 import { ViewTracker } from '@/components/public/ViewTracker'
 import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 
 interface Props { params: { slug: string } }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://virel-v3.vercel.app'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? siteConfig.domain
 
 function formatServiceName(raw: string): string {
   if (!raw) return ''
@@ -275,8 +276,8 @@ export default async function ModelProfilePage({ params }: Props) {
                   {profile.rates.map((row: any) => (
                     <tr key={row.label}>
                       <td>{row.label}</td>
-                      <td>{row.incall != null ? `£${Number(row.incall).toLocaleString('en-GB')}` : '—'}</td>
-                      <td>{row.outcall != null ? `£${Number(row.outcall).toLocaleString('en-GB')}` : '—'}</td>
+                      <td>{row.incall != null ? `£${Number(row.incall).toLocaleString(siteConfig.lang)}` : '—'}</td>
+                      <td>{row.outcall != null ? `£${Number(row.outcall).toLocaleString(siteConfig.lang)}` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
+import { siteConfig } from '@/../config/site';
 import {
   UserCheck, CalendarDays, Clock, ClipboardList, RefreshCw,
   Star, Users, Shield, MessageSquare, Target,
@@ -165,7 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex min-h-screen" style={{ background: 'var(--admin-bg)' }}>
       <aside className="w-60 flex-shrink-0 flex flex-col border-r border-zinc-800/50" style={{ background: 'var(--admin-bg)' }}>
         <div className="px-5 pt-6 pb-4">
-          <p className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">Virel</p>
+          <p className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">{siteConfig.name}</p>
           <p className="text-[11px] text-zinc-600 mt-0.5">Operations Platform</p>
         </div>
 

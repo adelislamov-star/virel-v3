@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
+import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
@@ -32,8 +33,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: hub.seoTitle || `Companions near ${hub.name} Station`,
     description: hub.seoDescription || `Find premium companions near ${hub.name} Station in London. Verified escorts available for incall and outcall.`,
-    alternates: { canonical: `https://virel-v3.vercel.app/london/${slug}/${station}/` },
-    robots: wordCount < 50 ? { index: false, follow: true } : { index: true, follow: true },
+    alternates: { canonical: `${siteConfig.domain}/london/${slug}/${station}/` },
+    robots: { index: false, follow: false },
   }
 }
 
@@ -73,8 +74,8 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://virel-v3.vercel.app' },
-      { '@type': 'ListItem', position: 2, name: hub.district.name, item: `https://virel-v3.vercel.app/london/${slug}/` },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+      { '@type': 'ListItem', position: 2, name: hub.district.name, item: `${siteConfig.domain}/london/${slug}/` },
       { '@type': 'ListItem', position: 3, name: `${hub.name} Station` },
     ],
   }

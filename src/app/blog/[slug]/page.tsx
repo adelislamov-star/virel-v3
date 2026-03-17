@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { siteConfig } from '@/../config/site'
 import { POSTS } from '../page'
 
 interface Props { params: { slug: string } }
@@ -280,11 +281,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: post.title,
     description: post.excerpt,
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://virel-v3.vercel.app/blog/${params.slug}` },
+    alternates: { canonical: `${siteConfig.domain}/blog/${params.slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `https://virel-v3.vercel.app/blog/${params.slug}`,
+      url: `${siteConfig.domain}/blog/${params.slug}`,
       type: 'article',
       publishedTime: post.date,
     },
@@ -364,9 +365,9 @@ export default function BlogPostPage({ params }: Props) {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    author: { '@type': 'Organization', name: 'Virel' },
-    publisher: { '@type': 'Organization', name: 'Virel', url: 'https://virel-v3.vercel.app' },
-    url: `https://virel-v3.vercel.app/blog/${post.slug}`,
+    author: { '@type': 'Organization', name: siteConfig.name },
+    publisher: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
+    url: `${siteConfig.domain}/blog/${post.slug}`,
   }
 
   return (
@@ -409,7 +410,7 @@ export default function BlogPostPage({ params }: Props) {
           <span className="article-cat">{post.category}</span>
           <h1 className="article-title">{post.title}</h1>
           <div className="article-meta">
-            <span>{new Date(post.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span>{new Date(post.date).toLocaleDateString(siteConfig.lang, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             <span>·</span>
             <span>{post.readTime}</span>
           </div>

@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { siteConfig } from '@/../config/site'
 
 export const runtime = 'edge'
 export const alt = 'Virel — Premium London Escorts'
@@ -43,7 +44,7 @@ export default async function Image() {
           London Escort Agency
         </p>
         <h1 style={{ fontSize: 96, fontWeight: 300, color: '#f0e8dc', margin: '0 0 20px', letterSpacing: '0.06em', display: 'flex' }}>
-          Virel
+          {siteConfig.name}
         </h1>
         <div style={{ width: 60, height: 1, background: 'rgba(201,168,76,0.4)', margin: '0 0 24px', display: 'flex' }} />
         <p style={{ fontSize: 20, color: '#6b6560', fontWeight: 300, letterSpacing: '0.08em', margin: 0, display: 'flex' }}>

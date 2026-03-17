@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { siteConfig } from '@/../config/site'
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -15,6 +16,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://virel-v3.vercel.app/sitemap.xml',
+    sitemap: `${siteConfig.domain}/sitemap.xml`,
   }
 }

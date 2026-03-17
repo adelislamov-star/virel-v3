@@ -1,3 +1,5 @@
+import { siteConfig } from '@/../config/site'
+
 // NOTIFICATION TYPES & INTERFACES
 export type NotificationChannel = 'email' | 'sms' | 'telegram';
 
@@ -50,10 +52,10 @@ Location: {{location}}
 Duration: {{duration}}
 Total: £{{amount}}
 
-Thank you for choosing Virel.
+Thank you for choosing ${siteConfig.name}.
 
 Best regards,
-Virel Team`
+${siteConfig.name} Team`
     },
     sms: {
       body: 'Booking confirmed with {{modelName}} on {{date}} at {{time}}. Total: £{{amount}}. Thank you!'
@@ -81,7 +83,7 @@ Your booking with {{modelName}} on {{date}} has been cancelled.
 If you have any questions, please contact us.
 
 Best regards,
-Virel Team`
+${siteConfig.name} Team`
     },
     telegram: {
       body: `❌ *Booking Cancelled*
@@ -104,7 +106,7 @@ Transaction ID: {{transactionId}}
 Thank you!
 
 Best regards,
-Virel Team`
+${siteConfig.name} Team`
     },
     telegram: {
       body: `💰 *Payment Received*
@@ -152,7 +154,7 @@ Location: {{location}}
 See you soon!
 
 Best regards,
-Virel Team`
+${siteConfig.name} Team`
     },
     sms: {
       body: 'Reminder: Booking tomorrow with {{modelName}} at {{time}}. Location: {{location}}'

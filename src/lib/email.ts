@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { siteConfig } from '@/../config/site'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -16,7 +17,7 @@ export async function sendEmail(params: {
   }
   try {
     await resend.emails.send({
-      from: process.env.EMAIL_FROM ?? 'bookings@virel.com',
+      from: process.env.EMAIL_FROM ?? siteConfig.email,
       to: params.to,
       subject: params.subject,
       html: params.html,
@@ -38,7 +39,7 @@ function virelEmail(body: string): string {
   ${body}
   <p style="color: #666; font-size: 12px; line-height: 1.8; margin-top: 32px; border-top: 1px solid #222; padding-top: 24px;">
     All services are for companionship only. Any activities between consenting adults are a matter of personal choice.<br><br>
-    &copy; 2026 Virel London. Strictly confidential.
+    &copy; 2026 ${siteConfig.name} London. Strictly confidential.
   </p>
 </div>`
 }
@@ -87,7 +88,7 @@ export async function sendBookingReceived(data: {
   <h2 style="font-size: 20px; font-weight: normal; margin-bottom: 24px;">We've received your request</h2>
   <p style="line-height: 1.8; margin-bottom: 16px;">Dear ${data.clientName},</p>
   <p style="line-height: 1.8; margin-bottom: 24px;">
-    Thank you for contacting Virel. Your booking request has been received and
+    Thank you for contacting ${siteConfig.name}. Your booking request has been received and
     our team will be in touch within <strong style="color: #c9a96e;">15 minutes</strong>
     via ${data.preferredContact}.
   </p>
@@ -96,7 +97,7 @@ export async function sendBookingReceived(data: {
 
   return sendEmail({
     to: data.to,
-    subject: 'Your booking request has been received — Virel London',
+    subject: `Your booking request has been received — ${siteConfig.name} London`,
     html,
   })
 }
@@ -134,7 +135,7 @@ export async function sendBookingConfirmed(data: {
 
   return sendEmail({
     to: data.to,
-    subject: 'Your booking is confirmed — Virel London',
+    subject: `Your booking is confirmed — ${siteConfig.name} London`,
     html,
   })
 }
@@ -161,7 +162,7 @@ export async function sendBookingCancelled(data: {
 
   return sendEmail({
     to: data.to,
-    subject: 'Your Virel booking has been updated',
+    subject: `Your ${siteConfig.name} booking has been updated`,
     html,
   })
 }
@@ -198,7 +199,7 @@ export async function sendBookingReminder(data: {
 
   return sendEmail({
     to: data.to,
-    subject: 'Reminder: Your Virel appointment is today',
+    subject: `Reminder: Your ${siteConfig.name} appointment is today`,
     html,
   })
 }
