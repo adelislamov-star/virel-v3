@@ -47,15 +47,15 @@ export function Footer() {
             <ul className="footer-district-list">
               {[
                 ['/companions', 'London Escorts'],
-                ['/escorts-in/mayfair', 'Escorts in Mayfair'],
-                ['/escorts-in/kensington', 'Escorts in Kensington'],
-                ['/escorts-in/knightsbridge', 'Escorts in Knightsbridge'],
-                ['/escorts-in/chelsea', 'Escorts in Chelsea'],
-                ['/escorts-in/belgravia', 'Escorts in Belgravia'],
-                ['/escorts-in/marylebone', 'Escorts in Marylebone'],
-                ['/escorts-in/westminster', 'Escorts in Westminster'],
-                ['/escorts-in/soho', 'Escorts in Soho'],
-                ['/escorts-in/canary-wharf', 'Escorts in Canary Wharf'],
+                ['/london/mayfair-escorts/', 'Escorts in Mayfair'],
+                ['/london/kensington-escorts/', 'Escorts in Kensington'],
+                ['/london/knightsbridge-escorts/', 'Escorts in Knightsbridge'],
+                ['/london/chelsea-escorts/', 'Escorts in Chelsea'],
+                ['/london/belgravia-escorts/', 'Escorts in Belgravia'],
+                ['/london/marylebone-escorts/', 'Escorts in Marylebone'],
+                ['/london/westminster-escorts/', 'Escorts in Westminster'],
+                ['/london/soho-escorts/', 'Escorts in Soho'],
+                ['/london/canary-wharf-escorts/', 'Escorts in Canary Wharf'],
               ].map(([href, label]) => (
                 <li key={href}><Link href={href} className="f-link">{label}</Link></li>
               ))}
