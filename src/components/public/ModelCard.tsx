@@ -21,10 +21,11 @@ export function ModelCard({
       <Link href={`/companions/${slug}`} className="mc-card">
         {coverPhotoUrl ? (
           <Image
-            fill
+            width={400}
+            height={500}
             src={coverPhotoUrl}
             alt={name}
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
             sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 33vw"
           />
         ) : (

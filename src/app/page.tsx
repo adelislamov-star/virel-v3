@@ -156,7 +156,7 @@ export default async function HomePage() {
         <section className="hero-split">
           <div className="hero-photo">
             {heroPhoto
-              ? <Image fill src={heroPhoto} alt="Premium London companion" style={{ objectFit: 'cover', objectPosition: 'center 15%' }} sizes="60vw" priority />
+              ? <Image width={1200} height={800} src={heroPhoto} alt="Premium London companion" style={{ objectFit: 'cover', objectPosition: 'center 15%', width: '100%', height: '100%' }} sizes="60vw" priority={true} />
               : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #111 0%, #1a1a1a 100%)' }} />
             }
             <div className="hero-photo-overlay" />
