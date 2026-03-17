@@ -61,15 +61,18 @@ export default async function HomePage() {
     const modelIds = featuredModels.map((m: any) => m.id)
     if (modelIds.length > 0) {
       const rates: any[] = await prisma.$queryRaw`
-        SELECT model_id, MIN(price) as min_price
+        SELECT "modelId",
+               MIN(LEAST(
+                 COALESCE("incallPrice", 999999),
+                 COALESCE("outcallPrice", 999999)
+               )) as min_price
         FROM model_rates
-        WHERE model_id = ANY(${modelIds}::text[])
-          AND is_active = true
-          AND price > 0
-        GROUP BY model_id
+        WHERE "modelId" = ANY(${modelIds}::text[])
+          AND ("incallPrice" > 0 OR "outcallPrice" > 0)
+        GROUP BY "modelId"
       `
       for (const r of rates) {
-        minPrices[r.model_id] = Number(r.min_price)
+        minPrices[r.modelId] = Number(r.min_price)
       }
     }
   } catch {}
