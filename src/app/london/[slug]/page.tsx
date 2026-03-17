@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
   if (!district) return {}
   return {
-    title: `${district.name} Escorts London | ${siteConfig.name}`,
+    title: `${district.name} Escorts London`,
     description: district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
     alternates: { canonical: `${siteConfig.domain}/london/${slug}/` },
   }
