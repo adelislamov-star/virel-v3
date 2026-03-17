@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { siteConfig } from '@/../config/site'
+import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 
 export const metadata = {
   title: `Contact | ${siteConfig.name} London Escorts`,
@@ -14,6 +15,7 @@ export const metadata = {
 export default function ContactPage() {
   return (
     <>
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Contact' }]} />
       <style>{`
         .contact-root { font-family:'DM Sans',sans-serif; background:#080808; color:#ddd5c8; min-height:100vh; }
         .contact-bc { font-size:11px; letter-spacing:.1em; color:#3a3530; padding:20px 40px; border-bottom:1px solid rgba(255,255,255,0.04); }

@@ -10,6 +10,7 @@ import { CompanionFilters } from '@/components/public/CompanionFilters'
 import { prisma } from '@/lib/db/client'
 
 import { siteConfig } from '@/../config/site'
+import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 
 export const metadata: Metadata = {
   title: 'London Companions',
@@ -173,6 +174,7 @@ export default async function CompanionsPage({
 
   return (
     <>
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Companions' }]} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogSchema) }} />
       <style>{`
         .catalog-root { font-family: 'DM Sans', sans-serif; background: #080808; color: #ddd5c8; min-height: 100vh; }
