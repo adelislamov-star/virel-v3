@@ -1,0 +1,116 @@
+.article-root {
+  font-family: "DM Sans", sans-serif;
+  background: #080808;
+  color: #ddd5c8;
+  min-height: 100vh;
+}
+.article-hero {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 80px 40px 60px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.article-cat {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: #c9a84c;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 20px;
+}
+.article-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 300;
+  color: #f0e8dc;
+  margin: 0 0 20px;
+  line-height: 1.15;
+}
+.article-meta {
+  font-size: 12px;
+  color: #3a3530;
+  letter-spacing: 0.06em;
+  display: flex;
+  gap: 20px;
+}
+.article-body {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 60px 40px 80px;
+}
+.article-excerpt {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: #9a9189;
+  line-height: 1.6;
+  margin-bottom: 48px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-style: italic;
+}
+.article-placeholder {
+  font-size: 15px;
+  color: #6b6560;
+  line-height: 1.9;
+}
+.article-placeholder h2 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 300;
+  color: #f0e8dc;
+  margin: 48px 0 20px;
+  line-height: 1.2;
+}
+.article-placeholder p {
+  margin: 0 0 20px;
+}
+.related-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 60px 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+@media (max-width: 600px) {
+  .article-hero,
+  .article-body,
+  .related-wrap { padding-left: 20px; padding-right: 20px; }
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-top: 32px;
+}
+@media (max-width: 700px) {
+  .related-grid { grid-template-columns: 1fr; }
+}
+.related-card {
+  background: #080808;
+  padding: 28px 24px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.related-card:hover {
+  background: #0d0c0a;
+}
+.related-cat {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #c9a84c;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: block;
+}
+.related-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 20px;
+  font-weight: 300;
+  color: #ddd5c8;
+  line-height: 1.3;
+  transition: color 0.2s;
+}
+.related-card:hover .related-title {
+  color: #c9a84c;
+}
