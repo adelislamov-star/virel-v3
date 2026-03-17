@@ -375,7 +375,44 @@ export default async function HomePage() {
           </p>
         </section>
 
-        {/* 8. FINAL CTA */}
+        {/* 8. WHY CHOOSE VIREL */}
+        <div className="section">
+          <span style={{ fontSize: 10, letterSpacing: '.25em', color: '#808080', textTransform: 'uppercase', display: 'block', marginBottom: 20 }}>
+            About Us
+          </span>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(32px, 4vw, 48px)',
+            fontWeight: 300,
+            fontStyle: 'italic',
+            color: '#FAFAFA',
+            margin: '0 0 32px',
+          }}>
+            Why Choose Virel
+          </h2>
+          <div style={{ maxWidth: 720, margin: '0 auto', fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 1.9, letterSpacing: '.01em' }}>
+            <p style={{ marginBottom: 20 }}>
+              Virel is a premier London escort agency built on discretion, trust, and an uncompromising
+              standard of quality. Every companion on our roster is personally verified — we meet each
+              individual, confirm their identity, and ensure their portfolio is authentic before they
+              ever appear on the site.
+            </p>
+            <p style={{ marginBottom: 20 }}>
+              As a discreet companion service in London, we cater to professionals, travellers, and
+              discerning gentlemen who value privacy above all else. Whether you are looking for an
+              elegant dinner date in Mayfair, a cultured evening in Kensington, or a relaxed encounter
+              in Chelsea, our VIP companions deliver an experience that is both refined and effortless.
+            </p>
+            <p>
+              What sets us apart is the personal touch. Our dedicated booking team responds within
+              thirty minutes, matches you with the ideal elite companion based on your preferences,
+              and handles every detail so you can focus on enjoying the moment. Professional,
+              confidential, and available around the clock — that is the Virel standard.
+            </p>
+          </div>
+        </div>
+
+        {/* 9. FINAL CTA */}
         <section className="final-cta">
           <h2 style={{
             fontFamily: "'Cormorant Garamond', serif",
