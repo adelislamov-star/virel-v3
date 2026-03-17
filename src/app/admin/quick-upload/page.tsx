@@ -209,7 +209,8 @@ export default function QuickUploadPage() {
   const buildUploadFormData = () => {
     const finalName = manualName.trim()
     const formData = new FormData()
-    sortedPhotos.forEach((photo) => formData.append('files', photo.file))
+    const photosToUpload = sortedPhotos.slice(0, 10)
+    photosToUpload.forEach((photo) => formData.append('files', photo.file))
     if (anketaFileRef) {
       formData.append('files', anketaFileRef)
     } else {
@@ -391,6 +392,7 @@ export default function QuickUploadPage() {
             if (noRates) warnings.push({ label: 'No rates found in anketa', detail: 'Rates will be empty — add manually after creation' })
             const lowQualityCount = sortedPhotos.filter((p: any) => p.lowQuality).length
             if (lowQualityCount > 0) warnings.push({ label: `${lowQualityCount} photo${lowQualityCount > 1 ? 's' : ''} flagged as low quality`, detail: 'Consider replacing them after creation' })
+            if (sortedPhotos.length > 10) warnings.push({ label: `${sortedPhotos.length} photos selected — only the first 10 will be uploaded`, detail: 'Remove extras or they will be cut off' })
 
             // ── Accepted fields ──
             const accepted = Object.entries(parsedForm)
