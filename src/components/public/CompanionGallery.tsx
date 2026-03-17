@@ -54,8 +54,8 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
         <div className="cg-main" onClick={() => setLightboxOpen(true)} style={{ cursor: 'zoom-in' }}>
           <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'cover', objectPosition: 'center 15%' }} sizes="60vw" priority={activeIndex === 0} />
           {/* Watermark */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
-            <span style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, letterSpacing: '0.5em', color: 'rgba(255,255,255,0.18)', textTransform: 'uppercase', transform: 'rotate(-30deg)', whiteSpace: 'nowrap' }}>VIREL</span>
+          <div style={{ position: 'absolute', bottom: 18, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
+            <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VIREL</span>
           </div>
           {/* Arrow buttons — desktop only */}
           {allPhotos.length > 1 && (
@@ -92,8 +92,8 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
           <button className="cg-lb-arrow cg-lb-prev" onClick={e => { e.stopPropagation(); prev() }}>&#8249;</button>
           <div className="cg-lb-img" onClick={e => e.stopPropagation()}>
             <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'contain' }} sizes="100vw" />
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
-              <span style={{ fontSize: 'clamp(32px, 6vw, 64px)', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, letterSpacing: '0.5em', color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase', transform: 'rotate(-30deg)', whiteSpace: 'nowrap' }}>VIREL</span>
+            <div style={{ position: 'absolute', bottom: 18, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
+              <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VIREL</span>
             </div>
           </div>
           <button className="cg-lb-arrow cg-lb-next" onClick={e => { e.stopPropagation(); next() }}>&#8250;</button>

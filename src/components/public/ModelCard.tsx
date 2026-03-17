@@ -37,6 +37,9 @@ export function ModelCard({
             </span>
           </div>
         )}
+        <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 5 }}>
+          <span style={{ fontSize: 10, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.5)', textTransform: 'uppercase' }}>VIREL</span>
+        </div>
         <div className="mc-overlay" />
         <div className="mc-content">
           {availability === 'Available Now' && (
