@@ -47,6 +47,9 @@ const nextConfig = {
       { source: '/admin/masters/call-rates',          destination: '/admin/call-rates',       permanent: true },
       { source: '/admin/masters/locations',           destination: '/admin/locations',        permanent: true },
       { source: '/admin/sla',                         destination: '/admin/sla-monitor',      permanent: true },
+      // Location duplicates → canonical /london/:district-escorts/
+      { source: '/escorts-in/:district',  destination: '/london/:district-escorts/', permanent: true },
+      { source: '/escorts-in-:district',  destination: '/london/:district-escorts/', permanent: true },
     ]
   },
 }
