@@ -643,23 +643,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ─── DATABASE SAVE CHAIN ───
+    // ─── DATABASE SAVE CHAIN (wrapped in transaction) ───
+
+    const name = parsedName
+    const street = aiParsed?.address || regexParsed?.address?.street || null
+    const flatNumber = regexParsed?.address?.flat || null
+    const flatFloor = regexParsed?.address?.floor ? parseInt(regexParsed.address.floor) : null
+    const postcode = aiParsed?.postcode || regexParsed?.address?.postcode || null
+    const tubeStation = aiParsed?.tube_station || regexParsed?.address?.tubeStation || null
+
+    let model: any
+    let linkedServices = 0
+    let insertedRates = 0
+
+    try {
+    const txResult = await prisma.$transaction(async (tx) => {
 
     // Step 1: Create model
     console.log('[quick-upload] Step 1: Creating model...')
-    const name = parsedName
     let slug = slugify(name)
     if (!slug) slug = 'model'
-    const existing = await prisma.model.findUnique({ where: { slug } })
+    const existing = await tx.model.findUnique({ where: { slug } })
     if (existing) slug = `${slug}-${Date.now()}`
 
     const publicCode = `${name.toUpperCase().replace(/[^A-Z0-9]/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
 
     const smokingVal = normalizeSmoking(aiParsed?.smokes) || normalizeSmoking(regexParsed?.smokes) || null
 
-    let model: any
-    try {
-    model = await prisma.model.create({
+    const txModel = await tx.model.create({
       data: {
         name,
         slug,
@@ -734,23 +745,13 @@ export async function POST(request: NextRequest) {
         },
       },
     })
-    } catch (error: any) {
-      if (error?.code === 'P2002' && error?.meta?.target?.includes('slug')) {
-        return NextResponse.json(
-          { error: 'Duplicate profile', code: 'DUPLICATE_SLUG' },
-          { status: 409 }
-        )
-      }
-      throw error
-    }
-    console.log('[quick-upload] Step 1: Model created:', model.id, model.name)
+    console.log('[quick-upload] Step 1: Model created:', txModel.id, txModel.name)
 
     // Step 2: Link services
     console.log('[quick-upload] Step 2: Linking services...')
-    let linkedServices = 0
 
     // Load all DB services for matching
-    const dbServices = await prisma.service.findMany({
+    const dbServices = await tx.service.findMany({
       select: { id: true, slug: true, title: true },
     })
     const slugToId = new Map<string, string>()
@@ -770,9 +771,9 @@ export async function POST(request: NextRequest) {
           continue
         }
         try {
-          await prisma.modelService.create({
+          await tx.modelService.create({
             data: {
-              modelId: model.id,
+              modelId: txModel.id,
               serviceId,
               isEnabled: true,
               extraPrice: svc.extra_price ?? (svc as any).extraPrice ?? null,
@@ -793,8 +794,8 @@ export async function POST(request: NextRequest) {
         const serviceId = slugToId.get(svcSlug)
         if (!serviceId) continue
         try {
-          await prisma.modelService.create({
-            data: { modelId: model.id, serviceId, isEnabled: true },
+          await tx.modelService.create({
+            data: { modelId: txModel.id, serviceId, isEnabled: true },
           })
           linkedServices++
         } catch {}
@@ -804,10 +805,9 @@ export async function POST(request: NextRequest) {
 
     // Step 3: Insert rates into model_rates (new schema: callRateMasterId + incallPrice + outcallPrice)
     console.log('[quick-upload] Step 3: Inserting rates...')
-    let insertedRates = 0
 
     // Fetch call_rate_masters to map AI duration keys → callRateMasterId
-    const callRateMasters = await prisma.$queryRawUnsafe<{ id: string; durationMin: number; label: string }[]>(
+    const callRateMasters = await tx.$queryRawUnsafe<{ id: string; durationMin: number; label: string }[]>(
       `SELECT id, "durationMin", label FROM call_rate_masters WHERE "isActive" = true`
     )
     // Map AI duration keys → callRateMasterId
@@ -827,11 +827,11 @@ export async function POST(request: NextRequest) {
     }
 
     const upsertRate = async (modelId: string, callRateMasterId: string, incall: number | null, outcall: number | null) => {
-      await prisma.$executeRawUnsafe(
+      await tx.$executeRawUnsafe(
         `DELETE FROM model_rates WHERE "modelId" = $1 AND "callRateMasterId" = $2`,
         modelId, callRateMasterId
       )
-      await prisma.$executeRawUnsafe(
+      await tx.$executeRawUnsafe(
         `INSERT INTO model_rates (id, "modelId", "callRateMasterId", "incallPrice", "outcallPrice")
          VALUES (gen_random_uuid()::text, $1, $2, $3, $4)`,
         modelId, callRateMasterId, incall, outcall
@@ -850,7 +850,7 @@ export async function POST(request: NextRequest) {
           const incallPrice = normalizePrice(v.incall)
           const outcallPrice = normalizePrice(v.outcall)
           if (incallPrice != null || outcallPrice != null) {
-            await upsertRate(model.id, masterId, incallPrice, outcallPrice)
+            await upsertRate(txModel.id, masterId, incallPrice, outcallPrice)
             insertedRates++
           }
         } catch (e) { console.error('[quick-upload] Rate upsert failed ' + duration, e) }
@@ -862,7 +862,7 @@ export async function POST(request: NextRequest) {
         try {
           const ratePrice = normalizePrice(rate.price) ?? rate.price
           const isOutcall = rate.callType === 'outcall'
-          await upsertRate(model.id, masterId, isOutcall ? null : ratePrice, isOutcall ? ratePrice : null)
+          await upsertRate(txModel.id, masterId, isOutcall ? null : ratePrice, isOutcall ? ratePrice : null)
           insertedRates++
         } catch (e) { console.error('[quick-upload] Regex rate upsert failed ' + rate.duration, e) }
       }
@@ -870,22 +870,17 @@ export async function POST(request: NextRequest) {
     console.log('[quick-upload] Step 3: Inserted ' + insertedRates + ' rates')
     // Step 4: Insert address
     console.log('[quick-upload] Step 4: Inserting address...')
-    const street = aiParsed?.address || regexParsed?.address?.street || null
-    const flatNumber = regexParsed?.address?.flat || null
-    const flatFloor = regexParsed?.address?.floor ? parseInt(regexParsed.address.floor) : null
-    const postcode = aiParsed?.postcode || regexParsed?.address?.postcode || null
-    const tubeStation = aiParsed?.tube_station || regexParsed?.address?.tubeStation || null
 
     if (street || postcode) {
       try {
-        await prisma.$executeRawUnsafe(
+        await tx.$executeRawUnsafe(
           `INSERT INTO model_addresses (id, model_id, street, flat_number, flat_floor, post_code, tube_station, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, true)
            ON CONFLICT (model_id) DO UPDATE SET
              street = EXCLUDED.street, flat_number = EXCLUDED.flat_number,
              flat_floor = EXCLUDED.flat_floor, post_code = EXCLUDED.post_code,
              tube_station = EXCLUDED.tube_station`,
-          `${model.id}-addr`, model.id,
+          `${txModel.id}-addr`, txModel.id,
           street, flatNumber, flatFloor, postcode, tubeStation,
         )
         console.log('[quick-upload] Step 4: Address saved')
@@ -899,13 +894,13 @@ export async function POST(request: NextRequest) {
     // Step 5: Insert work preferences
     console.log('[quick-upload] Step 5: Inserting work preferences...')
     try {
-      await prisma.$executeRawUnsafe(
+      await tx.$executeRawUnsafe(
         `INSERT INTO model_work_preferences (id, model_id, work_with_couples, work_with_women)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (model_id) DO UPDATE SET
            work_with_couples = EXCLUDED.work_with_couples,
            work_with_women = EXCLUDED.work_with_women`,
-        `${model.id}-prefs`, model.id,
+        `${txModel.id}-prefs`, txModel.id,
         aiParsed?.works_with_couples ?? regexParsed?.worksWithCouples ?? false,
         aiParsed?.serves_women ?? regexParsed?.servesWomen ?? false,
       )
@@ -928,7 +923,7 @@ export async function POST(request: NextRequest) {
         const normalized = normalizeStation(stationName)
 
         // 1. Exact match by slug or name
-        let hub = await prisma.transportHub.findFirst({
+        let hub = await tx.transportHub.findFirst({
           where: {
             isActive: true,
             OR: [
@@ -941,7 +936,7 @@ export async function POST(request: NextRequest) {
 
         // 2. Fallback: contains (substring match)
         if (!hub) {
-          hub = await prisma.transportHub.findFirst({
+          hub = await tx.transportHub.findFirst({
             where: {
               isActive: true,
               OR: [
@@ -958,7 +953,7 @@ export async function POST(request: NextRequest) {
 
           // Find or match a Location for primaryLocationId
           // Try district name first, then "London" fallback
-          let location = await prisma.location.findFirst({
+          let location = await tx.location.findFirst({
             where: {
               status: 'active',
               OR: [
@@ -968,15 +963,15 @@ export async function POST(request: NextRequest) {
             },
           })
           if (!location) {
-            location = await prisma.location.findFirst({
+            location = await tx.location.findFirst({
               where: { status: 'active', title: { contains: 'London', mode: 'insensitive' } },
             })
           }
 
           // Update model with primaryLocationId
           if (location) {
-            await prisma.model.update({
-              where: { id: model.id },
+            await tx.model.update({
+              where: { id: txModel.id },
               data: { primaryLocationId: location.id },
             })
             console.log(`[quick-upload] Step 5.5: Set primaryLocationId → "${location.title}"`)
@@ -985,9 +980,9 @@ export async function POST(request: NextRequest) {
           // Create ModelLocation record linking model to district
           const defaultWalkingMinutes = hub.walkingMinutes || 5
           try {
-            await prisma.modelLocation.create({
+            await tx.modelLocation.create({
               data: {
-                modelId: model.id,
+                modelId: txModel.id,
                 districtId: hub.district.id,
                 isPrimary: true,
                 transportHubId: hub.id,
@@ -1003,21 +998,21 @@ export async function POST(request: NextRequest) {
 
           // Add note if walking minutes is a default estimate
           if (!modelPostcode) {
-            await prisma.model.update({
-              where: { id: model.id },
+            await tx.model.update({
+              where: { id: txModel.id },
               data: {
-                notesInternal: [model.notesInternal, 'Walking minutes: estimated (default), needs verification'].filter(Boolean).join('\n'),
+                notesInternal: [txModel.notesInternal, 'Walking minutes: estimated (default), needs verification'].filter(Boolean).join('\n'),
               },
             })
           }
         } else {
           // No hub match — try matching district directly by station name
-          const district = await prisma.district.findFirst({
+          const district = await tx.district.findFirst({
             where: {
               isActive: true,
               OR: [
                 { name: { equals: stationName, mode: 'insensitive' } },
-                { slug: stationLower.replace(/\s+/g, '-') },
+                { slug: normalized.replace(/\s+/g, '-') },
               ],
             },
           })
@@ -1025,7 +1020,7 @@ export async function POST(request: NextRequest) {
           if (district) {
             console.log(`[quick-upload] Step 5.5: Matched district directly "${district.name}" (no hub)`)
 
-            let location = await prisma.location.findFirst({
+            let location = await tx.location.findFirst({
               where: {
                 status: 'active',
                 OR: [
@@ -1035,23 +1030,23 @@ export async function POST(request: NextRequest) {
               },
             })
             if (!location) {
-              location = await prisma.location.findFirst({
+              location = await tx.location.findFirst({
                 where: { status: 'active', title: { contains: 'London', mode: 'insensitive' } },
               })
             }
 
             if (location) {
-              await prisma.model.update({
-                where: { id: model.id },
+              await tx.model.update({
+                where: { id: txModel.id },
                 data: { primaryLocationId: location.id },
               })
               console.log(`[quick-upload] Step 5.5: Set primaryLocationId → "${location.title}"`)
             }
 
             try {
-              await prisma.modelLocation.create({
+              await tx.modelLocation.create({
                 data: {
-                  modelId: model.id,
+                  modelId: txModel.id,
                   districtId: district.id,
                   isPrimary: true,
                   walkingMinutes: 5,
@@ -1064,10 +1059,10 @@ export async function POST(request: NextRequest) {
               }
             }
 
-            await prisma.model.update({
-              where: { id: model.id },
+            await tx.model.update({
+              where: { id: txModel.id },
               data: {
-                notesInternal: [model.notesInternal, 'Walking minutes: estimated (default 5min), needs verification'].filter(Boolean).join('\n'),
+                notesInternal: [txModel.notesInternal, 'Walking minutes: estimated (default 5min), needs verification'].filter(Boolean).join('\n'),
               },
             })
           } else {
@@ -1079,6 +1074,25 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       console.error('[quick-upload] Step 5.5: Location matching failed (non-fatal):', e)
+    }
+
+    return { model: txModel, linkedServices, insertedRates }
+
+    }, { timeout: 30000 }) // end prisma.$transaction
+
+    model = txResult.model
+    linkedServices = txResult.linkedServices
+    insertedRates = txResult.insertedRates
+
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'Duplicate profile', code: 'DUPLICATE_SLUG' },
+          { status: 409 }
+        )
+      }
+      console.error('[quick-upload] Transaction failed, no profile created:', error)
+      return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
     }
 
     // Step 6: Upload photos to R2
@@ -1132,13 +1146,23 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[quick-upload] Step 6: Uploaded ${uploadedPhotos}/${imageBuffers.length} photos`)
 
-    if (imageBuffers.length > 0 && uploadedPhotos === 0) {
-      // All photo uploads failed — delete the model and report error
+    const totalPhotos = imageBuffers.length
+    let partialUploadWarning: string | null = null
+
+    // Full failure — rollback profile
+    if (totalPhotos > 0 && uploadedPhotos === 0) {
+      console.error('[quick-upload] All photo uploads failed, rolling back profile')
       await prisma.model.delete({ where: { id: model.id } }).catch(() => {})
       return NextResponse.json({
         success: false,
-        error: `All ${imageBuffers.length} photo uploads to R2 failed. Check R2 credentials and bucket configuration.`,
+        error: `All ${totalPhotos} photo uploads to R2 failed. Check R2 credentials and bucket configuration.`,
       }, { status: 502 })
+    }
+
+    // Partial failure — keep profile, warn operator
+    if (uploadedPhotos < totalPhotos) {
+      console.warn(`[quick-upload] Partial photo upload: ${uploadedPhotos}/${totalPhotos} succeeded`)
+      partialUploadWarning = `Only ${uploadedPhotos} of ${totalPhotos} photos uploaded successfully`
     }
 
     // Step 7: Save learning example
@@ -1227,6 +1251,9 @@ export async function POST(request: NextRequest) {
       success: true,
       modelId: model.id,
       slug: model.slug,
+      uploadedPhotos,
+      totalPhotos,
+      ...(partialUploadWarning ? { warning: partialUploadWarning } : {}),
       summary: {
         name,
         age: aiParsed?.age || regexParsed?.age || null,

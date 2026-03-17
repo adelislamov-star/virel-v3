@@ -65,6 +65,7 @@ export default function QuickUploadPage() {
   const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; name: string; publicCode: string } | null>(null)
   const [draftRestored, setDraftRestored] = useState(false)
   const [submitWarning, setSubmitWarning] = useState(false)
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -271,6 +272,9 @@ export default function QuickUploadPage() {
       localStorage.removeItem('virel_quick_upload_submitting')
       setDraftRestored(false)
       setDoneUrl(`/admin/models/${data.modelId}`)
+      if (data.warning) {
+        setUploadWarning(data.warning)
+      }
       setStage('done')
     } catch (e: any) {
       localStorage.removeItem('virel_quick_upload_submitting')
@@ -568,12 +572,17 @@ export default function QuickUploadPage() {
           <div style={{ fontSize: 60, marginBottom: 16 }}>🎉</div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Done!</h2>
           <p style={{ color: '#888', marginBottom: 28 }}>{sortedPhotos.length} photos uploaded and sorted</p>
+          {uploadWarning && (
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#f59e0b', marginBottom: 16, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
+              ⚠️ {uploadWarning} — please add the missing photos manually in the profile editor.
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <a href={doneUrl} style={{ background: '#6366f1', color: '#fff', textDecoration: 'none', padding: '12px 28px', borderRadius: 10, fontWeight: 700 }}>
               View Profile →
             </a>
             <button
-              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null); setAcceptedOpen(false); setDuplicateInfo(null) }}
+              onClick={() => { setStage('drop'); setPhotos([]); setSortedPhotos([]); setAnketaText(''); setAnketaFileRef(null); setParsedForm({}); setManualName(''); setProgress([]); setParseError(null); setAcceptedOpen(false); setDuplicateInfo(null); setUploadWarning(null) }}
               style={{ border: '1px solid #444', background: '#1e1e2e', color: '#ccc', padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}
             >
               Add Another
