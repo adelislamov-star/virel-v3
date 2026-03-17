@@ -11,8 +11,8 @@ export const metadata: Metadata = {
     google: 'MUip6cu8OH4oOYyaZKJIo5xoPElQToe0wMp-1J3JcAA',
   },
   title: {
-    default: `${siteConfig.name} – Premium Companion Services in London`,
-    template: `%s | ${siteConfig.name} London`,
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`,
   },
   description: 'Exclusive premium companion services in London. Discreet, professional, and elegant experiences with verified companions.',
   keywords: ['london escorts', 'escort agency london', 'premium companions london', 'virel'],

@@ -83,13 +83,48 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
     description: district.description || `Premium companions in ${district.name}, London.`,
     address: { '@type': 'PostalAddress', addressLocality: district.name, addressRegion: 'London', addressCountry: 'GB' },
   }
-  const breadcrumb = {
+  const faqItems = [
+    {
+      q: `Are companions available in ${district.name} tonight?`,
+      a: `Yes, we have ${models.length} companion${models.length !== 1 ? 's' : ''} available in ${district.name}. Check individual profiles for real-time availability or contact our team for same-day bookings.`,
+    },
+    {
+      q: `What is the typical rate in ${district.name}?`,
+      a: minPrice > 0
+        ? `Rates in ${district.name} typically start from £${minPrice} per hour. Prices vary based on the companion, duration, and type of booking.`
+        : `Please check individual companion profiles for current rates in ${district.name}. Contact our team for personalised quotes.`,
+    },
+    {
+      q: `Do you offer outcall in ${district.name}?`,
+      a: `Yes, many of our companions offer outcall services to hotels and private residences in ${district.name}. Outcall rates may differ from incall — check each companion's profile for details.`,
+    },
+  ]
+
+  const graphSchema = {
     '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
-      { '@type': 'ListItem', position: 2, name: 'London Escorts', item: `${siteConfig.domain}/london-escorts` },
-      { '@type': 'ListItem', position: 3, name: `${district.name} Escorts`, item: `${siteConfig.domain}/london/${slug}/` },
+    '@graph': [
+      {
+        '@type': 'LocalBusiness',
+        name: `${siteConfig.name} — ${district.name}`,
+        description: district.description || `Premium companions in ${district.name}, London.`,
+        address: { '@type': 'PostalAddress', addressLocality: district.name, addressRegion: 'London', addressCountry: 'GB' },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+          { '@type': 'ListItem', position: 2, name: 'London Escorts', item: `${siteConfig.domain}/london-escorts` },
+          { '@type': 'ListItem', position: 3, name: `${district.name} Escorts`, item: `${siteConfig.domain}/london/${slug}/` },
+        ],
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map(f => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
     ],
   }
 
@@ -104,18 +139,16 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         .faq-q { font-size:15px; color:#f0e8dc; font-weight:400; margin:0 0 8px; }
         .faq-a { font-size:14px; color:#6b6560; line-height:1.8; margin:0; }
       `}</style>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
       <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         {/* Breadcrumb */}
         <nav aria-label="breadcrumb" style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
-          <ol style={{ listStyle: 'none', display: 'flex', alignItems: 'center', gap: 0, margin: 0, padding: 0 }}>
+          <style>{`.bc-list li+li::before { content:"/"; margin:0 8px; color:#4a4540; }`}</style>
+          <ol className="bc-list" style={{ listStyle: 'none', display: 'flex', alignItems: 'center', margin: 0, padding: 0 }}>
             <li><Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link></li>
-            <li><span style={{ margin: '0 8px' }}>/</span></li>
             <li><Link href="/london-escorts" style={{ color: '#6b6560', textDecoration: 'none' }}>London Escorts</Link></li>
-            <li><span style={{ margin: '0 8px' }}>/</span></li>
             <li aria-current="page" style={{ color: '#C5A572' }}>{district.name} Escorts</li>
           </ol>
         </nav>
