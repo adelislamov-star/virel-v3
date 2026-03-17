@@ -310,12 +310,15 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="services-grid">
-              {services.map((svc: any) => (
+              {services.map((svc: any) => {
+                const serviceLabel = svc.slug.split('-').map((w: string) => w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                return (
                 <Link key={svc.slug} href={`/services/${svc.slug}`} className="svc-card">
-                  <h3 className="svc-card-title">{svc.publicName || svc.name || svc.slug.split('-').map((w: string) => w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h3>
+                  <h3 className="svc-card-title">{serviceLabel}</h3>
                   {svc.description && <p className="svc-card-desc">{svc.description}</p>}
                 </Link>
-              ))}
+                )
+              })}
             </div>
             <div style={{ textAlign: 'center', marginTop: 32 }}>
               <Link href="/categories" style={{ fontSize: 12, letterSpacing: '.15em', color: '#c9a84c', textDecoration: 'none', textTransform: 'uppercase', transition: 'color .2s' }}>
