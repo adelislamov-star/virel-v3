@@ -120,25 +120,31 @@ interface AIParsedProfile {
 
 // ─── Few-Shot Learning ───
 
-async function fetchFewShotExamples(): Promise<Array<{ input: string; output: string }>> {
+async function fetchFewShotExamples(): Promise<Array<{ input: string; output: string; operatorCorrections: Record<string, { ai: any; operator: any }> | null }>> {
   try {
     const examples = await prisma.aIParseExample.findMany({
       where: { inputType: 'document' },
-      orderBy: { createdAt: 'desc' },
-      take: 3,
+      orderBy: [
+        { correctionCount: 'desc' },
+        { qualityScore: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      take: 5,
       select: {
         inputText: true,
         outputJson: true,
         wasEdited: true,
         editedJson: true,
+        operatorCorrections: true,
       },
     })
 
     return examples
       .filter(e => e.inputText)
       .map(e => ({
-        input: e.inputText!.substring(0, 2000), // Truncate for context window
+        input: e.inputText!.substring(0, 2000),
         output: JSON.stringify(e.wasEdited && e.editedJson ? e.editedJson : e.outputJson),
+        operatorCorrections: (e.operatorCorrections as Record<string, { ai: any; operator: any }>) || null,
       }))
   } catch (e) {
     console.error('[quick-upload] Failed to fetch few-shot examples:', e)
@@ -229,6 +235,23 @@ async function parseDocumentWithAI(documentText: string): Promise<AIParsedProfil
     const fewShotExamples = await fetchFewShotExamples()
     console.log(`[quick-upload] Call 1: Using ${fewShotExamples.length} few-shot examples`)
 
+    // Build correction hints from past operator fixes
+    const correctionPatterns: string[] = []
+    for (const ex of fewShotExamples) {
+      const corrections = ex.operatorCorrections
+      if (!corrections) continue
+      for (const [field, { ai, operator }] of Object.entries(corrections)) {
+        correctionPatterns.push(
+          `- Field "${field}": AI returned "${ai}" but correct value was "${operator}"`
+        )
+      }
+    }
+    const uniquePatterns = [...new Set(correctionPatterns)].slice(0, 20)
+    const correctionHint =
+      uniquePatterns.length > 0
+        ? `\n\nKNOWN PAST AI MISTAKES — avoid repeating these:\n${uniquePatterns.join('\n')}`
+        : ''
+
     // Build messages with few-shot examples
     const messages: Anthropic.MessageParam[] = []
     for (const example of fewShotExamples) {
@@ -240,7 +263,7 @@ async function parseDocumentWithAI(documentText: string): Promise<AIParsedProfil
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
-      system: SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT + correctionHint,
       messages,
     })
 

@@ -339,6 +339,65 @@ export async function PATCH(
       console.error('[model-update] Learning comparison failed (non-fatal):', e);
     }
 
+    // ── AI Learning: record operator corrections (field-level) ──
+    try {
+      const modelRecord = await prisma.model.findUnique({
+        where: { id: params.id },
+        select: { aiParseExampleId: true },
+      });
+
+      if (modelRecord?.aiParseExampleId) {
+        const example = await prisma.aIParseExample.findUnique({
+          where: { id: modelRecord.aiParseExampleId },
+          select: { outputJson: true, operatorCorrections: true, correctionCount: true },
+        });
+
+        if (example) {
+          const corrections: Record<string, { ai: any; operator: any }> =
+            (example.operatorCorrections as any) || {};
+
+          const TRACKED_FIELDS = [
+            'bustType', 'bustSize', 'smokingStatus', 'tattooStatus',
+            'hairColour', 'eyeColour', 'nationality', 'age', 'height', 'weight',
+            'dressSize', 'feetSize', 'orientation',
+          ];
+
+          const aiOutput = (example.outputJson as any) || {};
+          // Fields come via body.stats in the PATCH handler
+          const opValues = body.stats || {};
+
+          for (const field of TRACKED_FIELDS) {
+            if (opValues[field] !== undefined) {
+              const aiVal = aiOutput[field];
+              const opVal = opValues[field];
+              if (String(aiVal) !== String(opVal)) {
+                corrections[field] = { ai: aiVal, operator: opVal };
+              }
+            }
+          }
+
+          const trackedWithData = TRACKED_FIELDS.filter(f => aiOutput[f] !== undefined);
+          const wrongFields = Object.keys(corrections).length;
+          const qualityScore =
+            trackedWithData.length > 0
+              ? Math.max(0, 1 - wrongFields / trackedWithData.length)
+              : null;
+
+          await prisma.aIParseExample.update({
+            where: { id: modelRecord.aiParseExampleId },
+            data: {
+              operatorCorrections: corrections,
+              correctionCount: { increment: 1 },
+              lastCorrectedAt: new Date(),
+              ...(qualityScore !== null ? { qualityScore } : {}),
+            },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[model-patch] Could not record AI corrections:', e);
+    }
+
     logAudit({
       action: 'model.updated',
       entityType: 'model',

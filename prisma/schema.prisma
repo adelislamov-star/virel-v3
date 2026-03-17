@@ -1158,9 +1158,13 @@ model AIParseExample {
   inputText  String?
   outputJson Json
   wasEdited  Boolean  @default(false)
-  editedJson Json?
-  createdAt  DateTime @default(now())
-  models     Model[]
+  editedJson           Json?
+  operatorCorrections  Json?
+  correctionCount      Int       @default(0)
+  lastCorrectedAt      DateTime?
+  qualityScore         Float?
+  createdAt            DateTime  @default(now())
+  models               Model[]
 
   @@index([inputType, createdAt])
   @@index([inputHash])
