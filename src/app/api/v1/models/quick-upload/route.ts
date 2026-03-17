@@ -921,18 +921,37 @@ export async function POST(request: NextRequest) {
       const modelPostcode = postcode || aiParsed?.postcode || null
 
       if (stationName) {
-        // Try to find matching transport hub by station name
-        const stationLower = stationName.toLowerCase().trim()
-        const hub = await prisma.transportHub.findFirst({
+        // Normalize: strip dots, apostrophes, expand "St" → "Street", lowercase
+        const normalizeStation = (s: string) =>
+          s.toLowerCase().replace(/[.'`]/g, '').replace(/\bst\b/g, 'street').replace(/\s+/g, ' ').trim()
+
+        const normalized = normalizeStation(stationName)
+
+        // 1. Exact match by slug or name
+        let hub = await prisma.transportHub.findFirst({
           where: {
             isActive: true,
             OR: [
+              { slug: normalized.replace(/\s/g, '-') },
               { name: { equals: stationName, mode: 'insensitive' } },
-              { slug: stationLower.replace(/\s+/g, '-') },
             ],
           },
           include: { district: true },
         })
+
+        // 2. Fallback: contains (substring match)
+        if (!hub) {
+          hub = await prisma.transportHub.findFirst({
+            where: {
+              isActive: true,
+              OR: [
+                { name: { contains: normalized, mode: 'insensitive' } },
+                { name: { contains: stationName, mode: 'insensitive' } },
+              ],
+            },
+            include: { district: true },
+          })
+        }
 
         if (hub) {
           console.log(`[quick-upload] Step 5.5: Matched hub "${hub.name}" → district "${hub.district.name}"`)
