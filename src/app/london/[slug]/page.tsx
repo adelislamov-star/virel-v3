@@ -7,6 +7,7 @@ import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
+import '../district.css'
 
 export const revalidate = 3600
 
@@ -130,16 +131,6 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`
-        .dist-link { display:block; padding:16px 20px; border:1px solid rgba(255,255,255,0.07); text-decoration:none; color:#ddd5c8; font-size:14px; transition:border-color .25s; }
-        .dist-link:hover { border-color:rgba(197,165,114,0.4); }
-        .dist-cta { display:inline-block; padding:16px 40px; background:#C5A572; color:#0A0A0A; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:background .25s; font-family:inherit; }
-        .dist-cta:hover { background:#d4b87a; }
-        .dist-tag { display:inline-block; padding:6px 16px; border:1px solid rgba(255,255,255,0.06); font-size:12px; color:#6b6560; }
-        .faq-q { font-size:15px; color:#f0e8dc; font-weight:400; margin:0 0 8px; }
-        .faq-a { font-size:14px; color:#6b6560; line-height:1.8; margin:0; }
-        .bc-list li+li::before { content:"/"; margin:0 8px; color:#4a4540; }
-      `}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
       <Header />
 
