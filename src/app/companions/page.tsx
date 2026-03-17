@@ -140,7 +140,7 @@ export default async function CompanionsPage({
   }
   if (maxPrice) {
     const max = parseFloat(maxPrice)
-    filteredModels = filteredModels.filter((m: any) => (minPrices[m.id] ?? 0) <= max)
+    filteredModels = filteredModels.filter((m: any) => (minPrices[m.id] ?? 0) < max)
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
