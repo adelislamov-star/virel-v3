@@ -312,7 +312,7 @@ export default async function HomePage() {
             <div className="services-grid">
               {services.map((svc: any) => (
                 <Link key={svc.slug} href={`/services/${svc.slug}`} className="svc-card">
-                  <h3 className="svc-card-title">{svc.publicName || svc.name || svc.slug}</h3>
+                  <h3 className="svc-card-title">{svc.publicName || svc.name || svc.slug.split('-').map((w: string) => w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h3>
                   {svc.description && <p className="svc-card-desc">{svc.description}</p>}
                 </Link>
               ))}
