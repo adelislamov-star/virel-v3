@@ -14,5 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/faq`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/categories`, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/london-escorts`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/how-it-works`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/discretion`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/verification`, changeFrequency: 'monthly', priority: 0.6 },
   ]
 }

@@ -69,6 +69,9 @@ export function Footer() {
               {[
                 ['/faq', 'FAQ'],
                 ['/services', 'Services'],
+                ['/how-it-works', 'How It Works'],
+                ['/discretion', 'Discretion & Privacy'],
+                ['/verification', 'Verification'],
                 ['/contact', 'Contact'],
                 ['/join', 'Join Us'],
                 ['/terms', 'Terms of Service'],
