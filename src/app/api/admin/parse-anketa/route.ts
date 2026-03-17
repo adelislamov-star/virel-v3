@@ -149,6 +149,42 @@ Field rules:
       fields = JSON.parse(match[0])
     }
 
+    // ── Convert flat rate fields → nested rates object ──
+    const rates: Record<string, { incall: number | null; outcall: number | null }> = {}
+    const rateMap: Record<string, { key: string; type: 'incall' | 'outcall' }> = {
+      rate30min: { key: '30min', type: 'incall' },
+      rate45min: { key: '45min', type: 'incall' },
+      rate1hIn: { key: '1hour', type: 'incall' },
+      rate1h: { key: '1hour', type: 'incall' },
+      rate1hOut: { key: '1hour', type: 'outcall' },
+      rate90minIn: { key: '90min', type: 'incall' },
+      rate90min: { key: '90min', type: 'incall' },
+      rate90minOut: { key: '90min', type: 'outcall' },
+      rate2hIn: { key: '2hours', type: 'incall' },
+      rate2h: { key: '2hours', type: 'incall' },
+      rate2hOut: { key: '2hours', type: 'outcall' },
+      rate3hIn: { key: '3hours', type: 'incall' },
+      rate3h: { key: '3hours', type: 'incall' },
+      rate3hOut: { key: '3hours', type: 'outcall' },
+      rateOvernightIn: { key: 'overnight', type: 'incall' },
+      rateOvernight: { key: 'overnight', type: 'incall' },
+      rateOvernightOut: { key: 'overnight', type: 'outcall' },
+    }
+    for (const [field, { key, type }] of Object.entries(rateMap)) {
+      const v = fields[field]
+      if (v == null) continue
+      const price = typeof v === 'number' ? v : parseInt(String(v).replace(/[^0-9]/g, ''), 10)
+      if (isNaN(price)) continue
+      if (!rates[key]) rates[key] = { incall: null, outcall: null }
+      rates[key][type] = price
+      delete fields[field]
+    }
+    // Also remove rateExtraHour (not mapped to duration)
+    delete fields.rateExtraHour
+    if (Object.keys(rates).length > 0) {
+      fields.rates = rates
+    }
+
     // ── Build notesInternal from raw extracted data ──
     const factLines: string[] = []
     if (fields.name) factLines.push(`Name: ${fields.name}`)
@@ -170,9 +206,9 @@ Field rules:
     if (fields.orientation) factLines.push(`Orientation: ${fields.orientation}`)
     if (fields.smokingStatus) factLines.push(`Smoking: ${fields.smokingStatus}`)
     if (fields.tattooStatus && fields.tattooStatus !== 'none') factLines.push(`Tattoo: ${fields.tattooStatus}`)
-    if (fields.rate1hIn) factLines.push(`1h incall: £${fields.rate1hIn}`)
-    if (fields.rate1hOut) factLines.push(`1h outcall: £${fields.rate1hOut}`)
-    if (fields.rateOvernight) factLines.push(`Overnight: £${fields.rateOvernight}`)
+    if (fields.rates?.['1hour']?.incall) factLines.push(`1h incall: £${fields.rates['1hour'].incall}`)
+    if (fields.rates?.['1hour']?.outcall) factLines.push(`1h outcall: £${fields.rates['1hour'].outcall}`)
+    if (fields.rates?.['overnight']?.incall) factLines.push(`Overnight: £${fields.rates['overnight'].incall}`)
     fields.notesInternal = factLines.join(' | ')
 
     // ── Generate public bio via separate AI call ──
