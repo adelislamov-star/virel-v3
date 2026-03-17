@@ -317,6 +317,11 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
+            <div style={{ textAlign: 'center', marginTop: 32 }}>
+              <Link href="/categories" style={{ fontSize: 12, letterSpacing: '.15em', color: '#c9a84c', textDecoration: 'none', textTransform: 'uppercase', transition: 'color .2s' }}>
+                Browse all categories →
+              </Link>
+            </div>
           </div>
         )}
 

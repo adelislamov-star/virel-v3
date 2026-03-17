@@ -25,6 +25,7 @@ export function Header() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 36 }} className="desktop-nav">
           {[
             ['/companions', 'Companions'],
+            ['/categories', 'Categories'],
             ['/about', 'About'],
             ['/contact', 'Contact'],
           ].map(([href, label]) => (
@@ -52,6 +53,7 @@ export function Header() {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#080808', padding: '20px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
             ['/companions', 'Companions'],
+            ['/categories', 'Categories'],
             ['/about', 'About'],
             ['/contact', 'Contact'],
           ].map(([href, label]) => (

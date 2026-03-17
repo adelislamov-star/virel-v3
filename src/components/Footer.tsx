@@ -46,6 +46,7 @@ export function Footer() {
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Companions</p>
             <ul className="footer-district-list">
               {[
+                ['/categories', 'Escorts by Category'],
                 ['/companions', 'London Escorts'],
                 ['/london/mayfair-escorts/', 'Escorts in Mayfair'],
                 ['/london/kensington-escorts/', 'Escorts in Kensington'],
