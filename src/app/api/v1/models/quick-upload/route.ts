@@ -16,6 +16,7 @@ import { randomUUID, createHash } from 'crypto'
 import { requireRole, isActor } from '@/lib/auth'
 import Anthropic from '@anthropic-ai/sdk'
 import { normalizePhone, normalizeHeight, normalizeWeight, normalizeAge, normalizePrice, normalizeSmoking, normalizeBustType, normalizeTattoo } from '@/lib/normalize-anketa'
+import { auditModelReadiness } from '@/lib/publish-validation'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -1234,6 +1235,14 @@ export async function POST(request: NextRequest) {
       console.log('[quick-upload] Step 8: Audit log saved')
     } catch (e) {
       console.error('[quick-upload] Step 8: Audit log failed (non-fatal):', e)
+    }
+
+    // Calculate readiness score
+    try {
+      const readiness = await auditModelReadiness(model.id)
+      console.log(`[quick-upload] Readiness score for ${model.id}: ${readiness.score}% — ${readiness.checks.filter(c => !c.passed).map(c => c.label).join(', ') || 'all passed'}`)
+    } catch (e) {
+      console.warn('[quick-upload] Could not calculate readiness score:', e)
     }
 
     console.log('[quick-upload] === Quick Upload Complete ===')

@@ -37,6 +37,13 @@ export async function POST(request: NextRequest) {
 
     const text = await extractText(file)
 
+    if (text.trim().length < 50) {
+      return NextResponse.json({
+        success: false,
+        error: 'Could not extract text from document. The file may be encrypted, scanned as image, or corrupted. Please try a text-based PDF or DOCX.',
+      }, { status: 422 })
+    }
+
     const EXAMPLE_INPUT = `Name – Sophia
 Age – 24
 Height – 1,67

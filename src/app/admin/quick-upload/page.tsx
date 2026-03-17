@@ -556,12 +556,12 @@ export default function QuickUploadPage() {
             >
               Create Anyway
             </button>
-            <a
+            <Link
               href={`/admin/models/${duplicateInfo.id}`}
               style={{ background: '#1e1e2e', color: '#ccc', border: '1px solid #444', borderRadius: 10, padding: '12px 28px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}
             >
               Open Existing
-            </a>
+            </Link>
           </div>
         </div>
       )}

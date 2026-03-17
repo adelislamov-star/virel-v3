@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { prisma } from '@/lib/db/client'
 
 export interface AuditCheck {
@@ -52,9 +51,7 @@ export async function auditModelReadiness(modelId: string): Promise<PublishAudit
         return v != null && v !== ''
       }).length + (model.stats.languages?.length ? 1 : 0)
     : 0
-  const measurementsCount = (model as any).measurements ? 1 : 0
-  const ethnicityCount = (model as any).ethnicity ? 1 : 0
-  const totalStatsInDB = statsInDB + measurementsCount + ethnicityCount
+  const totalStatsInDB = statsInDB
 
   const checks: AuditCheck[] = [
     {
