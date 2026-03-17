@@ -64,6 +64,7 @@ export default function QuickUploadPage() {
   const [acceptedOpen, setAcceptedOpen] = useState(false)
   const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; name: string; publicCode: string } | null>(null)
   const [draftRestored, setDraftRestored] = useState(false)
+  const [submitWarning, setSubmitWarning] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -72,6 +73,11 @@ export default function QuickUploadPage() {
   // Restore draft on mount
   useEffect(() => {
     try {
+      const wasSubmitting = localStorage.getItem('virel_quick_upload_submitting')
+      if (wasSubmitting) {
+        localStorage.removeItem('virel_quick_upload_submitting')
+        setSubmitWarning(true)
+      }
       const saved = localStorage.getItem(DRAFT_KEY)
       if (saved) {
         const d = JSON.parse(saved)
@@ -229,6 +235,7 @@ export default function QuickUploadPage() {
     if (!finalName) { alert('Enter model name'); return }
 
     setStage('uploading')
+    localStorage.setItem('virel_quick_upload_submitting', 'true')
     setProgress([])
     setDuplicateInfo(null)
 
@@ -248,6 +255,7 @@ export default function QuickUploadPage() {
       const data = await res.json()
 
       if (res.status === 409 && data.duplicate) {
+        localStorage.removeItem('virel_quick_upload_submitting')
         setDuplicateInfo(data.existing)
         setStage('duplicate')
         return
@@ -260,10 +268,12 @@ export default function QuickUploadPage() {
       log(`✅ Uploaded ${data.summary?.photos || 0} photos`)
       log('🎉 Done!')
       localStorage.removeItem(DRAFT_KEY)
+      localStorage.removeItem('virel_quick_upload_submitting')
       setDraftRestored(false)
       setDoneUrl(`/admin/models/${data.modelId}`)
       setStage('done')
     } catch (e: any) {
+      localStorage.removeItem('virel_quick_upload_submitting')
       log(`❌ ${e.message}`)
       setStage('error')
     }
@@ -284,6 +294,14 @@ export default function QuickUploadPage() {
         <span style={{ color: '#888' }}>/</span>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>⚡ Quick Upload</h1>
       </div>
+
+      {/* ── SUBMIT WARNING BANNER ──────────────────────────────────── */}
+      {submitWarning && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 flex items-start justify-between gap-3" style={{ marginBottom: 12 }}>
+          <span>⚠️ A previous upload may still be in progress. Check the <a href="/admin/models" className="underline">Models list</a> before creating again to avoid duplicates.</span>
+          <button onClick={() => setSubmitWarning(false)} className="shrink-0 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* ── DRAFT RESTORED BANNER ──────────────────────────────────── */}
       {draftRestored && (stage === 'drop' || stage === 'preview') && (
