@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db/client'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
+import { RichText } from '@/components/public/RichText'
+import { categoryContent } from '@/data/category-content'
+import '../category.css'
 
 export const revalidate = 3600
 
@@ -31,7 +34,6 @@ function buildCategoryFilter(cat: typeof categories[number]): any {
   const base = { status: 'active', deletedAt: null }
 
   if (cat.group === 'nationality') {
-    // Match stats.nationality (case-insensitive contains)
     return { ...base, stats: { nationality: { contains: cat.name, mode: 'insensitive' } } }
   }
 
@@ -48,7 +50,7 @@ function buildCategoryFilter(cat: typeof categories[number]): any {
       case 'slim':
       case 'curvy':
       case 'busty':
-        return { ...base, stats: { bustSize: { not: null } } } // fallback — show all with stats
+        return { ...base, stats: { bustSize: { not: null } } }
       case 'mature':
         return { ...base, stats: { age: { gte: 30 } } }
       case 'young':
@@ -58,7 +60,6 @@ function buildCategoryFilter(cat: typeof categories[number]): any {
     }
   }
 
-  // experience — match by tagline/bio keywords or service slug
   if (cat.group === 'experience') {
     switch (cat.slug) {
       case 'gfe':
@@ -93,15 +94,25 @@ function buildCategoryFilter(cat: typeof categories[number]): any {
   return base
 }
 
+// Strip HTML for schema.org
+const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '')
+
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const cat = categories.find(c => c.slug === slug)
   if (!cat) notFound()
 
-  const relatedCategories = categories
-    .filter(c => c.slug !== slug)
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 6)
+  const custom = categoryContent[slug]
+
+  // Related categories: use custom list or random fallback
+  const relatedCats = custom?.relatedCategories
+    ? custom.relatedCategories
+        .map(s => categories.find(c => c.slug === s))
+        .filter(Boolean)
+    : categories
+        .filter(c => c.slug !== slug)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 6)
 
   const [models, districts] = await Promise.all([
     prisma.model.findMany({
@@ -128,7 +139,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   const metaDescription = `${cat.name} companions in London. Hand-picked, verified. From £${siteConfig.priceFrom}/hr. ${siteConfig.name} companion agency.`
 
-  const faqItems = [
+  // FAQ — custom or generic
+  const faqItems = custom?.faq || [
     {
       q: `How many ${cat.name.toLowerCase()} escorts do you have in London?`,
       a: `We currently have ${models.length} verified ${cat.name.toLowerCase()} companion${models.length !== 1 ? 's' : ''} available in London. Our selection is updated daily as new companions join and availability changes.`,
@@ -143,7 +155,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     },
   ]
 
-  // Merged schema: CollectionPage + BreadcrumbList + FAQPage
   const pageSchema = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -168,7 +179,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         mainEntity: faqItems.map(f => ({
           '@type': 'Question',
           name: f.q,
-          acceptedAnswer: { '@type': 'Answer', text: f.a },
+          acceptedAnswer: { '@type': 'Answer', text: stripHtml(f.a) },
         })),
       },
     ],
@@ -176,27 +187,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`
-        .cat-link { display:block; padding:16px 20px; border:1px solid rgba(255,255,255,0.07); text-decoration:none; color:#ddd5c8; font-size:14px; transition:border-color .25s; }
-        .cat-link:hover { border-color:rgba(197,165,114,0.4); }
-        .cat-cta { display:inline-block; padding:16px 40px; background:#C5A572; color:#0A0A0A; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:background .25s; font-family:inherit; }
-        .cat-cta:hover { background:#d4b87a; }
-        .breadcrumb { list-style:none; display:flex; align-items:center; gap:0; padding:0; margin:0 0 32px; font-size:12px; }
-        .breadcrumb li { display:flex; align-items:center; }
-        .breadcrumb li+li::before { content:'/'; margin:0 8px; color:#4a4540; }
-        .breadcrumb a { color:#6b6560; text-decoration:none; transition:color .2s; }
-        .breadcrumb a:hover { color:#C5A572; }
-        .breadcrumb [aria-current] { color:#C5A572; }
-        .faq-q { font-size:15px; color:#f0e8dc; font-weight:400; margin:0 0 8px; }
-        .faq-a { font-size:14px; color:#6b6560; line-height:1.8; margin:0; }
-      `}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageSchema) }} />
       <Header />
 
       {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         <nav aria-label="breadcrumb">
-          <ol className="breadcrumb">
+          <ol className="cat-bc">
             <li><Link href="/">Home</Link></li>
             <li><Link href="/categories">Categories</Link></li>
             <li aria-current="page">{cat.name} Escorts</li>
@@ -207,42 +204,57 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           <em style={{ fontStyle: 'italic', color: '#C5A572' }}>{cat.name}</em> Escorts in London
         </h1>
 
-        <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 680, margin: '0 0 64px' }}>
-          Discover our selection of {cat.name.toLowerCase()} companions in London, each personally vetted by the {siteConfig.name} team.
-          Whether you are looking for a dinner date, a social event companion, or a private encounter,
-          our {cat.name.toLowerCase()} escorts offer sophistication, discretion, and genuine connection.
-          All profiles feature authentic, verified photographs and detailed descriptions to help you
-          find exactly the right companion for your preferences.
-        </p>
+        {!custom && (
+          <p className="cat-p" style={{ maxWidth: 680, margin: '0 0 64px' }}>
+            Discover our selection of {cat.name.toLowerCase()} companions in London, each personally vetted by the {siteConfig.name} team.
+            Whether you are looking for a dinner date, a social event companion, or a private encounter,
+            our {cat.name.toLowerCase()} escorts offer sophistication, discretion, and genuine connection.
+            All profiles feature authentic, verified photographs and detailed descriptions to help you
+            find exactly the right companion for your preferences.
+          </p>
+        )}
       </section>
 
       {/* About */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-          About {cat.name} Companions
-        </h2>
-        <div style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 760 }}>
-          <p style={{ margin: '0 0 16px' }}>
-            Our {cat.name.toLowerCase()} companions in London are hand-picked for their sophistication,
-            intelligence and charm. Each companion is personally verified by {siteConfig.name} before joining
-            our agency, ensuring the highest standards of presentation and professionalism.
-          </p>
-          <p style={{ margin: 0 }}>
-            Whether you are looking for a companion for a dinner date in Mayfair, an overnight stay,
-            or a travel companion for a business trip, our {cat.name.toLowerCase()} escorts in London
-            offer a discreet and memorable experience. Available for both incall and outcall
-            appointments across London, from £{siteConfig.priceFrom} per hour.
-          </p>
+        <div className="cat-divider" />
+        <h2 className="cat-h2">About {cat.name} Companions</h2>
+        <div style={{ maxWidth: 760 }}>
+          {custom?.aboutParagraphs ? (
+            custom.aboutParagraphs.map((p, i) => (
+              <p key={i} className="cat-p">{p}</p>
+            ))
+          ) : (
+            <>
+              <p className="cat-p">
+                Our {cat.name.toLowerCase()} companions in London are hand-picked for their sophistication,
+                intelligence and charm. Each companion is personally verified by {siteConfig.name} before joining
+                our agency, ensuring the highest standards of presentation and professionalism.
+              </p>
+              <p className="cat-p">
+                Whether you are looking for a companion for a dinner date in Mayfair, an overnight stay,
+                or a travel companion for a business trip, our {cat.name.toLowerCase()} escorts in London
+                offer a discreet and memorable experience. Available for both incall and outcall
+                appointments across London, from £{siteConfig.priceFrom} per hour.
+              </p>
+            </>
+          )}
         </div>
       </section>
+
+      {/* Standard Text (custom only) */}
+      {custom?.standardText && (
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+          <div style={{ maxWidth: 760 }}>
+            <p className="cat-p"><RichText text={custom.standardText} /></p>
+          </div>
+        </section>
+      )}
 
       {/* Companions */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 32, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: 0 }}>
-            Our {cat.name} Companions
-          </h2>
+          <h2 className="cat-h2" style={{ margin: 0 }}>Our {cat.name} Companions</h2>
           <span style={{ fontSize: 11, color: '#4a4540', letterSpacing: '.15em' }}>{models.length} AVAILABLE</span>
         </div>
         {models.length > 0 ? (
@@ -273,10 +285,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       {/* Popular Locations */}
       {districts.length > 0 && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-            Popular Locations
-          </h2>
+          <div className="cat-divider" />
+          <h2 className="cat-h2">Popular Locations</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
             {districts.map(d => (
               <Link key={d.slug} href={`/london/${d.slug}-escorts/`} className="cat-link">
@@ -289,12 +299,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       {/* Related Categories */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-          Related Categories
-        </h2>
+        <div className="cat-divider" />
+        <h2 className="cat-h2">Related Categories</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-          {relatedCategories.map(rc => (
+          {relatedCats.map(rc => (
             <Link key={rc.slug} href={`/categories/${rc.slug}`} className="cat-link">
               {rc.name} Escorts
             </Link>
@@ -304,15 +312,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       {/* FAQ */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 32px' }}>
-          Frequently Asked Questions
-        </h2>
+        <div className="cat-divider" />
+        <h2 className="cat-h2" style={{ marginBottom: 32 }}>Frequently Asked Questions</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {faqItems.map((f, i) => (
             <div key={i}>
-              <p className="faq-q">{f.q}</p>
-              <p className="faq-a">{f.a}</p>
+              <p className="cat-faq-q">{f.q}</p>
+              <p className="cat-faq-a"><RichText text={f.a} /></p>
             </div>
           ))}
         </div>
@@ -320,9 +326,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       {/* CTA */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 120px', textAlign: 'center' }}>
-        <Link href="/companions" className="cat-cta">
-          Browse All Companions
-        </Link>
+        <Link href="/companions" className="cat-cta">Browse All Companions</Link>
       </section>
 
       <Footer />
