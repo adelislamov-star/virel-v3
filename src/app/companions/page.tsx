@@ -8,7 +8,7 @@ import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
 import { CompanionFilters } from '@/components/public/CompanionFilters'
 import { prisma } from '@/lib/db/client'
-import { Prisma } from '@prisma/client'
+
 import { siteConfig } from '@/../config/site'
 
 export const metadata: Metadata = {
@@ -43,17 +43,23 @@ export default async function CompanionsPage({
   const sort = typeof searchParams.sort === 'string' ? searchParams.sort : 'recommended'
   const page = Math.max(1, parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1', 10) || 1)
 
+  // Build stats filter (merged so multiple stats conditions don't overwrite each other)
+  const statsFilter: any = {}
+  if (hairColor && hairColor !== 'any') {
+    statsFilter.hairColour = { contains: hairColor, mode: 'insensitive' }
+  }
+  if (nationality && nationality !== 'any') {
+    statsFilter.nationality = { equals: nationality, mode: 'insensitive' }
+  }
+  if (age === '18-24') { statsFilter.age = { gte: 18, lte: 24 } }
+  else if (age === '25-30') { statsFilter.age = { gte: 25, lte: 30 } }
+  else if (age === '30plus') { statsFilter.age = { gte: 30 } }
+
   // Build where clause
   const where: any = {
     status: 'active',
-    
     deletedAt: null,
-    ...(hairColor && hairColor !== 'any' && {
-      stats: { hairColour: { contains: hairColor, mode: 'insensitive' } },
-    }),
-    ...(nationality && nationality !== 'any' && {
-      stats: { nationality: { equals: nationality, mode: 'insensitive' } },
-    }),
+    ...(Object.keys(statsFilter).length > 0 && { stats: statsFilter }),
     ...(districtId && {
       modelLocations: { some: { districtId } },
     }),
@@ -61,9 +67,6 @@ export default async function CompanionsPage({
       services: { some: { service: { slug: service }, isEnabled: true } },
     }),
     ...(availability === 'available-now' && { availability: 'Available Now' }),
-    ...(age === '18-24' && { stats: { age: { gte: 18, lte: 24 } } }),
-    ...(age === '25-30' && { stats: { age: { gte: 25, lte: 30 } } }),
-    ...(age === '30plus' && { stats: { age: { gte: 30 } } }),
   }
 
   // Sort
@@ -98,24 +101,35 @@ export default async function CompanionsPage({
     }),
   ])
 
-  // Fetch min prices via raw SQL
+  // Fetch min prices via Prisma
   let minPrices: Record<string, number> = {}
-  try {
+  {
     const modelIds = models.map((m: any) => m.id)
     if (modelIds.length > 0) {
-      const rates: any[] = await prisma.$queryRaw`
-        SELECT model_id, MIN(price) as min_price
-        FROM model_rates
-        WHERE model_id = ANY(${modelIds}::text[])
-          AND is_active = true
-          AND price > 0
-        GROUP BY model_id
-      `
+      const rates = await prisma.modelRate.findMany({
+        where: {
+          modelId: { in: modelIds },
+          OR: [
+            { incallPrice: { gt: 0 } },
+            { outcallPrice: { gt: 0 } },
+          ],
+        },
+        select: {
+          modelId: true,
+          incallPrice: true,
+          outcallPrice: true,
+        },
+      })
       for (const r of rates) {
-        minPrices[r.model_id] = Number(r.min_price)
+        const prices = [r.incallPrice, r.outcallPrice].filter((p): p is number => p != null && p > 0)
+        if (prices.length === 0) continue
+        const min = Math.min(...prices)
+        if (!minPrices[r.modelId] || min < minPrices[r.modelId]) {
+          minPrices[r.modelId] = min
+        }
       }
     }
-  } catch {}
+  }
 
   // Apply price filters client-side (since pricing is in a separate table)
   let filteredModels = models
