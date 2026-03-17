@@ -7,6 +7,7 @@ import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
+import '../service.css'
 
 export const revalidate = 3600
 
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const displayName = service.publicName || service.title || service.name
   return {
     title: service.seoTitle || `${displayName} London`,
-    description: service.seoDescription || `${displayName} service with premium London companions. Browse verified escorts offering ${displayName}.`,
+    description: service.seoDescription || `${displayName} companions in London. Verified, discreet. From £${siteConfig.priceFrom}/hr. ${siteConfig.name} companion agency.`,
     alternates: { canonical: `${siteConfig.domain}/services/${slug}` },
   }
 }
@@ -43,105 +44,146 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
 
   const displayName = service.publicName || service.title || service.name
 
-  // Models offering this service
-  const modelServices = await prisma.modelService.findMany({
-    where: { serviceId: service.id, isEnabled: true },
-    select: { modelId: true },
-  })
-  const modelIds = modelServices.map(ms => ms.modelId)
+  const [modelServices, districts, related] = await Promise.all([
+    prisma.modelService.findMany({
+      where: { serviceId: service.id, isEnabled: true },
+      select: { modelId: true },
+    }),
+    prisma.district.findMany({
+      where: { isActive: true },
+      select: { name: true, slug: true },
+      orderBy: { sortOrder: 'asc' },
+      take: 8,
+    }),
+    prisma.service.findMany({
+      where: {
+        isActive: true,
+        isPublic: true,
+        id: { not: service.id },
+      },
+      select: { slug: true, publicName: true, title: true, name: true },
+      take: 6,
+      orderBy: { sortOrder: 'asc' },
+    }),
+  ])
 
+  const modelIds = modelServices.map(ms => ms.modelId)
   const models = modelIds.length > 0
     ? await prisma.model.findMany({
         where: { id: { in: modelIds }, status: 'active', deletedAt: null },
         include: {
           media: { where: { isPublic: true, isPrimary: true }, select: { url: true }, take: 1 },
-          stats: { select: { nationality: true } },
           modelLocations: {
             where: { isPrimary: true },
             include: { district: { select: { name: true } } },
             take: 1,
           },
-          modelRates: {
-            take: 1,
-          },
+          modelRates: { take: 1 },
         },
         take: 12,
       })
     : []
 
-  // Related services (same category)
-  const related = await prisma.service.findMany({
-    where: {
-      isActive: true,
-      isPublic: true,
-      category: service.category,
-      id: { not: service.id },
+  const faqItems = [
+    {
+      q: `What is ${displayName}?`,
+      a: service.introText
+        || `${displayName} is one of the most popular services offered by our London companions. Each companion providing this service has been personally verified and selected for quality.`,
     },
-    select: { slug: true, publicName: true, title: true, name: true },
-    take: 3,
-    orderBy: { sortOrder: 'asc' },
-  })
+    {
+      q: `How much does ${displayName} cost in London?`,
+      a: `Rates for ${displayName} start from £${siteConfig.priceFrom} per hour. Prices vary depending on the companion, duration, and whether you choose incall or outcall. Check individual profiles for exact rates.`,
+    },
+    {
+      q: `Can I book ${displayName} for outcall?`,
+      a: `Yes, many of our companions offer ${displayName} as an outcall service to hotels and private residences across London. Outcall rates may differ from incall — see each companion's profile for details.`,
+    },
+  ]
 
-  // Schema.org
-  const schema = {
+  const graphSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Service',
-    name: displayName,
-    description: service.introText || service.fullDescription || `${displayName} with premium London companions.`,
-    provider: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
-    areaServed: { '@type': 'City', name: 'London' },
-  }
-
-  const breadcrumb = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
-      { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteConfig.domain}/services` },
-      { '@type': 'ListItem', position: 3, name: displayName },
+    '@graph': [
+      {
+        '@type': 'Service',
+        name: displayName,
+        description: service.introText || service.fullDescription || `${displayName} with premium London companions.`,
+        provider: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
+        areaServed: { '@type': 'City', name: 'London' },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+          { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteConfig.domain}/services` },
+          { '@type': 'ListItem', position: 3, name: displayName, item: `${siteConfig.domain}/services/${slug}` },
+        ],
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map(f => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
     ],
   }
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <style>{`
-        .svc-rel { display:block; padding:20px 24px; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.02); text-decoration:none; transition:border-color .25s; }
-        .svc-rel:hover { border-color:rgba(197,165,114,0.35); }
-        .svc-cta { display:inline-block; padding:16px 40px; border:1px solid rgba(197,165,114,0.4); color:#C5A572; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:all .25s; font-family:inherit; }
-        .svc-cta:hover { background:rgba(197,165,114,0.08); border-color:#C5A572; }
-      `}</style>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
       <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
-          <Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <Link href="/services" style={{ color: '#6b6560', textDecoration: 'none' }}>Services</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <span style={{ color: '#C5A572' }}>{displayName}</span>
+        <nav aria-label="breadcrumb" style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
+          <ol style={{ listStyle: 'none', display: 'flex', alignItems: 'center', margin: 0, padding: 0, gap: 8 }}>
+            <li><Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link></li>
+            <li style={{ color: '#4a4540' }}>/</li>
+            <li><Link href="/services" style={{ color: '#6b6560', textDecoration: 'none' }}>Services</Link></li>
+            <li style={{ color: '#4a4540' }}>/</li>
+            <li aria-current="page" style={{ color: '#C5A572' }}>{displayName}</li>
+          </ol>
         </nav>
 
         <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(36px,5vw,60px)', fontWeight: 300, color: '#f0e8dc', lineHeight: 1.1, margin: '0 0 24px' }}>
-          {displayName} <em style={{ fontStyle: 'italic', color: '#C5A572' }}>London</em>
+          <em style={{ fontStyle: 'italic', color: '#C5A572' }}>{displayName}</em> in London
         </h1>
 
-        <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 680, margin: '0 0 64px' }}>
-          {service.introText || `Discover ${displayName} with our premium London companions. Each companion is verified and offers a truly exceptional experience.`}
-        </p>
+        {/* About Section */}
+        <div style={{ maxWidth: 680, margin: '0 0 64px' }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px' }}>
+            About {displayName}
+          </h2>
+          {service.fullDescription ? (
+            <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>{service.fullDescription}</p>
+          ) : (
+            <>
+              <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: '0 0 12px' }}>
+                {displayName} is one of the most sought-after services among our London clientele.
+                Our verified companions who offer {displayName} are selected for their professionalism,
+                warmth, and ability to create a genuinely memorable experience. Whether you are visiting
+                London for business or pleasure, this service is available for both incall and outcall
+                appointments across all major districts.
+              </p>
+              <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>
+                Rates start from £{siteConfig.priceFrom} per hour. Our concierge team is available
+                24/7 to arrange your booking with a guaranteed 30-minute response time.
+              </p>
+            </>
+          )}
+        </div>
       </section>
 
-      {/* Models */}
-      {models.length > 0 && (
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 32, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: 0 }}>
-              Companions offering {displayName}
-            </h2>
-            <span style={{ fontSize: 11, color: '#4a4540', letterSpacing: '.15em' }}>{models.length} AVAILABLE</span>
-          </div>
+      {/* Our Companions */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 32, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: 0 }}>
+            Our Companions
+          </h2>
+          <span style={{ fontSize: 11, color: '#4a4540', letterSpacing: '.15em' }}>{models.length} AVAILABLE</span>
+        </div>
+        {models.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {models.map((m: any) => (
               <ModelCard
@@ -158,19 +200,28 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
               />
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <p style={{ fontSize: 14, color: '#6b6560', marginBottom: 24 }}>No companions currently listed for {displayName}.</p>
+            <Link href="/companions" className="svc-cta">Browse All Companions</Link>
+          </div>
+        )}
+      </section>
 
-      {/* Full Description */}
-      {service.fullDescription && (
+      {/* Available Locations */}
+      {districts.length > 0 && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
           <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
           <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-            About {displayName}
+            Available Locations
           </h2>
-          <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 680 }}>
-            {service.fullDescription}
-          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {districts.map(d => (
+              <Link key={d.slug} href={`/london/${d.slug}-escorts/`} className="svc-loc-link">
+                {d.name}
+              </Link>
+            ))}
+          </div>
         </section>
       )}
 
@@ -190,6 +241,22 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
           </div>
         </section>
       )}
+
+      {/* FAQ */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
+        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 32px' }}>
+          Frequently Asked Questions
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 64 }}>
+          {faqItems.map(f => (
+            <div key={f.q}>
+              <p className="svc-faq-q">{f.q}</p>
+              <p className="svc-faq-a">{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* CTA */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 120px', textAlign: 'center' }}>
