@@ -36,7 +36,7 @@ export function Footer() {
               Premium companion services in London. Discreet, sophisticated, and professional.
             </p>
             <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
-              <a href={siteConfig.telegram} className="f-contact">Telegram</a>
+              <a href={siteConfig.telegram} className="f-contact" target="_blank" rel="noopener noreferrer">Telegram</a>
               <a href={`mailto:${siteConfig.email}`} className="f-contact">Email</a>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function Footer() {
           <div>
             <p style={{ fontSize: 10, letterSpacing: '.2em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 20 }}>Contact</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <li><a href={siteConfig.telegram} className="f-link">Telegram</a></li>
+              <li><a href={siteConfig.telegram} className="f-link" target="_blank" rel="noopener noreferrer">Telegram</a></li>
               <li><a href={`mailto:${siteConfig.email}`} className="f-link" style={{ wordBreak: 'break-all' }}>{siteConfig.email}</a></li>
               <li style={{ fontSize: 13, color: '#4a4540' }}>London, United Kingdom</li>
               <li style={{ fontSize: 13, color: '#4a4540' }}>Available 24/7</li>

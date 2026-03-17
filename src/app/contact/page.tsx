@@ -64,7 +64,7 @@ export default function ContactPage() {
           </p>
 
           <div className="c-channels">
-            <a href={siteConfig.telegram} className="c-channel" target="_blank" rel="noopener">
+            <a href={siteConfig.telegram} className="c-channel" target="_blank" rel="noopener noreferrer">
               <div className="c-channel-left">
                 <span className="c-channel-icon">✈</span>
                 <div>
@@ -78,7 +78,7 @@ export default function ContactPage() {
               </div>
             </a>
 
-            <a href="https://wa.me/447000000000" className="c-channel" target="_blank" rel="noopener">
+            <a href="https://wa.me/447000000000" className="c-channel" target="_blank" rel="noopener noreferrer">
               <div className="c-channel-left">
                 <span className="c-channel-icon">◉</span>
                 <div>
