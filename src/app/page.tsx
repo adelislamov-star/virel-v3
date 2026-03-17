@@ -87,27 +87,61 @@ export default async function HomePage() {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Organization',
-        '@id': `${siteConfig.domain}/#organization`,
-        name: siteConfig.name,
-        url: siteConfig.domain,
-        description: siteConfig.tagline,
-        areaServed: { '@type': 'City', name: 'London' },
-      },
-      {
         '@type': 'LocalBusiness',
         '@id': `${siteConfig.domain}/#business`,
         name: siteConfig.name,
         description: siteConfig.tagline,
         url: siteConfig.domain,
+        email: siteConfig.email,
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'London',
+          addressCountry: 'GB',
+        },
         areaServed: { '@type': 'City', name: 'London' },
+        priceRange: '£££',
+        openingHours: 'Mo-Su 00:00-24:00',
+        sameAs: [siteConfig.telegram],
       },
       {
         '@type': 'WebSite',
         '@id': `${siteConfig.domain}/#website`,
         url: siteConfig.domain,
         name: siteConfig.name,
-        publisher: { '@id': `${siteConfig.domain}/#organization` },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${siteConfig.domain}/companions?q={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'How do I book a companion in London?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Contact us via Telegram or email. We respond within 30 minutes and will guide you through the booking process.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What areas of London do you cover?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'We cover all areas of London including Mayfair, Knightsbridge, Chelsea, Kensington, Belgravia and more. Outcall available across London.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What are your rates?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: `Our companions start from £${siteConfig.priceFrom} per hour. Rates vary depending on the companion and type of booking.`,
+            },
+          },
+        ],
       },
     ],
   }
