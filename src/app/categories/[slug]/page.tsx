@@ -126,25 +126,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     }),
   ])
 
-  // Schema
-  const collectionSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `${cat.name} Escorts London`,
-    url: `${siteConfig.domain}/categories/${slug}`,
-    description: `${cat.name} companions in London. Verified by ${siteConfig.name}.`,
-    provider: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
-  }
-
-  const breadcrumb = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
-      { '@type': 'ListItem', position: 2, name: 'Categories', item: `${siteConfig.domain}/categories` },
-      { '@type': 'ListItem', position: 3, name: `${cat.name} Escorts` },
-    ],
-  }
+  const metaDescription = `${cat.name} companions in London. Hand-picked, verified. From £${siteConfig.priceFrom}/hr. ${siteConfig.name} companion agency.`
 
   const faqItems = [
     {
@@ -161,14 +143,35 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     },
   ]
 
-  const faqSchema = {
+  // Merged schema: CollectionPage + BreadcrumbList + FAQPage
+  const pageSchema = {
     '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems.map(f => ({
-      '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
-    })),
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${siteConfig.domain}/categories/${slug}`,
+        name: `${cat.name} Escorts London`,
+        description: metaDescription,
+        url: `${siteConfig.domain}/categories/${slug}`,
+        provider: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
+          { '@type': 'ListItem', position: 2, name: 'Categories', item: `${siteConfig.domain}/categories` },
+          { '@type': 'ListItem', position: 3, name: `${cat.name} Escorts`, item: `${siteConfig.domain}/categories/${slug}` },
+        ],
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map(f => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
+    ],
   }
 
   return (
@@ -181,9 +184,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         .faq-q { font-size:15px; color:#f0e8dc; font-weight:400; margin:0 0 8px; }
         .faq-a { font-size:14px; color:#6b6560; line-height:1.8; margin:0; }
       `}</style>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageSchema) }} />
       <Header />
 
       {/* Hero */}
@@ -207,6 +208,33 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           All profiles feature authentic, verified photographs and detailed descriptions to help you
           find exactly the right companion for your preferences.
         </p>
+      </section>
+
+      {/* About */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
+        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
+          About {cat.name} Companions
+        </h2>
+        <div style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 760 }}>
+          <p style={{ margin: '0 0 16px' }}>
+            London is renowned for its diversity and sophistication, and our {cat.name.toLowerCase()} companions
+            embody exactly that. At {siteConfig.name}, we carefully select and personally verify every companion
+            to ensure they meet the highest standards of elegance, professionalism, and discretion.
+            Each profile you see is genuine — authentic photographs, honest descriptions, and real availability.
+          </p>
+          <p style={{ margin: '0 0 16px' }}>
+            Our {cat.name.toLowerCase()} escorts are available for a wide range of occasions across central London:
+            intimate dinner dates in Mayfair, social events in Knightsbridge, private encounters in Kensington,
+            or overnight companionship in Chelsea. Whether you prefer incall at a discreet location or outcall
+            to your hotel or residence, our companions are flexible and accommodating.
+          </p>
+          <p style={{ margin: 0 }}>
+            Booking is simple and confidential. Browse profiles below, check real-time availability, and contact
+            our team via Telegram or email for a prompt, discreet response — typically within 30 minutes.
+            Rates start from £{siteConfig.priceFrom} per hour, with bespoke packages available for extended bookings.
+          </p>
+        </div>
       </section>
 
       {/* Companions */}
