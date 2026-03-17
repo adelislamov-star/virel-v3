@@ -181,6 +181,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         .cat-link:hover { border-color:rgba(197,165,114,0.4); }
         .cat-cta { display:inline-block; padding:16px 40px; background:#C5A572; color:#0A0A0A; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:background .25s; font-family:inherit; }
         .cat-cta:hover { background:#d4b87a; }
+        .breadcrumb { list-style:none; display:flex; align-items:center; gap:0; padding:0; margin:0 0 32px; font-size:12px; }
+        .breadcrumb li { display:flex; align-items:center; }
+        .breadcrumb li+li::before { content:'/'; margin:0 8px; color:#4a4540; }
+        .breadcrumb a { color:#6b6560; text-decoration:none; transition:color .2s; }
+        .breadcrumb a:hover { color:#C5A572; }
+        .breadcrumb [aria-current] { color:#C5A572; }
         .faq-q { font-size:15px; color:#f0e8dc; font-weight:400; margin:0 0 8px; }
         .faq-a { font-size:14px; color:#6b6560; line-height:1.8; margin:0; }
       `}</style>
@@ -189,12 +195,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
-        <nav style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
-          <Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <Link href="/categories" style={{ color: '#6b6560', textDecoration: 'none' }}>Categories</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <span style={{ color: '#C5A572' }}>{cat.name} Escorts</span>
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb">
+            <li><Link href="/">Home</Link></li>
+            <li><Link href="/categories">Categories</Link></li>
+            <li aria-current="page">{cat.name} Escorts</li>
+          </ol>
         </nav>
 
         <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(36px,5vw,60px)', fontWeight: 300, color: '#f0e8dc', lineHeight: 1.1, margin: '0 0 24px' }}>
@@ -218,21 +224,15 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         </h2>
         <div style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 760 }}>
           <p style={{ margin: '0 0 16px' }}>
-            London is renowned for its diversity and sophistication, and our {cat.name.toLowerCase()} companions
-            embody exactly that. At {siteConfig.name}, we carefully select and personally verify every companion
-            to ensure they meet the highest standards of elegance, professionalism, and discretion.
-            Each profile you see is genuine — authentic photographs, honest descriptions, and real availability.
-          </p>
-          <p style={{ margin: '0 0 16px' }}>
-            Our {cat.name.toLowerCase()} escorts are available for a wide range of occasions across central London:
-            intimate dinner dates in Mayfair, social events in Knightsbridge, private encounters in Kensington,
-            or overnight companionship in Chelsea. Whether you prefer incall at a discreet location or outcall
-            to your hotel or residence, our companions are flexible and accommodating.
+            Our {cat.name.toLowerCase()} companions in London are hand-picked for their sophistication,
+            intelligence and charm. Each companion is personally verified by {siteConfig.name} before joining
+            our agency, ensuring the highest standards of presentation and professionalism.
           </p>
           <p style={{ margin: 0 }}>
-            Booking is simple and confidential. Browse profiles below, check real-time availability, and contact
-            our team via Telegram or email for a prompt, discreet response — typically within 30 minutes.
-            Rates start from £{siteConfig.priceFrom} per hour, with bespoke packages available for extended bookings.
+            Whether you are looking for a companion for a dinner date in Mayfair, an overnight stay,
+            or a travel companion for a business trip, our {cat.name.toLowerCase()} escorts in London
+            offer a discreet and memorable experience. Available for both incall and outcall
+            appointments across London, from £{siteConfig.priceFrom} per hour.
           </p>
         </div>
       </section>
