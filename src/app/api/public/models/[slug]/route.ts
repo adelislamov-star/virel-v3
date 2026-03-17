@@ -44,7 +44,13 @@ export async function GET(
             smokingStatus: true,
           },
         },
-        modelRates: true,
+        modelRates: {
+          include: {
+            callRateMaster: {
+              select: { id: true, label: true, durationMin: true, sortOrder: true, isActive: true },
+            },
+          },
+        },
         modelLocations: {
           include: {
             district: { select: { id: true, name: true, slug: true } },
