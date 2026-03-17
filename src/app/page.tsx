@@ -11,11 +11,11 @@ import { siteConfig } from '@/../config/site'
 
 export const metadata = {
   title: `${siteConfig.name} | ${siteConfig.tagline}`,
-  description: "Discover London's most exclusive companions. Sophisticated, discreet, memorable.",
+  description: "Virel is London's premier escort agency offering discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. From £250 per hour.",
   alternates: { canonical: siteConfig.domain },
   openGraph: {
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
-    description: "Discover London's most exclusive companions. Sophisticated, discreet, memorable.",
+    description: "Virel is London's premier escort agency offering discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. From £250 per hour.",
     url: siteConfig.domain,
     siteName: siteConfig.name,
     locale: siteConfig.locale,
