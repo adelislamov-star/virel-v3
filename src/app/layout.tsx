@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     default: siteConfig.name,
     template: `%s | ${siteConfig.name}`,
   },
-  description: "Virel is London's premier escort agency offering discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. From £250 per hour.",
+  description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
   keywords: ['london escorts', 'escort agency london', 'premium companions london', 'virel'],
   robots: { index: true, follow: true },
   alternates: { canonical: BASE_URL },
@@ -24,13 +24,13 @@ export const metadata: Metadata = {
     url: BASE_URL,
     siteName: siteConfig.name,
     title: `${siteConfig.name} – Premium Companion Services in London`,
-    description: "Virel is London's premier escort agency offering discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. From £250 per hour.",
+    description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
   },
   twitter: {
     card: 'summary_large_image',
     site: '@virel_london',
     title: `${siteConfig.name} – Premium Companion Services in London`,
-    description: "Virel is London's premier escort agency offering discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. From £250 per hour.",
+    description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
   },
 }
 
