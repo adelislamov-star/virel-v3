@@ -109,6 +109,7 @@ export default async function CompanionsPage({
       const rates = await prisma.modelRate.findMany({
         where: {
           modelId: { in: modelIds },
+          callRateMaster: { durationMin: 60 },
           OR: [
             { incallPrice: { gt: 0 } },
             { outcallPrice: { gt: 0 } },
