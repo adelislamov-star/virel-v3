@@ -1064,7 +1064,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const result = await uploadMedia(buffer, key, mediaType)
-        await generateThumbnail(buffer, result.key)
+        const thumb = await generateThumbnail(buffer, result.key)
 
         await prisma.modelMedia.create({
           data: {
@@ -1077,6 +1077,17 @@ export async function POST(request: NextRequest) {
             sortOrder,
           },
         })
+        if (thumb?.url) {
+          await prisma.modelMedia.create({
+            data: {
+              modelId: model.id,
+              url: thumb.url,
+              storageKey: thumb.key,
+              type: 'thumbnail',
+              sortOrder,
+            },
+          })
+        }
         uploadedPhotos++
         console.log(`[quick-upload] Step 6: Uploaded photo ${i + 1}/${imageBuffers.length}`)
       } catch (e: any) {
