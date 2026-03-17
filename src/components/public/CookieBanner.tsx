@@ -6,7 +6,7 @@ export function CookieBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (!localStorage.getItem('virel-cookie-consent')) {
+    if (!localStorage.getItem('vaurel-cookie-consent')) {
       setVisible(true)
     }
   }, [])
@@ -14,7 +14,7 @@ export function CookieBanner() {
   if (!visible) return null
 
   const accept = (level: 'all' | 'essential') => {
-    localStorage.setItem('virel-cookie-consent', level)
+    localStorage.setItem('vaurel-cookie-consent', level)
     setVisible(false)
   }
 

@@ -5,7 +5,7 @@ import { siteConfig } from '@/../config/site'
 
 export const runtime = 'nodejs';
 
-const MANAGER_EMAIL = process.env.MANAGER_EMAIL || 'manager@virel.com'
+const MANAGER_EMAIL = process.env.MANAGER_EMAIL || 'manager@vaurel.co.uk'
 
 function getResend() {
   if (!process.env.RESEND_API_KEY) return null
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
     const resend = getResend()
     if (resend) {
       await resend.emails.send({
-        from: `${siteConfig.name} Platform <noreply@virel.com>`,
+        from: `${siteConfig.name} Platform <noreply@vaurel.co.uk>`,
         to: MANAGER_EMAIL,
         subject: `New Application: ${body.name}`,
         html: buildEmailHtml(body),

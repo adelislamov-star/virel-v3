@@ -57,7 +57,7 @@ export default function ContactPage() {
 
         <div className="contact-inner">
           <span className="c-eyebrow">Get in Touch</span>
-          <h1 className="c-title">Contact <em>Virel</em></h1>
+          <h1 className="c-title">Contact <em>Vaurel</em></h1>
           <p className="c-subtitle">
             We're available around the clock. For the fastest response, use Telegram or WhatsApp.
             All communications are handled with complete discretion.
@@ -104,7 +104,7 @@ export default function ContactPage() {
           <div className="c-join">
             <h2 className="c-join-title">Model Application</h2>
             <p className="c-join-text">
-              Interested in joining Virel as a companion? We welcome applications from sophisticated,
+              Interested in joining Vaurel as a companion? We welcome applications from sophisticated,
               professional individuals looking to work with London's premier agency.
             </p>
             <Link href="/join" className="c-join-link">Apply Now →</Link>

@@ -11,11 +11,11 @@ import { siteConfig } from '@/../config/site'
 
 export const metadata = {
   title: `${siteConfig.name} | ${siteConfig.tagline}`,
-  description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
+  description: "Vaurel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
   alternates: { canonical: siteConfig.domain },
   openGraph: {
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
-    description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
+    description: "Vaurel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
     url: siteConfig.domain,
     siteName: siteConfig.name,
     locale: siteConfig.locale,
@@ -378,7 +378,7 @@ export default async function HomePage() {
           </p>
         </section>
 
-        {/* 8. WHY CHOOSE VIREL */}
+        {/* 8. WHY CHOOSE VAUREL */}
         <div className="section">
           <span style={{ fontSize: 10, letterSpacing: '.25em', color: '#808080', textTransform: 'uppercase', display: 'block', marginBottom: 20 }}>
             About Us
@@ -391,11 +391,11 @@ export default async function HomePage() {
             color: '#FAFAFA',
             margin: '0 0 32px',
           }}>
-            Why Choose Virel
+            Why Choose Vaurel
           </h2>
           <div style={{ maxWidth: 720, margin: '0 auto', fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 1.9, letterSpacing: '.01em' }}>
             <p style={{ marginBottom: 20 }}>
-              Virel is a premier London escort agency built on discretion, trust, and an uncompromising
+              Vaurel is a premier London escort agency built on discretion, trust, and an uncompromising
               standard of quality. Every companion on our roster is personally verified — we meet each
               individual, confirm their identity, and ensure their portfolio is authentic before they
               ever appear on the site.
@@ -410,7 +410,7 @@ export default async function HomePage() {
               What sets us apart is the personal touch. Our dedicated booking team responds within
               thirty minutes, matches you with the ideal elite companion based on your preferences,
               and handles every detail so you can focus on enjoying the moment. Professional,
-              confidential, and available around the clock — that is the Virel standard.
+              confidential, and available around the clock — that is the Vaurel standard.
             </p>
           </div>
         </div>

@@ -27,7 +27,7 @@ export const categoryContent: Record<string, CategoryContent> = {
     aboutParagraphs: [
       'Russian ladies have a particular reputation in London\u2019s companion world \u2014 one that is largely deserved. The combination of a rigorous educational culture, a natural elegance in dress and manner, and a directness that reads as confidence rather than abruptness makes them consistently sought after.',
       'The ladies we represent from Russia and the broader Russian-speaking world are not here by accident. Most have university degrees. Several speak three or more languages. Their understanding of how to conduct themselves at a formal dinner, in a hotel suite, or on a business trip abroad is not something that requires explanation.',
-      'What distinguishes a Virel Russian companion from the broader category is selection. We introduce a small number of ladies. Each one has been personally met by our team. The standard is consistent.',
+      'What distinguishes a Vaurel Russian companion from the broader category is selection. We introduce a small number of ladies. Each one has been personally met by our team. The standard is consistent.',
     ],
     standardText:
       'For an evening in <a href="/london/mayfair-escorts/">Mayfair</a> or <a href="/london/knightsbridge-escorts/">Knightsbridge</a>, our Russian companions are among the most naturally suited to those environments. Many are available for <a href="/services/overnight-stay">overnight arrangements</a> and <a href="/services/travel-companion">travel</a>. For those looking for warmth alongside sophistication, the <a href="/categories/gfe">girlfriend experience</a> is the arrangement most frequently requested.',
@@ -45,9 +45,9 @@ export const categoryContent: Record<string, CategoryContent> = {
   /* ---------------------------------------------------------------- */
   gfe: {
     aboutParagraphs: [
-      'The girlfriend experience is the most requested arrangement at Virel, and the most misunderstood outside the people who actually book it. It is not a performance. It is not a script. It is the simple quality of spending time with someone who is genuinely present \u2014 interested in the conversation, comfortable in the environment, at ease in her own company and yours.',
+      'The girlfriend experience is the most requested arrangement at Vaurel, and the most misunderstood outside the people who actually book it. It is not a performance. It is not a script. It is the simple quality of spending time with someone who is genuinely present \u2014 interested in the conversation, comfortable in the environment, at ease in her own company and yours.',
       'The ladies we represent for GFE arrangements are selected specifically for this quality. Intelligence matters here more than it does anywhere else. The ability to hold a conversation across subjects \u2014 and to listen as well as speak \u2014 is not a minor detail. Neither is the ease with which they move through restaurants, hotel lobbies, and unfamiliar social situations.',
-      'A GFE booking with Virel looks like this: you make contact, we suggest one or two ladies based on what you\u2019ve told us, you confirm, and the evening proceeds as naturally as any other. No awkwardness at the start. No watching the clock at the end.',
+      'A GFE booking with Vaurel looks like this: you make contact, we suggest one or two ladies based on what you\u2019ve told us, you confirm, and the evening proceeds as naturally as any other. No awkwardness at the start. No watching the clock at the end.',
     ],
     standardText:
       'Our GFE companions are available across London \u2014 <a href="/london/mayfair-escorts/">Mayfair</a>, <a href="/london/knightsbridge-escorts/">Knightsbridge</a>, <a href="/london/chelsea-escorts/">Chelsea</a> and beyond. Most are available for <a href="/services/dinner-date">dinner dates</a>, <a href="/services/overnight-stay">overnight stays</a> and <a href="/services/travel-companion">travel</a>. <a href="/services/incall">Incall</a> and <a href="/services/outcall">outcall</a> both available. Rates from \u00a3300 per hour \u2014 individual profiles carry full details.',
@@ -106,7 +106,7 @@ export const categoryContent: Record<string, CategoryContent> = {
   elite: {
     aboutParagraphs: [
       'The word elite is used freely in this industry and means very little most of the time. We use it to mean something specific: ladies who require no introduction to the environments our clients move through. Ladies who have lived internationally, who are comfortable in black tie and equally comfortable in a hotel suite at midnight, who understand that the quality of an evening is determined by the quality of conversation and presence rather than anything else.',
-      'Our elite tier is not defined by appearance alone, though appearance is part of it. It is defined by a combination of qualities that cannot be manufactured: education, composure, genuine intelligence, and an ease in the world that comes from having navigated it well. These are not common qualities. The number of companions at this level who work through Virel is deliberately small.',
+      'Our elite tier is not defined by appearance alone, though appearance is part of it. It is defined by a combination of qualities that cannot be manufactured: education, composure, genuine intelligence, and an ease in the world that comes from having navigated it well. These are not common qualities. The number of companions at this level who work through Vaurel is deliberately small.',
       'If you have worked with companion agencies before and found the experience transactional, this is the answer to that.',
     ],
     standardText:
@@ -125,7 +125,7 @@ export const categoryContent: Record<string, CategoryContent> = {
   /* ---------------------------------------------------------------- */
   vip: {
     aboutParagraphs: [
-      'VIP at Virel means that the arrangement receives our full attention from the first message to the end of the evening. It means the companion has been selected with specific care for the client\u2019s situation \u2014 not the first available name from a list, but a considered introduction.',
+      'VIP at Vaurel means that the arrangement receives our full attention from the first message to the end of the evening. It means the companion has been selected with specific care for the client\u2019s situation \u2014 not the first available name from a list, but a considered introduction.',
       'The ladies in this category are available for arrangements that go beyond the standard. Extended evenings, multi-day trips, events requiring a companion who can move through a formal environment without briefing. Several hold postgraduate degrees. Several travel internationally as a matter of course.',
       'The practical difference between a VIP arrangement and a standard booking is in the detail. We handle the logistics \u2014 restaurant reservations, travel, any specific requirements \u2014 so that the client\u2019s only responsibility is to be present.',
     ],
@@ -133,7 +133,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       'VIP arrangements available across London and internationally. <a href="/services/outcall">Outcall</a> to all central London hotels. <a href="/services/travel-companion">Travel companions</a> available for trips outside the UK. Contact our team directly for VIP introductions \u2014 <a href="/discretion">Telegram</a> or email.',
     relatedCategories: ['elite', 'high-class', 'gfe', 'dinner-date', 'overnight', 'travel-companion'],
     faq: [
-      { q: 'What does VIP mean at Virel?', a: 'Full attention from first contact to end of evening. A considered introduction, not a list. Logistics handled by our team.' },
+      { q: 'What does VIP mean at Vaurel?', a: 'Full attention from first contact to end of evening. A considered introduction, not a list. Logistics handled by our team.' },
       { q: 'Are VIP companions available for multi-day arrangements?', a: 'Yes. Several of our VIP ladies travel internationally and are available for extended bookings.' },
       { q: 'How much notice is required for a VIP booking?', a: 'Same-day arrangements are sometimes possible. For specific companions or travel, 24\u201348 hours is recommended.' },
       { q: 'How do I make a VIP booking?', a: 'Contact our team by Telegram or email. We will discuss your requirements and arrange the introduction.' },
@@ -166,14 +166,14 @@ export const categoryContent: Record<string, CategoryContent> = {
   mature: {
     aboutParagraphs: [
       'The preference for mature companions is more common than the industry acknowledges, and more rational than the preference for youth that dominates the marketing. A lady in her thirties or forties who has navigated the world well carries something that cannot be replicated by someone younger: the ease of someone who has nothing to prove, the confidence of someone who knows exactly who she is.',
-      'Our mature companions \u2014 which at Virel means ladies from their late twenties through their forties \u2014 are among the most consistently re-booked in our roster. The reasons are not complicated. They are better conversationalists. They are more comfortable in formal environments. They do not require management.',
+      'Our mature companions \u2014 which at Vaurel means ladies from their late twenties through their forties \u2014 are among the most consistently re-booked in our roster. The reasons are not complicated. They are better conversationalists. They are more comfortable in formal environments. They do not require management.',
       'For clients who find the standard companion world too focused on appearance over substance, this category is the correction.',
     ],
     standardText:
       'Available across London for <a href="/categories/gfe">GFE arrangements</a>, <a href="/services/dinner-date">dinner dates</a> and <a href="/services/overnight-stay">overnight stays</a>. <a href="/london/mayfair-escorts/">Mayfair</a>, <a href="/london/chelsea-escorts/">Chelsea</a>, <a href="/london/kensington-escorts/">Kensington</a> and all central London locations. <a href="/services/incall">Incall</a> and <a href="/services/outcall">outcall</a> available.',
     relatedCategories: ['gfe', 'elite', 'dinner-date', 'russian', 'brunette', 'high-class'],
     faq: [
-      { q: 'What age range does mature cover?', a: 'At Virel, mature means ladies from their late twenties through their forties. Specific ages are listed on individual profiles.' },
+      { q: 'What age range does mature cover?', a: 'At Vaurel, mature means ladies from their late twenties through their forties. Specific ages are listed on individual profiles.' },
       { q: 'Why do clients prefer mature companions?', a: 'Conversation, composure and an ease in formal environments that comes with experience. The most consistently re-booked companions on our roster are in this category.' },
       { q: 'Are mature companions available for dinner dates?', a: 'Yes \u2014 and they are among the most suited to it. Restaurant evenings, events, private dining.' },
       { q: 'Are overnight arrangements available?', a: 'Yes. Contact our team for availability and rates.' },

@@ -12,7 +12,7 @@ export async function DELETE(
   try {
     const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
     if (!isActor(auth)) return auth;
-    const actorId = request.cookies.get('virel-token')?.value || 'system';
+    const actorId = request.cookies.get('vaurel-token')?.value || 'system';
 
     const result = await removeManualBlock(params.slotId, actorId);
 

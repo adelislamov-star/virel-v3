@@ -31,7 +31,7 @@ export default function BlogPage() {
 
         <div className="blog-hero">
           <span className="blog-eyebrow">Insights &amp; Guides</span>
-          <h1 className="blog-title">The Virel <em>Journal</em></h1>
+          <h1 className="blog-title">The Vaurel <em>Journal</em></h1>
           <p className="blog-desc">Expert guides, insider tips, and everything you need to know about premium companionship in London.</p>
         </div>
 

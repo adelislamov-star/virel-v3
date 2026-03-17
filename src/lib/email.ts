@@ -30,10 +30,10 @@ export async function sendEmail(params: {
 }
 
 // ── Brand wrapper ───────────────────────────────────────────────────────
-function virelEmail(body: string): string {
+function vaurelEmail(body: string): string {
   return `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; padding: 40px;">
   <div style="border-bottom: 1px solid #c9a96e; padding-bottom: 20px; margin-bottom: 32px;">
-    <h1 style="color: #c9a96e; font-size: 28px; margin: 0; letter-spacing: 4px;">VIREL</h1>
+    <h1 style="color: #c9a96e; font-size: 28px; margin: 0; letter-spacing: 4px;">VAUREL</h1>
     <p style="color: #888; margin: 4px 0 0; font-size: 12px; letter-spacing: 2px;">LONDON'S PREMIER COMPANION AGENCY</p>
   </div>
   ${body}
@@ -84,7 +84,7 @@ export async function sendBookingReceived(data: {
     { label: 'Total', value: `<span style="color: #c9a96e;">&pound;${data.grandTotal} ${data.currency}</span>` },
   ]
 
-  const html = virelEmail(`
+  const html = vaurelEmail(`
   <h2 style="font-size: 20px; font-weight: normal; margin-bottom: 24px;">We've received your request</h2>
   <p style="line-height: 1.8; margin-bottom: 16px;">Dear ${data.clientName},</p>
   <p style="line-height: 1.8; margin-bottom: 24px;">
@@ -123,7 +123,7 @@ export async function sendBookingConfirmed(data: {
     { label: 'Total', value: `<span style="color: #c9a96e;">&pound;${data.grandTotal} ${data.currency}</span>` },
   ]
 
-  const html = virelEmail(`
+  const html = vaurelEmail(`
   <h2 style="font-size: 20px; font-weight: normal; margin-bottom: 24px;">Your booking is confirmed</h2>
   <p style="line-height: 1.8; margin-bottom: 16px;">Dear ${data.clientName},</p>
   <p style="line-height: 1.8; margin-bottom: 24px;">
@@ -146,7 +146,7 @@ export async function sendBookingCancelled(data: {
   formattedDate: string
   requestId: string
 }): Promise<boolean> {
-  const html = virelEmail(`
+  const html = vaurelEmail(`
   <h2 style="font-size: 20px; font-weight: normal; margin-bottom: 24px;">Booking update</h2>
   <p style="line-height: 1.8; margin-bottom: 16px;">Dear ${data.clientName},</p>
   <p style="line-height: 1.8; margin-bottom: 24px;">
@@ -183,7 +183,7 @@ export async function sendBookingReminder(data: {
     ...(data.location ? [{ label: 'Location', value: data.location }] : []),
   ]
 
-  const html = virelEmail(`
+  const html = vaurelEmail(`
   <h2 style="font-size: 20px; font-weight: normal; margin-bottom: 24px;">Your appointment is today</h2>
   <p style="line-height: 1.8; margin-bottom: 16px;">Dear ${data.clientName},</p>
   <p style="line-height: 1.8; margin-bottom: 24px;">

@@ -30,8 +30,8 @@ async function seed() {
   }
 
   // Create owner user
-  const ownerEmail = 'admin@virel.com';
-  const ownerPassword = 'virel2024!';
+  const ownerEmail = 'admin@vaurel.co.uk';
+  const ownerPassword = 'vaurel2024!';
   const passwordHash = await bcrypt.hash(ownerPassword, 12);
 
   const existingUser = await prisma.user.findUnique({ where: { email: ownerEmail } });

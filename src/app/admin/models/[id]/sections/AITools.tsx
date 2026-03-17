@@ -129,7 +129,7 @@ export default function AITools({ model, modelId, onToast, onModelUpdate }: Prop
         // Generate SEO from the model data
         const name = model.name as string;
         const tagline = (model.tagline as string) || json.data.tagline || '';
-        const seoTitle = `${name} - Elite Companion London | Virel`.slice(0, 60);
+        const seoTitle = `${name} - Elite Companion London | Vaurel`.slice(0, 60);
         const seoDesc = tagline ? `Meet ${name}. ${tagline}. Available for exclusive encounters in London.`.slice(0, 155) : `Meet ${name}. Available for exclusive encounters in London.`.slice(0, 155);
 
         await fetch(`/api/v1/models/${modelId}`, {

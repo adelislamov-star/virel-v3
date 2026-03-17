@@ -27,7 +27,7 @@ export async function POST(
 
     const { title, category, relatedDistricts, relatedServices } = post;
 
-    const prompt = `You are a luxury lifestyle content writer for Virel, a premier companion agency in London.
+    const prompt = `You are a luxury lifestyle content writer for Vaurel, a premier companion agency in London.
 Write a sophisticated, engaging blog post about: "${title}"
 Category: ${category}
 ${relatedDistricts.length ? `Related London areas: ${relatedDistricts.join(', ')}` : ''}

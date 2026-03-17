@@ -10,7 +10,7 @@ export async function applyWatermark(
   options: WatermarkOptions = {}
 ): Promise<Buffer> {
   const {
-    text = 'VIREL',
+    text = 'VAUREL',
     opacity = 0.35,
   } = options
 

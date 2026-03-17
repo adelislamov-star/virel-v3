@@ -1,11 +1,11 @@
 export const siteConfig = {
-  name: "Virel",
-  domain: "https://virel-v3.vercel.app",
+  name: "Vaurel",
+  domain: "https://vaurel.co.uk",
   tagline: "London's Premier Companion Agency",
   description:
     "Premium companion agency in London. Verified, discreet, sophisticated.",
   telegram: "https://t.me/virel_bookings",
-  email: "bookings@virel.com",
+  email: "bookings@vaurel.co.uk",
   phone: "",
   locale: "en_GB",
   lang: "en-GB",

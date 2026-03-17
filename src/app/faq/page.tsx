@@ -183,7 +183,7 @@ export default function FAQPage() {
         <div className="faq-inner">
           <span className="f-eyebrow">Questions & Answers</span>
           <h1 className="f-title">Frequently <em>Asked</em></h1>
-          <p className="f-subtitle">Everything you need to know about booking with Virel.</p>
+          <p className="f-subtitle">Everything you need to know about booking with Vaurel.</p>
 
           {FAQS.map(section => (
             <div key={section.category} className="faq-section">

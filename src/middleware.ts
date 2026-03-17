@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   const isApiAuth = pathname.startsWith('/api/auth/');
   const isApiV1 = pathname.startsWith('/api/v1/');
 
-  const token = request.cookies.get('virel-token')?.value;
+  const token = request.cookies.get('vaurel-token')?.value;
 
   // Admin pages: redirect to login if no token
   if (isAdminPage) {
@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
 
   // API v1 routes: reject if no token (auth routes are excluded)
   if (isApiV1 && !isApiAuth && !token) {
-    console.error('[middleware] No virel-token cookie for:', pathname);
+    console.error('[middleware] No vaurel-token cookie for:', pathname);
     return NextResponse.json(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'No auth token. Please log in.' } },
       { status: 401 },

@@ -29,7 +29,7 @@ export async function POST(
     const publicName = service.publicName || name;
     const category = service.category;
 
-    const prompt = `You are an SEO expert for Virel, a luxury companion agency in London.
+    const prompt = `You are an SEO expert for Vaurel, a luxury companion agency in London.
 Generate sophisticated, tasteful, SEO-optimized content for the service: "${name}"
 Public name: "${publicName}". Category: "${category}".
 Return ONLY valid JSON, no markdown, no explanation:

@@ -69,14 +69,14 @@ export default function QuickUploadPage() {
   const dropRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const DRAFT_KEY = 'virel_quick_upload_draft'
+  const DRAFT_KEY = 'vaurel_quick_upload_draft'
 
   // Restore draft on mount
   useEffect(() => {
     try {
-      const wasSubmitting = localStorage.getItem('virel_quick_upload_submitting')
+      const wasSubmitting = localStorage.getItem('vaurel_quick_upload_submitting')
       if (wasSubmitting) {
-        localStorage.removeItem('virel_quick_upload_submitting')
+        localStorage.removeItem('vaurel_quick_upload_submitting')
         setSubmitWarning(true)
       }
       const saved = localStorage.getItem(DRAFT_KEY)
@@ -236,7 +236,7 @@ export default function QuickUploadPage() {
     if (!finalName) { alert('Enter model name'); return }
 
     setStage('uploading')
-    localStorage.setItem('virel_quick_upload_submitting', 'true')
+    localStorage.setItem('vaurel_quick_upload_submitting', 'true')
     setProgress([])
     setDuplicateInfo(null)
 
@@ -256,7 +256,7 @@ export default function QuickUploadPage() {
       const data = await res.json()
 
       if (res.status === 409 && data.duplicate) {
-        localStorage.removeItem('virel_quick_upload_submitting')
+        localStorage.removeItem('vaurel_quick_upload_submitting')
         setDuplicateInfo(data.existing)
         setStage('duplicate')
         return
@@ -269,7 +269,7 @@ export default function QuickUploadPage() {
       log(`✅ Uploaded ${data.summary?.photos || 0} photos`)
       log('🎉 Done!')
       localStorage.removeItem(DRAFT_KEY)
-      localStorage.removeItem('virel_quick_upload_submitting')
+      localStorage.removeItem('vaurel_quick_upload_submitting')
       setDraftRestored(false)
       setDoneUrl(`/admin/models/${data.modelId}`)
       if (data.warning) {
@@ -277,7 +277,7 @@ export default function QuickUploadPage() {
       }
       setStage('done')
     } catch (e: any) {
-      localStorage.removeItem('virel_quick_upload_submitting')
+      localStorage.removeItem('vaurel_quick_upload_submitting')
       log(`❌ ${e.message}`)
       setStage('error')
     }

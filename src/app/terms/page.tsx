@@ -11,11 +11,11 @@ export const metadata = {
 }
 
 const sections = [
-  { title: '1. Age Restriction', body: 'You must be 18 years of age or older to use this website. By accessing Virel, you confirm that you are an adult and that accessing adult content is legal in your jurisdiction.' },
-  { title: '2. Nature of Service', body: 'Virel is a companion introduction service. All companions listed are independent adults who offer their time and social companionship. This website facilitates introductions only. Any arrangement made between clients and companions is a private matter between consenting adults.' },
+  { title: '1. Age Restriction', body: 'You must be 18 years of age or older to use this website. By accessing Vaurel, you confirm that you are an adult and that accessing adult content is legal in your jurisdiction.' },
+  { title: '2. Nature of Service', body: 'Vaurel is a companion introduction service. All companions listed are independent adults who offer their time and social companionship. This website facilitates introductions only. Any arrangement made between clients and companions is a private matter between consenting adults.' },
   { title: '3. Acceptable Use', body: 'You agree not to use this website for any unlawful purpose. You agree not to harass, abuse, or threaten any companion. Repeated no-shows or last-minute cancellations may result in being blocked from the service.' },
   { title: '4. Accuracy of Information', body: 'We make every effort to ensure profiles are accurate and photos are authentic. However, we cannot guarantee availability at any given time. Rates are set by the companions themselves and are subject to change.' },
-  { title: '5. Limitation of Liability', body: 'Virel acts solely as an introduction platform. We are not responsible for the conduct of companions or clients during or after any arranged meeting. Use of this service is entirely at your own risk.' },
+  { title: '5. Limitation of Liability', body: 'Vaurel acts solely as an introduction platform. We are not responsible for the conduct of companions or clients during or after any arranged meeting. Use of this service is entirely at your own risk.' },
   { title: '6. Changes to Terms', body: 'We reserve the right to update these terms at any time. Continued use of the website constitutes acceptance of any revised terms.' },
 ]
 

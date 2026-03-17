@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       req: request,
     });
 
-    response.cookies.set('virel-token', user.id, {
+    response.cookies.set('vaurel-token', user.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

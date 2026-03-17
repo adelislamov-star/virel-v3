@@ -1,5 +1,5 @@
 // AUTH UTILITIES
-// Extracts actor from virel-token cookie, provides role checks
+// Extracts actor from vaurel-token cookie, provides role checks
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
@@ -13,14 +13,14 @@ export interface Actor {
 }
 
 // ── getActorFromRequest ──────────────────────────────────────
-// Reads virel-token cookie (which stores the user ID),
+// Reads vaurel-token cookie (which stores the user ID),
 // loads user + roles from DB, returns Actor or null
 export async function getActorFromRequest(
   request: NextRequest,
 ): Promise<Actor | null> {
-  const token = request.cookies.get('virel-token')?.value;
+  const token = request.cookies.get('vaurel-token')?.value;
   if (!token) {
-    console.error('[auth] no virel-token cookie found. URL:', request.url);
+    console.error('[auth] no vaurel-token cookie found. URL:', request.url);
     return null;
   }
 

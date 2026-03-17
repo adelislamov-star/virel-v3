@@ -177,7 +177,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
               </p>
               <p style={{ ...pStyle, margin: 0 }}>
                 Whether you are staying at one of the many five-star hotels in {district.name} or
-                visiting for business, Virel companions are available 24/7 with a guaranteed
+                visiting for business, Vaurel companions are available 24/7 with a guaranteed
                 30-minute response time.
               </p>
             </>
@@ -223,7 +223,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
           <div style={dividerStyle} />
           <div style={{ maxWidth: 680 }}>
-            <h2 style={h2Style}>The Virel Standard</h2>
+            <h2 style={h2Style}>The Vaurel Standard</h2>
             {custom.standardTextParagraphs.map((p, i) => (
               <p key={i} style={{ ...pStyle, margin: i === custom.standardTextParagraphs!.length - 1 ? '0' : '0 0 12px' }}>
                 <RichText text={p} />

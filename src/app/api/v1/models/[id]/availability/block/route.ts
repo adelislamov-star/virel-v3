@@ -21,7 +21,7 @@ export async function POST(
   try {
     const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER']);
     if (!isActor(auth)) return auth;
-    const actorId = request.cookies.get('virel-token')?.value || 'system';
+    const actorId = request.cookies.get('vaurel-token')?.value || 'system';
 
     const body = await request.json();
     const data = BlockSchema.parse(body);

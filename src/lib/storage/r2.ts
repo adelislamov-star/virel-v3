@@ -20,7 +20,7 @@ export const r2 = new S3Client({
   },
 });
 
-const BUCKET = process.env.R2_BUCKET_NAME || 'virel-media';
+const BUCKET = process.env.R2_BUCKET_NAME || 'vaurel-media';
 const CDN_URL = process.env.NEXT_PUBLIC_CDN_URL || '';
 
 // -------------------------------------------
@@ -62,7 +62,7 @@ export async function uploadMedia(
     // Apply watermark before resize
     let watermarkedBuffer = buffer;
     try {
-      watermarkedBuffer = await applyWatermark(buffer, { text: 'VIREL', opacity: 0.35 });
+      watermarkedBuffer = await applyWatermark(buffer, { text: 'VAUREL', opacity: 0.35 });
     } catch (err) {
       console.error('[WATERMARK] Failed, uploading original:', err);
     }
@@ -107,7 +107,7 @@ export async function generateThumbnail(
   // Apply watermark before thumbnail resize
   let watermarkedBuffer = buffer;
   try {
-    watermarkedBuffer = await applyWatermark(buffer, { text: 'VIREL', opacity: 0.35 });
+    watermarkedBuffer = await applyWatermark(buffer, { text: 'VAUREL', opacity: 0.35 });
   } catch (err) {
     console.error('[WATERMARK] Thumbnail failed, using original:', err);
   }

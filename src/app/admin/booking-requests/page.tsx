@@ -1015,7 +1015,7 @@ export default function BookingRequestsPage() {
                   </>
                 )}
                 <a
-                  href={`https://wa.me/${cleanPhone(selectedRequest.clientPhone)}?text=Hello ${encodeURIComponent(selectedRequest.clientName)}, regarding your booking request with Virel...`}
+                  href={`https://wa.me/${cleanPhone(selectedRequest.clientPhone)}?text=Hello ${encodeURIComponent(selectedRequest.clientName)}, regarding your booking request with Vaurel...`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition-colors"

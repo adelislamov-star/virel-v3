@@ -9,7 +9,7 @@ export const revalidate = 86400
 
 export const metadata: Metadata = {
   title: 'How It Works — Companion Agency London',
-  description: 'Book a companion in London in 3 simple steps. 30-minute response guaranteed. Virel companion agency.',
+  description: 'Book a companion in London in 3 simple steps. 30-minute response guaranteed. Vaurel companion agency.',
   alternates: { canonical: `${siteConfig.domain}/how-it-works` },
 }
 

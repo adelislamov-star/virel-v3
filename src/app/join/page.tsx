@@ -249,7 +249,7 @@ export default function JoinPage() {
           <nav style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', marginBottom: 40 }}>
             <Link href="/" style={{ color: '#3a3530', textDecoration: 'none' }}>HOME</Link>
             <span style={{ margin: '0 10px' }}>—</span>
-            <span style={{ color: '#c9a84c' }}>JOIN VIREL</span>
+            <span style={{ color: '#c9a84c' }}>JOIN VAUREL</span>
           </nav>
           <span style={{ ...sectionLabel, marginBottom: 16 }}>Companion Application</span>
           <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(40px, 5vw, 64px)', fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px', lineHeight: 1.05 }}>

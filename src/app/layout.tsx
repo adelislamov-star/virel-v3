@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     default: siteConfig.name,
     template: `%s | ${siteConfig.name}`,
   },
-  description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
-  keywords: ['london escorts', 'escort agency london', 'premium companions london', 'virel'],
+  description: "Vaurel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
+  keywords: ['london escorts', 'escort agency london', 'premium companions london', 'vaurel'],
   robots: { index: true, follow: true },
   alternates: { canonical: BASE_URL },
   openGraph: {
@@ -24,13 +24,13 @@ export const metadata: Metadata = {
     url: BASE_URL,
     siteName: siteConfig.name,
     title: `${siteConfig.name} – Premium Companion Services in London`,
-    description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
+    description: "Vaurel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@virel_london',
+    site: '@vaurel_london',
     title: `${siteConfig.name} – Premium Companion Services in London`,
-    description: "Virel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
+    description: "Vaurel is London's premier escort agency — discreet, sophisticated companion services across Mayfair, Kensington, Chelsea and beyond. Available 24/7.",
   },
 }
 

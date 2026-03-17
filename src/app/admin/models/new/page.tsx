@@ -85,7 +85,7 @@ const defaultFormData: FormData = {
   photos: [],
 }
 
-const LS_KEY = 'virel_new_model_draft'
+const LS_KEY = 'vaurel_new_model_draft'
 
 /* ─── Small helpers ─── */
 

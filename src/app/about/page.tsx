@@ -35,7 +35,7 @@ export default function AboutPage() {
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '96px 24px 80px' }}>
         <p style={{ fontSize: 10, letterSpacing: '.3em', textTransform: 'uppercase', color: '#C5A572', marginBottom: 24 }}>About Us</p>
         <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(40px,6vw,72px)', fontWeight: 300, color: '#f0e8dc', lineHeight: 1.05, margin: '0 0 16px' }}>
-          About <em style={{ fontStyle: 'italic', color: '#C5A572' }}>Virel</em>
+          About <em style={{ fontStyle: 'italic', color: '#C5A572' }}>Vaurel</em>
         </h1>
         <p style={{ fontSize: 16, color: '#6b6560', marginBottom: 56, fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic', fontSize: 20 }}>
           London&apos;s Premier Companion Agency
@@ -43,7 +43,7 @@ export default function AboutPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 15, color: '#8a8580', lineHeight: 1.9, marginBottom: 64 }}>
           <p style={{ margin: 0 }}>
-            Virel was founded with a singular vision: to redefine the companion experience in London. We believe that
+            Vaurel was founded with a singular vision: to redefine the companion experience in London. We believe that
             true luxury lies not in ostentation, but in the quality of connection — in moments of genuine warmth,
             intelligent conversation, and effortless elegance.
           </p>

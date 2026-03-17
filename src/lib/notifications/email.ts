@@ -6,7 +6,7 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'notifications@virel.com';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'notifications@vaurel.co.uk';
 
 export async function sendEmail(data: NotificationData): Promise<NotificationResult> {
   if (!resend) {

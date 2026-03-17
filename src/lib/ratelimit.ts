@@ -11,7 +11,7 @@ function createLoginRatelimit() {
     redis: Redis.fromEnv(),
     limiter: Ratelimit.slidingWindow(5, '15 m'),
     analytics: false,
-    prefix: 'virel:login',
+    prefix: 'vaurel:login',
   });
 }
 

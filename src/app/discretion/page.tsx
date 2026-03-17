@@ -9,7 +9,7 @@ export const revalidate = 86400
 
 export const metadata: Metadata = {
   title: 'Discretion & Privacy',
-  description: 'Your privacy is our priority. Learn how Virel protects client confidentiality.',
+  description: 'Your privacy is our priority. Learn how Vaurel protects client confidentiality.',
   alternates: { canonical: `${siteConfig.domain}/discretion` },
 }
 
@@ -83,7 +83,7 @@ export default function DiscretionPage() {
             How We Protect Your Privacy
           </h2>
           <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>
-            Privacy is not an afterthought at Virel — it is built into every layer of our service.
+            Privacy is not an afterthought at Vaurel — it is built into every layer of our service.
             From the moment you browse our website to long after your appointment, we ensure
             that your identity, preferences, and activity remain completely confidential.
             We do not use tracking cookies for advertising, we do not sell data, and we do not

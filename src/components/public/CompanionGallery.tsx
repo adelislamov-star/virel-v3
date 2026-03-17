@@ -55,7 +55,7 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
           <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'cover', objectPosition: 'center 15%' }} sizes="60vw" priority={activeIndex === 0} />
           {/* Watermark */}
           <div style={{ position: 'absolute', bottom: 18, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
-            <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VIREL</span>
+            <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VAUREL</span>
           </div>
           {/* Arrow buttons — desktop only */}
           {allPhotos.length > 1 && (
@@ -93,7 +93,7 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
           <div className="cg-lb-img" onClick={e => e.stopPropagation()}>
             <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'contain' }} sizes="100vw" />
             <div style={{ position: 'absolute', bottom: 18, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
-              <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VIREL</span>
+              <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VAUREL</span>
             </div>
           </div>
           <button className="cg-lb-arrow cg-lb-next" onClick={e => { e.stopPropagation(); next() }}>&#8250;</button>

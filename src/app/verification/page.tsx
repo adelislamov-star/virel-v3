@@ -9,7 +9,7 @@ export const revalidate = 86400
 
 export const metadata: Metadata = {
   title: 'Companion Verification',
-  description: 'Every Virel companion is personally verified. Learn about our selection process.',
+  description: 'Every Vaurel companion is personally verified. Learn about our selection process.',
   alternates: { canonical: `${siteConfig.domain}/verification` },
 }
 
@@ -83,7 +83,7 @@ export default function VerificationPage() {
             Personal Interview
           </h2>
           <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>
-            Every companion meets our team in person before joining Virel. During this meeting
+            Every companion meets our team in person before joining Vaurel. During this meeting
             we assess professionalism, communication skills, presentation, and personality.
             We look for genuine warmth, intelligence, and the ability to make clients feel
             at ease. Fewer than one in five applicants passes our interview process.

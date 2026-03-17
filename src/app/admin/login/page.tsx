@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { siteConfig } from '@/../config/site';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@virel.com');
+  const [email, setEmail] = useState('admin@vaurel.co.uk');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
