@@ -14,14 +14,27 @@ export async function GET(
     const auth = await requireRole(request, ['OWNER', 'OPS_MANAGER', 'OPERATOR']);
     if (!isActor(auth)) return auth;
     const { id } = await params;
-    const rates = await prisma.modelRate.findMany({
+
+    const rawRates = await prisma.modelRate.findMany({
       where: { modelId: id },
-      include: {
-        callRateMaster: { select: { label: true, durationMin: true, sortOrder: true } },
-      },
-      orderBy: { callRateMaster: { sortOrder: 'asc' } },
+      include: { callRateMaster: true },
     });
-    return NextResponse.json({ success: true, data: rates });
+
+    const data = rawRates
+      .map(r => ({
+        modelId: id,
+        callRateMasterId: r.callRateMasterId,
+        incallPrice: r.incallPrice,
+        outcallPrice: r.outcallPrice,
+        callRateMaster: {
+          label: r.callRateMaster.label,
+          durationMin: r.callRateMaster.durationMin,
+          sortOrder: r.callRateMaster.sortOrder,
+        },
+      }))
+      .sort((a, b) => a.callRateMaster.sortOrder - b.callRateMaster.sortOrder);
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('[models/[id]/rates GET]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -44,19 +57,17 @@ export async function POST(
     await prisma.$transaction(async (tx) => {
       await tx.modelRate.deleteMany({ where: { modelId } });
 
-      const validRates = rates.filter(
-        (r) => r.incallPrice !== null || r.outcallPrice !== null,
-      );
+      const data = rates
+        .filter(r => r.incallPrice != null || r.outcallPrice != null)
+        .map(r => ({
+          modelId,
+          callRateMasterId: r.callRateMasterId,
+          incallPrice: r.incallPrice,
+          outcallPrice: r.outcallPrice,
+        }));
 
-      if (validRates.length > 0) {
-        await tx.modelRate.createMany({
-          data: validRates.map((r) => ({
-            modelId,
-            callRateMasterId: r.callRateMasterId,
-            incallPrice: r.incallPrice,
-            outcallPrice: r.outcallPrice,
-          })),
-        });
+      if (data.length > 0) {
+        await tx.modelRate.createMany({ data });
       }
     });
 
@@ -67,7 +78,6 @@ export async function POST(
       req: request,
     });
 
-    // Revalidate frontend caches
     try {
       const m = await prisma.model.findUnique({ where: { id: modelId }, select: { slug: true } });
       if (m?.slug) revalidatePath(`/companions/${m.slug}`);

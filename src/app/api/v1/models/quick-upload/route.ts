@@ -791,32 +791,39 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[quick-upload] Step 2: Linked ${linkedServices} services`)
 
-    // Step 3: Insert rates directly into model_rates (duration_type + call_type + price)
+    // Step 3: Insert rates into model_rates (new schema: callRateMasterId + incallPrice + outcallPrice)
     console.log('[quick-upload] Step 3: Inserting rates...')
     let insertedRates = 0
 
-    // Build lookup map from AI keys to duration_type values
-    const aiKeyToDuration: Record<string, string> = {
-      '30min': '30min', '30 min': '30min', '30 minutes': '30min',
-      '45min': '45min', '45 min': '45min', '45 minutes': '45min',
-      '1hour': '1hour', '1 hour': '1hour', '60min': '1hour', '60 min': '1hour',
-      '90min': '90min', '90 min': '90min', '90 minutes': '90min', '1.5hours': '90min',
-      '2hours': '2hours', '2 hours': '2hours', '120min': '2hours',
-      '3hours': '3hours', '3 hours': '3hours', '180min': '3hours',
-      '4hours': '4hours', '4 hours': '4hours', '240min': '4hours',
-      'overnight': 'overnight', 'overnight (9 hrs)': 'overnight', 'overnight (9hrs)': 'overnight',
-      'extra_hour': 'extra_hour', 'extra hour': 'extra_hour', 'extra': 'extra_hour',
+    // Fetch call_rate_masters to map AI duration keys → callRateMasterId
+    const callRateMasters = await prisma.$queryRawUnsafe<{ id: string; durationMin: number; label: string }[]>(
+      `SELECT id, "durationMin", label FROM call_rate_masters WHERE "isActive" = true`
+    )
+    // Map AI duration keys → callRateMasterId
+    const durationToMasterId: Record<string, string> = {}
+    for (const crm of callRateMasters) {
+      const lbl = crm.label.toLowerCase()
+      durationToMasterId[lbl] = crm.id
+      // Also map common AI keys
+      if (crm.durationMin === 30) { durationToMasterId['30min'] = crm.id; durationToMasterId['30 min'] = crm.id; durationToMasterId['30 minutes'] = crm.id }
+      if (crm.durationMin === 45) { durationToMasterId['45min'] = crm.id; durationToMasterId['45 min'] = crm.id; durationToMasterId['45 minutes'] = crm.id }
+      if (crm.durationMin === 60 && lbl.includes('hour') && !lbl.includes('extra')) { durationToMasterId['1hour'] = crm.id; durationToMasterId['1 hour'] = crm.id; durationToMasterId['60min'] = crm.id; durationToMasterId['60 min'] = crm.id }
+      if (crm.durationMin === 90) { durationToMasterId['90min'] = crm.id; durationToMasterId['90 min'] = crm.id; durationToMasterId['90 minutes'] = crm.id; durationToMasterId['1.5hours'] = crm.id }
+      if (crm.durationMin === 120) { durationToMasterId['2hours'] = crm.id; durationToMasterId['2 hours'] = crm.id; durationToMasterId['120min'] = crm.id }
+      if (crm.durationMin === 180) { durationToMasterId['3hours'] = crm.id; durationToMasterId['3 hours'] = crm.id; durationToMasterId['180min'] = crm.id }
+      if (crm.durationMin === 540) { durationToMasterId['overnight'] = crm.id; durationToMasterId['overnight (9 hrs)'] = crm.id; durationToMasterId['overnight (9hrs)'] = crm.id }
+      if (lbl.includes('extra')) { durationToMasterId['extra_hour'] = crm.id; durationToMasterId['extra hour'] = crm.id; durationToMasterId['extra'] = crm.id }
     }
 
-    const upsertRate = async (modelId: string, dt: string, ct: string, price: number) => {
+    const upsertRate = async (modelId: string, callRateMasterId: string, incall: number | null, outcall: number | null) => {
       await prisma.$executeRawUnsafe(
-        `DELETE FROM model_rates WHERE model_id = $1 AND duration_type = $2 AND call_type = $3 AND location_id IS NULL`,
-        modelId, dt, ct
+        `DELETE FROM model_rates WHERE "modelId" = $1 AND "callRateMasterId" = $2`,
+        modelId, callRateMasterId
       )
       await prisma.$executeRawUnsafe(
-        `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, currency, is_active, created_at, updated_at)
-         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'GBP', true, now(), now())`,
-        modelId, dt, ct, price
+        `INSERT INTO model_rates (id, "modelId", "callRateMasterId", "incallPrice", "outcallPrice")
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4)`,
+        modelId, callRateMasterId, incall, outcall
       )
     }
 
@@ -825,23 +832,26 @@ export async function POST(request: NextRequest) {
     if (aiRates) {
       for (const [duration, val] of Object.entries(aiRates)) {
         if (!val) continue
-        const dt = aiKeyToDuration[duration.toLowerCase()]
-        if (!dt) { console.log('[quick-upload] No duration type for ' + duration); continue }
+        const masterId = durationToMasterId[duration.toLowerCase()]
+        if (!masterId) { console.log('[quick-upload] No callRateMaster for ' + duration); continue }
         const v = val as { incall?: number | string; outcall?: number | string }
         try {
           const incallPrice = normalizePrice(v.incall)
           const outcallPrice = normalizePrice(v.outcall)
-          if (incallPrice != null) { await upsertRate(model.id, dt, 'incall', incallPrice); insertedRates++ }
-          if (outcallPrice != null) { await upsertRate(model.id, dt, 'outcall', outcallPrice); insertedRates++ }
+          if (incallPrice != null || outcallPrice != null) {
+            await upsertRate(model.id, masterId, incallPrice, outcallPrice)
+            insertedRates++
+          }
         } catch (e) { console.error('[quick-upload] Rate upsert failed ' + duration, e) }
       }
     } else if (regexParsed?.rates?.length) {
       for (const rate of regexParsed.rates) {
-        const dt = aiKeyToDuration[rate.duration.toLowerCase()]
-        if (!dt) continue
+        const masterId = durationToMasterId[rate.duration.toLowerCase()]
+        if (!masterId) continue
         try {
           const ratePrice = normalizePrice(rate.price) ?? rate.price
-          await upsertRate(model.id, dt, rate.callType || 'incall', ratePrice)
+          const isOutcall = rate.callType === 'outcall'
+          await upsertRate(model.id, masterId, isOutcall ? null : ratePrice, isOutcall ? ratePrice : null)
           insertedRates++
         } catch (e) { console.error('[quick-upload] Regex rate upsert failed ' + rate.duration, e) }
       }

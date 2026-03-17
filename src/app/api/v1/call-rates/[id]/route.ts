@@ -49,6 +49,7 @@ export async function DELETE(
 
     const { id } = await params;
 
+    // Check if any model_rates use this callRateMaster
     const usedBy = await prisma.modelRate.count({ where: { callRateMasterId: id } });
     if (usedBy > 0) {
       return NextResponse.json(

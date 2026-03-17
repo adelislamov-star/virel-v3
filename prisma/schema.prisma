@@ -158,8 +158,6 @@ model Model {
   signal                 Boolean                  @default(false)
   street                 String?
   telegram               Boolean                  @default(false)
-  telegramPhone          String?
-  telegramTag            String?
   travelCompanion        Boolean                  @default(false)
   viber                  Boolean                  @default(false)
   whatsapp               Boolean                  @default(false)
@@ -173,6 +171,8 @@ model Model {
   lastViewedAt           DateTime?
   viewsToday             Int                      @default(0)
   viewsTotal             Int                      @default(0)
+  telegramPhone          String?
+  telegramTag            String?
   offeredOffers          AlternativeOffer[]       @relation("OfferedModel")
   requestedOffers        AlternativeOffer[]       @relation("RequestedModel")
   availabilityConflicts  AvailabilityConflict[]
@@ -195,9 +195,9 @@ model Model {
   aiParseExample         AIParseExample?          @relation(fields: [aiParseExampleId], references: [id])
   primaryLocation        Location?                @relation("PrimaryLocation", fields: [primaryLocationId], references: [id])
   payments               Payment[]
+  quickUploadLogs        QuickUploadLog[]
   complaintPatterns      ReviewComplaintPattern[]
   reviews                Review[]
-  quickUploadLogs        QuickUploadLog[]
 
   @@index([slug])
   @@index([status])
@@ -1775,31 +1775,27 @@ model CronLog {
 }
 
 model CallRateMaster {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   label       String
   durationMin Int
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  sortOrder   Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  modelRates  ModelRate[]
 
   @@map("call_rate_masters")
 }
 
 model ModelRate {
-  id           String   @id @default(cuid())
-  modelId      String   @map("model_id")
-  locationId   String?  @map("location_id")
-  durationType String   @map("duration_type")
-  callType     String   @map("call_type")
-  price        Float
-  taxiFee      Float?   @map("taxi_fee")
-  currency     String   @default("GBP")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  model        Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  id                String         @id @default(cuid())
+  modelId           String
+  callRateMasterId  String
+  incallPrice       Float?
+  outcallPrice      Float?
+  callRateMaster    CallRateMaster @relation(fields: [callRateMasterId], references: [id])
+  model             Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
-  @@unique([modelId, locationId, durationType, callType])
+  @@unique([modelId, callRateMasterId])
   @@map("model_rates")
 }
 
@@ -1977,16 +1973,16 @@ model model_work_preferences {
 }
 
 model QuickUploadLog {
-  id              String   @id @default(cuid())
-  modelId         String   @map("model_id")
-  aiParsedFields  Json?    @map("ai_parsed_fields")
-  operatorEdits   Json?    @map("operator_edits")
-  finalFields     Json?    @map("final_fields")
-  createdBy       String?  @map("created_by")
-  createdAt       DateTime @default(now()) @map("created_at")
-  model           Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  id             String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  modelId        String   @map("model_id")
+  aiParsedFields Json?    @map("ai_parsed_fields")
+  operatorEdits  Json?    @map("operator_edits")
+  finalFields    Json?    @map("final_fields")
+  createdBy      String?  @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  model          Model    @relation(fields: [modelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([modelId])
-  @@index([createdAt])
+  @@index([createdAt], map: "idx_quick_upload_logs_created")
+  @@index([modelId], map: "idx_quick_upload_logs_model")
   @@map("quick_upload_logs")
 }

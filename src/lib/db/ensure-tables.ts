@@ -14,17 +14,11 @@ export async function ensureExtensionTables(): Promise<void> {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS model_rates (
         id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-        model_id TEXT NOT NULL,
-        location_id TEXT,
-        duration_type TEXT NOT NULL,
-        call_type TEXT NOT NULL,
-        price DOUBLE PRECISION NOT NULL,
-        taxi_fee DOUBLE PRECISION,
-        currency TEXT NOT NULL DEFAULT 'GBP',
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        UNIQUE(model_id, location_id, duration_type, call_type)
+        "modelId" TEXT NOT NULL,
+        "callRateMasterId" TEXT NOT NULL,
+        "incallPrice" DOUBLE PRECISION,
+        "outcallPrice" DOUBLE PRECISION,
+        UNIQUE("modelId", "callRateMasterId")
       )
     `)
 

@@ -43,9 +43,11 @@ export async function GET(
     let rates: any[] = [];
     try {
       rates = await prisma.$queryRawUnsafe(`
-        SELECT * FROM model_rates 
-        WHERE model_id = '${params.id}' AND is_active = true
-        ORDER BY duration_type, call_type
+        SELECT mr.*, crm.label, crm."durationMin", crm."sortOrder"
+        FROM model_rates mr
+        JOIN call_rate_masters crm ON crm.id = mr."callRateMasterId"
+        WHERE mr."modelId" = '${params.id}'
+        ORDER BY crm."sortOrder"
       `) as any[];
     } catch {}
     
@@ -241,26 +243,23 @@ export async function PATCH(
 
     // Update rates
     if (body.rates) {
-      // Deactivate all existing rates
+      // Delete all existing rates
       await prisma.$executeRawUnsafe(
-        `UPDATE model_rates SET is_active = false WHERE model_id = $1`,
+        `DELETE FROM model_rates WHERE "modelId" = $1`,
         params.id
       );
-      // Upsert each rate
+      // Insert each rate
       for (const r of body.rates) {
         await prisma.$executeRawUnsafe(
-          `INSERT INTO model_rates (id, model_id, duration_type, call_type, price, taxi_fee, currency, is_active)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)
-           ON CONFLICT (model_id, location_id, duration_type, call_type) DO UPDATE SET
-             price = EXCLUDED.price,
-             taxi_fee = EXCLUDED.taxi_fee,
-             is_active = true`,
+          `INSERT INTO model_rates (id, "modelId", "callRateMasterId", "incallPrice", "outcallPrice")
+           VALUES (gen_random_uuid()::text, $1, $2, $3, $4)
+           ON CONFLICT ("modelId", "callRateMasterId") DO UPDATE SET
+             "incallPrice" = EXCLUDED."incallPrice",
+             "outcallPrice" = EXCLUDED."outcallPrice"`,
           params.id,
-          r.durationType,
-          r.callType,
-          r.price,
-          r.taxiFee ?? null,
-          r.currency ?? 'GBP'
+          r.callRateMasterId,
+          r.incallPrice ?? null,
+          r.outcallPrice ?? null
         );
       }
     }
@@ -396,7 +395,7 @@ export async function DELETE(
     await prisma.modelService.deleteMany({ where: { modelId: id } });
     await prisma.modelMedia.deleteMany({ where: { modelId: id } });
     // model_rates, model_addresses, model_work_preferences are raw tables outside Prisma schema
-    try { await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE model_id = '${id}'`); } catch {}
+    try { await prisma.$executeRawUnsafe(`DELETE FROM model_rates WHERE "modelId" = '${id}'`); } catch {}
     try { await prisma.$executeRawUnsafe(`DELETE FROM model_addresses WHERE model_id = '${id}'`); } catch {}
     try { await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences WHERE model_id = '${id}'`); } catch {}
     try { await prisma.modelStats.delete({ where: { modelId: id } }); } catch {}
