@@ -138,6 +138,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         .dist-tag { display:inline-block; padding:6px 16px; border:1px solid rgba(255,255,255,0.06); font-size:12px; color:#6b6560; }
         .faq-q { font-size:15px; color:#f0e8dc; font-weight:400; margin:0 0 8px; }
         .faq-a { font-size:14px; color:#6b6560; line-height:1.8; margin:0; }
+        .bc-list li+li::before { content:"/"; margin:0 8px; color:#4a4540; }
       `}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
       <Header />
@@ -145,7 +146,6 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         {/* Breadcrumb */}
         <nav aria-label="breadcrumb" style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
-          <style>{`.bc-list li+li::before { content:"/"; margin:0 8px; color:#4a4540; }`}</style>
           <ol className="bc-list" style={{ listStyle: 'none', display: 'flex', alignItems: 'center', margin: 0, padding: 0 }}>
             <li><Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link></li>
             <li><Link href="/london-escorts" style={{ color: '#6b6560', textDecoration: 'none' }}>London Escorts</Link></li>
