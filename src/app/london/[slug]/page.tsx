@@ -7,6 +7,8 @@ import { siteConfig } from '@/../config/site'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
+import { RichText } from '@/components/public/RichText'
+import { districtContent } from '@/data/district-content'
 import '../district.css'
 
 export const revalidate = 3600
@@ -27,9 +29,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     select: { name: true, seoTitle: true, seoDescription: true },
   })
   if (!district) return {}
+
+  const custom = districtContent[districtSlug]
+
   return {
     title: `${district.name} Escorts London`,
-    description: district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
+    description:
+      custom?.metaDescription ||
+      district.seoDescription ||
+      `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
     alternates: { canonical: `${siteConfig.domain}/london/${slug}/` },
   }
 }
@@ -71,20 +79,15 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
 
   if (!district) notFound()
 
+  const custom = districtContent[districtSlug]
+
   const minPrice = models.reduce((min, m) => {
     const p = m.modelRates?.[0]?.incallPrice
     return p && (min === 0 || p < min) ? p : min
   }, 0)
 
-  // Schema.org
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: `${siteConfig.name} — ${district.name}`,
-    description: district.description || `Premium companions in ${district.name}, London.`,
-    address: { '@type': 'PostalAddress', addressLocality: district.name, addressRegion: 'London', addressCountry: 'GB' },
-  }
-  const faqItems = [
+  // FAQ — custom or generic
+  const faqItems = custom?.faq || [
     {
       q: `Are companions available in ${district.name} tonight?`,
       a: `Yes, we have ${models.length} companion${models.length !== 1 ? 's' : ''} available in ${district.name}. Check individual profiles for real-time availability or contact our team for same-day bookings.`,
@@ -100,6 +103,9 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       a: `Yes, many of our companions offer outcall services to hotels and private residences in ${district.name}. Outcall rates may differ from incall — check each companion's profile for details.`,
     },
   ]
+
+  // Strip HTML tags for schema.org plain text
+  const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '')
 
   const graphSchema = {
     '@context': 'https://schema.org',
@@ -123,11 +129,15 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         mainEntity: faqItems.map(f => ({
           '@type': 'Question',
           name: f.q,
-          acceptedAnswer: { '@type': 'Answer', text: f.a },
+          acceptedAnswer: { '@type': 'Answer', text: stripHtml(f.a) },
         })),
       },
     ],
   }
+
+  const pStyle = { fontSize: 15, color: '#8a8580', lineHeight: 1.9 as const, margin: '0 0 12px' as const }
+  const dividerStyle = { height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }
+  const h2Style = { fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }
 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
@@ -153,17 +163,25 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
           <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px' }}>
             About {district.name}
           </h2>
-          <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: '0 0 12px' }}>
-            {district.name} is one of London&apos;s most prestigious districts, known for its luxury hotels,
-            fine dining and exclusive atmosphere. Our verified companions in {district.name} are available
-            for both incall and outcall appointments, offering a discreet and sophisticated experience
-            from £{siteConfig.priceFrom} per hour.
-          </p>
-          <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>
-            Whether you are staying at one of the many five-star hotels in {district.name} or
-            visiting for business, Virel companions are available 24/7 with a guaranteed
-            30-minute response time.
-          </p>
+          {custom?.aboutParagraphs ? (
+            custom.aboutParagraphs.map((p, i) => (
+              <p key={i} style={{ ...pStyle, margin: i === custom.aboutParagraphs!.length - 1 ? '0' : '0 0 12px' }}>{p}</p>
+            ))
+          ) : (
+            <>
+              <p style={pStyle}>
+                {district.name} is one of London&apos;s most prestigious districts, known for its luxury hotels,
+                fine dining and exclusive atmosphere. Our verified companions in {district.name} are available
+                for both incall and outcall appointments, offering a discreet and sophisticated experience
+                from £{siteConfig.priceFrom} per hour.
+              </p>
+              <p style={{ ...pStyle, margin: 0 }}>
+                Whether you are staying at one of the many five-star hotels in {district.name} or
+                visiting for business, Virel companions are available 24/7 with a guaranteed
+                30-minute response time.
+              </p>
+            </>
+          )}
         </div>
       </section>
 
@@ -200,13 +218,25 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         )}
       </section>
 
+      {/* Standard Text — data-driven with RichText for link parsing */}
+      {custom?.standardTextParagraphs && (
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+          <div style={dividerStyle} />
+          <div style={{ maxWidth: 680 }}>
+            <h2 style={h2Style}>The Virel Standard</h2>
+            {custom.standardTextParagraphs.map((p, i) => (
+              <p key={i} style={{ ...pStyle, margin: i === custom.standardTextParagraphs!.length - 1 ? '0' : '0 0 12px' }}>
+                <RichText text={p} />
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Popular Categories */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-          Popular Categories in {district.name}
-        </h2>
+        <div style={dividerStyle} />
+        <h2 style={h2Style}>Popular Categories in {district.name}</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
           {[
             { name: 'Blonde Escorts', slug: 'blonde' },
@@ -226,26 +256,24 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       </section>
 
       {/* Hotels & Restaurants */}
-      {((district.hotels && district.hotels.length > 0) || (district.restaurants && district.restaurants.length > 0)) && (
+      {(custom?.hotels || custom?.restaurants || district.hotels?.length > 0 || district.restaurants?.length > 0) && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-            Fine Dining & Hotels
-          </h2>
+          <div style={dividerStyle} />
+          <h2 style={h2Style}>Fine Dining & Hotels</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {district.hotels?.length > 0 && (
+            {(custom?.hotels || district.hotels)?.length > 0 && (
               <div>
                 <h3 style={{ fontSize: 12, letterSpacing: '.15em', textTransform: 'uppercase', color: '#C5A572', margin: '0 0 12px', fontWeight: 400 }}>Hotels</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {district.hotels.map((h: string) => <span key={h} className="dist-tag">{h}</span>)}
+                  {(custom?.hotels || district.hotels).map((h: string) => <span key={h} className="dist-tag">{h}</span>)}
                 </div>
               </div>
             )}
-            {district.restaurants?.length > 0 && (
+            {(custom?.restaurants || district.restaurants)?.length > 0 && (
               <div>
                 <h3 style={{ fontSize: 12, letterSpacing: '.15em', textTransform: 'uppercase', color: '#C5A572', margin: '0 0 12px', fontWeight: 400 }}>Restaurants</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {district.restaurants.map((r: string) => <span key={r} className="dist-tag">{r}</span>)}
+                  {(custom?.restaurants || district.restaurants).map((r: string) => <span key={r} className="dist-tag">{r}</span>)}
                 </div>
               </div>
             )}
@@ -254,59 +282,59 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       )}
 
       {/* Nearby Areas */}
-      {nearbyDistricts.length > 0 && (
+      {(custom?.nearbyText || nearbyDistricts.length > 0) && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-            Nearby Areas
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-            {nearbyDistricts.map(d => (
-              <Link key={d.slug} href={`/london/${d.slug}-escorts/`} className="dist-link">
-                {d.name}
-              </Link>
-            ))}
-          </div>
+          <div style={dividerStyle} />
+          <h2 style={h2Style}>Nearby Areas</h2>
+          {custom?.nearbyText ? (
+            <div style={{ maxWidth: 680 }}>
+              <p style={{ ...pStyle, margin: 0 }}><RichText text={custom.nearbyText} /></p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {nearbyDistricts.map(d => (
+                <Link key={d.slug} href={`/london/${d.slug}-escorts/`} className="dist-link">
+                  {d.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
       {/* FAQ */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 32px' }}>
-          FAQ
-        </h2>
+        <div style={dividerStyle} />
+        <h2 style={{ ...h2Style, margin: '0 0 32px' }}>FAQ</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div>
-            <p className="faq-q">Are companions available in {district.name} tonight?</p>
-            <p className="faq-a">
-              Yes, we have {models.length} companion{models.length !== 1 ? 's' : ''} available in {district.name}.
-              Check individual profiles for real-time availability or contact our team for same-day bookings.
-            </p>
-          </div>
-          <div>
-            <p className="faq-q">What is the typical rate in {district.name}?</p>
-            <p className="faq-a">
-              {minPrice > 0
-                ? `Rates in ${district.name} typically start from £${minPrice} per hour. Prices vary based on the companion, duration, and type of booking.`
-                : `Please check individual companion profiles for current rates in ${district.name}. Contact our team for personalised quotes.`}
-            </p>
-          </div>
-          <div>
-            <p className="faq-q">Do you offer outcall in {district.name}?</p>
-            <p className="faq-a">
-              Yes, many of our companions offer outcall services to hotels and private residences in {district.name}.
-              Outcall rates may differ from incall — check each companion&apos;s profile for details.
-            </p>
-          </div>
+          {faqItems.map((f, i) => (
+            <div key={i}>
+              <p className="faq-q">{f.q}</p>
+              <p className="faq-a"><RichText text={f.a} /></p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CTA */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 120px', textAlign: 'center' }}>
-        <Link href={`/book?district=${district.id}`} className="dist-cta">
-          Book a Companion in {district.name}
-        </Link>
+        {custom?.ctaText && (
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
+            {custom.ctaText}
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/companions" className="dist-cta">Browse Companions</Link>
+          <a
+            href={siteConfig.telegram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="dist-cta"
+            style={{ background: 'transparent', border: '1px solid #C5A572', color: '#C5A572' }}
+          >
+            Message on Telegram
+          </a>
+        </div>
       </section>
 
       <Footer />
