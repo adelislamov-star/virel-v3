@@ -110,10 +110,12 @@ Field rules:
 - tattooStatus: "none", "small", "medium", or "large"
 - piercingTypes: "none" or description
 - orientation: "heterosexual" or "bisexual"
-- breastType: "natural" or "silicone"
+- breastSize: breast cup size only, e.g. "34C", "32B". Extract ONLY the size, ignore natural/silicone.
+- breastType: "natural" or "silicone". Look for these words near breast size. "silicone 34C" → breastType: "silicone", breastSize: "34C"
 - rates: number string, no currency symbols
 - languages: array of strings
 - booleans (workWithCouples, workWithWomen, blackClients, disabledClients, airports): true or false
+  IMPORTANT: disabledClients means "does the model accept disabled clients". If answer is "no" → false. If "yes" → true. Do NOT default to true.
 - services: array of objects. Include service if answer is yes/has price, exclude if no/blank.
   Each object: {"code":"CODE"} or {"code":"CODE","extraPrice":NUMBER} if any price mentioned.
   Extra price detection — ALL these formats mean extraPrice (extract the number):

@@ -772,12 +772,14 @@ export async function POST(request: NextRequest) {
           continue
         }
         try {
+          const svcExtraPrice = svc.extra_price ?? (svc as any).extraPrice ?? null
           await tx.modelService.create({
             data: {
               modelId: txModel.id,
               serviceId,
               isEnabled: true,
-              extraPrice: svc.extra_price ?? (svc as any).extraPrice ?? null,
+              extraPrice: svcExtraPrice,
+              isExtra: svcExtraPrice != null && svcExtraPrice > 0,
             },
           })
           linkedServices++
@@ -839,7 +841,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const aiRates = aiParsed?.rates
+    const aiRates = aiParsed?.rates as Record<string, { incall?: number | null; outcall?: number | null }> | undefined
+    // Auto-calculate missing multi-hour rates from 1h + extra hour
+    if (aiRates) {
+      const r1hIn = aiRates['1hour']?.incall ?? null
+      const r1hOut = aiRates['1hour']?.outcall ?? null
+      const rExtra = aiRates['extra_hour']?.incall ?? aiRates['extra hour']?.incall ?? aiRates['extra']?.incall ?? null
+      if (rExtra != null) {
+        const durations: Array<{ key: string; multiplier: number }> = [
+          { key: '2hours', multiplier: 1 },
+          { key: '3hours', multiplier: 2 },
+        ]
+        for (const { key, multiplier } of durations) {
+          if (!aiRates[key]) {
+            const incall = r1hIn != null ? r1hIn + rExtra * multiplier : null
+            const outcall = r1hOut != null ? r1hOut + rExtra * multiplier : null
+            if (incall != null || outcall != null) {
+              aiRates[key] = { incall, outcall }
+            }
+          }
+        }
+      }
+      // Overnight: if only incall set, copy to outcall
+      if (aiRates['overnight']?.incall != null && aiRates['overnight']?.outcall == null) {
+        aiRates['overnight'].outcall = aiRates['overnight'].incall
+      }
+    }
     console.log('[quick-upload] Step 3: aiRates available:', !!aiRates, aiRates ? Object.keys(aiRates) : 'none')
     if (aiRates) {
       for (const [duration, val] of Object.entries(aiRates)) {
