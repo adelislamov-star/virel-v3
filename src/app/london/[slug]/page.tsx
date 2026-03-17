@@ -26,14 +26,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     select: { name: true, seoTitle: true, seoDescription: true },
   })
   if (!district) return {}
-  // Strip any existing brand suffix so layout template doesn't double it
-  const rawTitle = district.seoTitle || `Companions in ${district.name}`
-  const cleanTitle = rawTitle
-    .replace(/\s*\|\s*Virel London\s*$/i, '')
-    .replace(/\s*\|\s*Virel\s*$/i, '')
-    .trim()
   return {
-    title: cleanTitle,
+    title: `${district.name} Escorts London | ${siteConfig.name}`,
     description: district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
     alternates: { canonical: `${siteConfig.domain}/london/${slug}/` },
   }
@@ -46,9 +40,6 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
   const [district, models, nearbyDistricts] = await Promise.all([
     prisma.district.findUnique({
       where: { slug: districtSlug, isActive: true },
-      include: {
-        transportHubs: { where: { isActive: true }, orderBy: { walkingMinutes: 'asc' } },
-      },
     }),
     prisma.model.findMany({
       where: {
@@ -97,8 +88,8 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
-      { '@type': 'ListItem', position: 2, name: 'London', item: `${siteConfig.domain}/companions` },
-      { '@type': 'ListItem', position: 3, name: district.name },
+      { '@type': 'ListItem', position: 2, name: 'London Escorts', item: `${siteConfig.domain}/london-escorts` },
+      { '@type': 'ListItem', position: 3, name: `${district.name} Escorts`, item: `${siteConfig.domain}/london/${slug}/` },
     ],
   }
 
@@ -119,23 +110,37 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         {/* Breadcrumb */}
-        <nav style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
-          <Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <Link href="/companions" style={{ color: '#6b6560', textDecoration: 'none' }}>London</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <span style={{ color: '#C5A572' }}>{district.name}</span>
+        <nav aria-label="breadcrumb" style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
+          <ol style={{ listStyle: 'none', display: 'flex', alignItems: 'center', gap: 0, margin: 0, padding: 0 }}>
+            <li><Link href="/" style={{ color: '#6b6560', textDecoration: 'none' }}>Home</Link></li>
+            <li><span style={{ margin: '0 8px' }}>/</span></li>
+            <li><Link href="/london-escorts" style={{ color: '#6b6560', textDecoration: 'none' }}>London Escorts</Link></li>
+            <li><span style={{ margin: '0 8px' }}>/</span></li>
+            <li aria-current="page" style={{ color: '#C5A572' }}>{district.name} Escorts</li>
+          </ol>
         </nav>
 
         <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(36px,5vw,60px)', fontWeight: 300, color: '#f0e8dc', lineHeight: 1.1, margin: '0 0 24px' }}>
-          Companions in <em style={{ fontStyle: 'italic', color: '#C5A572' }}>{district.name}</em>, London
+          <em style={{ fontStyle: 'italic', color: '#C5A572' }}>{district.name}</em> Escorts London
         </h1>
 
-        {district.description && (
-          <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, maxWidth: 680, margin: '0 0 64px' }}>
-            {district.description}
+        {/* About Section */}
+        <div style={{ maxWidth: 680, margin: '0 0 64px' }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px' }}>
+            About {district.name}
+          </h2>
+          <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: '0 0 12px' }}>
+            {district.name} is one of London&apos;s most prestigious districts, known for its luxury hotels,
+            fine dining and exclusive atmosphere. Our verified companions in {district.name} are available
+            for both incall and outcall appointments, offering a discreet and sophisticated experience
+            from £{siteConfig.priceFrom} per hour.
           </p>
-        )}
+          <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>
+            Whether you are staying at one of the many five-star hotels in {district.name} or
+            visiting for business, Virel companions are available 24/7 with a guaranteed
+            30-minute response time.
+          </p>
+        </div>
       </section>
 
       {/* Models */}
@@ -171,25 +176,30 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         )}
       </section>
 
-      {/* Transport Hubs */}
-      {district.transportHubs.length > 0 && (
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
-          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-            Nearby Stations
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-            {district.transportHubs.map((hub: any) => (
-              <Link key={hub.id} href={`/london/${slug}/${hub.slug}-station/`} className="dist-link">
-                <span style={{ fontWeight: 400 }}>{hub.name}</span>
-                {hub.walkingMinutes && (
-                  <span style={{ color: '#6b6560', marginLeft: 8, fontSize: 12 }}>{hub.walkingMinutes} min walk</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+
+      {/* Popular Categories */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent)', marginBottom: 48 }} />
+        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
+          Popular Categories in {district.name}
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+          {[
+            { name: 'Blonde Escorts', slug: 'blonde' },
+            { name: 'Brunette Escorts', slug: 'brunette' },
+            { name: 'Russian Escorts', slug: 'russian' },
+            { name: 'GFE Escorts', slug: 'gfe' },
+            { name: 'Busty Escorts', slug: 'busty' },
+            { name: 'Mature Escorts', slug: 'mature' },
+            { name: 'VIP Escorts', slug: 'vip' },
+            { name: 'Dinner Date Escorts', slug: 'dinner-date' },
+          ].map(cat => (
+            <Link key={cat.slug} href={`/categories/${cat.slug}/`} className="dist-link">
+              {cat.name}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Hotels & Restaurants */}
       {((district.hotels && district.hotels.length > 0) || (district.restaurants && district.restaurants.length > 0)) && (
