@@ -657,7 +657,9 @@ export async function POST(request: NextRequest) {
 
     const smokingVal = normalizeSmoking(aiParsed?.smokes) || normalizeSmoking(regexParsed?.smokes) || null
 
-    const model = await prisma.model.create({
+    let model: any
+    try {
+    model = await prisma.model.create({
       data: {
         name,
         slug,
@@ -732,6 +734,15 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+    } catch (error: any) {
+      if (error?.code === 'P2002' && error?.meta?.target?.includes('slug')) {
+        return NextResponse.json(
+          { error: 'Duplicate profile', code: 'DUPLICATE_SLUG' },
+          { status: 409 }
+        )
+      }
+      throw error
+    }
     console.log('[quick-upload] Step 1: Model created:', model.id, model.name)
 
     // Step 2: Link services
