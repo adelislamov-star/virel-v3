@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Star, Pencil, Trash2, Plus, X, FileText } from 'lucide-react';
+import { useRevalidate } from '@/hooks/useRevalidate';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -83,6 +84,7 @@ export default function CategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Category | null>(null);
+  const { revalidate, isRevalidating, revalidateStatus } = useRevalidate();
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'loading') => {
     setToast({ message, type });
@@ -257,6 +259,9 @@ export default function CategoriesPage() {
       }
 
       showToast('Saved successfully', 'success');
+      // Auto-revalidate the category page on the frontend
+      const savedSlug = modal.slug || toSlug(modal.title || '');
+      revalidate(`/categories/${savedSlug}`);
       setModal(null);
       loadCategories();
     } catch {
@@ -746,6 +751,28 @@ export default function CategoriesPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {!modal._isNew && (
+                  <button
+                    type="button"
+                    onClick={() => revalidate(`/categories/${modal.slug}`)}
+                    disabled={isRevalidating}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      revalidateStatus === 'success'
+                        ? 'bg-green-600 text-white'
+                        : revalidateStatus === 'error'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                    }`}
+                  >
+                    {isRevalidating
+                      ? '⟳ Обновление...'
+                      : revalidateStatus === 'success'
+                      ? '✓ Обновлено!'
+                      : revalidateStatus === 'error'
+                      ? '✗ Ошибка'
+                      : '🔄 Обновить сайт'}
+                  </button>
+                )}
                 <button onClick={() => setModal(null)} className="px-4 py-2 text-sm rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">Cancel</button>
                 <button
                   onClick={handleSave}

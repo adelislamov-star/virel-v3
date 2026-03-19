@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Eye, Save, Send, Sparkles, X, Plus } from 'lucide-react';
+import { useRevalidate } from '@/hooks/useRevalidate';
 import type { BlogPost } from '@/types/blog';
 
 type District = { id: string; name: string };
@@ -56,6 +57,7 @@ export default function BlogEditorPage() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ title: string; excerpt: string; content: string } | null>(null);
 
+  const { revalidate, isRevalidating, revalidateStatus } = useRevalidate();
   const dirtyRef = useRef(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -185,6 +187,11 @@ export default function BlogEditorPage() {
         setDirty(false);
         dirtyRef.current = false;
         if (publish) setIsPublished(true);
+        // Auto-revalidate blog pages
+        if (!isAutoSave) {
+          revalidate(`/blog/${slug}`);
+          revalidate('/blog');
+        }
         if (isAutoSave) {
           const now = new Date();
           setAutoSaveTime(
@@ -317,6 +324,28 @@ export default function BlogEditorPage() {
             >
               <Eye className="w-4 h-4" />
               Preview
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                await revalidate(`/blog/${slug}`);
+                await revalidate('/blog');
+              }}
+              disabled={isRevalidating}
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                revalidateStatus === 'success'
+                  ? 'bg-green-600 text-white'
+                  : revalidateStatus === 'error'
+                  ? 'bg-red-600 text-white'
+                  : 'border border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+              }`}
+            >
+              {isRevalidating
+                ? '⟳ Обновление...'
+                : revalidateStatus === 'success'
+                ? '✓ Обновлено!'
+                : '🔄 Обновить сайт'}
             </button>
 
             <button

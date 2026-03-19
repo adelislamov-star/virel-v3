@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+import { useRevalidate } from '@/hooks/useRevalidate';
 import BasicInfoTab from '@/components/models/tabs/BasicInfoTab';
 import MediaTab from '@/components/models/tabs/MediaTab';
 
@@ -50,6 +51,8 @@ export default function ModelEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
+
+  const { revalidate } = useRevalidate();
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'loading') => {
     setToast({ message, type });
@@ -116,6 +119,11 @@ export default function ModelEditPage() {
       const data = await res.json();
       if (data.success) {
         showToast('Saved successfully', 'success');
+        // Auto-revalidate model page and homepage
+        if (model?.slug) {
+          revalidate(`/companions/${model.slug}`);
+          revalidate('/');
+        }
         loadModel();
       } else {
         showToast(data.error?.message || 'Save failed', 'error');

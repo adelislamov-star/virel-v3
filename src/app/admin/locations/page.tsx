@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Star, Pencil, Sparkles, Trash2, Plus, X } from 'lucide-react';
+import { useRevalidate } from '@/hooks/useRevalidate';
 
 interface District {
   id: string;
@@ -138,6 +139,7 @@ export default function LocationsPage() {
 
   // Shared
   const [saving, setSaving] = useState(false);
+  const { revalidate, isRevalidating, revalidateStatus } = useRevalidate();
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'district' | 'hub'; item: District | TransportHub } | null>(null);
 
@@ -291,6 +293,9 @@ export default function LocationsPage() {
       const json = await res.json();
       if (json.success) {
         showToast('Saved successfully', 'success');
+        const savedSlug = districtModal.slug || toSlug(districtModal.name || '');
+        revalidate(`/escorts-in-${savedSlug}`);
+        revalidate('/escorts-in');
         setDistrictModal(null);
         loadDistricts();
       } else {
@@ -1085,6 +1090,28 @@ export default function LocationsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-zinc-800">
+              {!districtModal._isNew && (
+                <button
+                  type="button"
+                  onClick={() => revalidate(`/escorts-in-${districtModal.slug}`)}
+                  disabled={isRevalidating}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    revalidateStatus === 'success'
+                      ? 'bg-green-600 text-white'
+                      : revalidateStatus === 'error'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  }`}
+                >
+                  {isRevalidating
+                    ? '⟳ Обновление...'
+                    : revalidateStatus === 'success'
+                    ? '✓ Обновлено!'
+                    : revalidateStatus === 'error'
+                    ? '✗ Ошибка'
+                    : '🔄 Обновить сайт'}
+                </button>
+              )}
               <button onClick={() => setDistrictModal(null)} className="px-4 py-2 text-sm rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700">Cancel</button>
               <button
                 onClick={handleSaveDistrict}
