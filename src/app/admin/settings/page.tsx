@@ -17,6 +17,11 @@ export default function SettingsPage() {
   const badgeInfo = 'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20';
 
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMessage, setPwMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/v1/system/integrations')
@@ -83,6 +88,91 @@ export default function SettingsPage() {
               <div className="text-sm text-zinc-500">Loading integration status...</div>
             )}
           </div>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Security</h3>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setPwMessage(null);
+              if (newPassword !== confirmPassword) {
+                setPwMessage({ type: 'error', text: 'Пароли не совпадают' });
+                return;
+              }
+              if (newPassword.length < 8) {
+                setPwMessage({ type: 'error', text: 'Пароль должен быть не менее 8 символов' });
+                return;
+              }
+              setPwSaving(true);
+              try {
+                const res = await fetch('/api/auth/change-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ currentPassword, newPassword }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  setPwMessage({ type: 'success', text: 'Пароль успешно изменён' });
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                } else {
+                  setPwMessage({ type: 'error', text: data.error || 'Ошибка сервера' });
+                }
+              } catch {
+                setPwMessage({ type: 'error', text: 'Ошибка сети' });
+              } finally {
+                setPwSaving(false);
+              }
+            }}
+            className="space-y-3"
+          >
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">Текущий пароль</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                className="w-full rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">Новый пароль</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">Подтвердить новый пароль</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none"
+              />
+            </div>
+            {pwMessage && (
+              <p className={`text-sm ${pwMessage.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                {pwMessage.text}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={pwSaving}
+              className="rounded-lg bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {pwSaving ? 'Сохранение...' : 'Сменить пароль'}
+            </button>
+          </form>
         </div>
 
         <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-5">
