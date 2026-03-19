@@ -7,37 +7,57 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { siteConfig } from '@/../config/site'
-import { blogPosts } from '@/../data/blog-posts'
+import { prisma } from '@/lib/db/client'
 import '../article.css'
 
-export function generateStaticParams() {
-  return blogPosts.map(p => ({ slug: p.slug }))
+function computeReadTime(content: string): string {
+  const words = content.replace(/<[^>]*>/g, '').split(/\s+/).length
+  return `${Math.max(1, Math.ceil(words / 200))} min read`
+}
+
+export async function generateStaticParams() {
+  const posts = await prisma.blogPost.findMany({
+    where: { isPublished: true },
+    select: { slug: true },
+  })
+  return posts.map(p => ({ slug: p.slug }))
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const post = blogPosts.find(p => p.slug === slug)
+  const post = await prisma.blogPost.findUnique({
+    where: { slug },
+    select: { title: true, excerpt: true, seoTitle: true, seoDescription: true, publishedAt: true },
+  })
   if (!post) return { title: 'Not Found', robots: { index: false, follow: false } }
   return {
-    title: post.title,
-    description: post.description,
+    title: post.seoTitle || post.title,
+    description: post.seoDescription || post.excerpt || '',
     alternates: { canonical: `${siteConfig.domain}/blog/${slug}` },
     openGraph: {
-      title: post.title,
-      description: post.description,
+      title: post.seoTitle || post.title,
+      description: post.seoDescription || post.excerpt || '',
       url: `${siteConfig.domain}/blog/${slug}`,
       type: 'article',
-      publishedTime: post.publishedAt,
+      publishedTime: post.publishedAt?.toISOString(),
     },
   }
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const post = blogPosts.find(p => p.slug === slug)
+  const [post, otherPosts] = await Promise.all([
+    prisma.blogPost.findUnique({ where: { slug, isPublished: true } }),
+    prisma.blogPost.findMany({
+      where: { slug: { not: slug }, isPublished: true },
+      orderBy: { publishedAt: 'desc' },
+      select: { slug: true, title: true, category: true },
+      take: 3,
+    }),
+  ])
   if (!post) notFound()
 
-  const otherPosts = blogPosts.filter(p => p.slug !== slug).slice(0, 3)
+  const readTime = computeReadTime(post.content)
 
   const graphSchema = {
     '@context': 'https://schema.org',
@@ -45,8 +65,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       {
         '@type': 'Article',
         headline: post.title,
-        description: post.description,
-        datePublished: post.publishedAt,
+        description: post.excerpt,
+        datePublished: post.publishedAt?.toISOString(),
         author: { '@type': 'Organization', name: siteConfig.name },
         publisher: { '@type': 'Organization', name: siteConfig.name, url: siteConfig.domain },
         url: `${siteConfig.domain}/blog/${slug}`,
@@ -84,25 +104,16 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <span className="article-cat">{post.category}</span>
           <h1 className="article-title">{post.title}</h1>
           <div className="article-meta">
-            <span>{new Date(post.publishedAt).toLocaleDateString(siteConfig.lang, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString(siteConfig.lang, { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</span>
             <span>·</span>
-            <span>{post.readTime}</span>
+            <span>{readTime}</span>
           </div>
         </div>
 
         <div className="article-body">
-          <p className="article-excerpt">{post.description}</p>
+          <p className="article-excerpt">{post.excerpt}</p>
 
-          <div className="article-content">
-            {post.content.map((section, i) => (
-              <div key={i}>
-                {section.heading && <h2>{section.heading}</h2>}
-                {section.body.map((para, j) => (
-                  <p key={j}>{para}</p>
-                ))}
-              </div>
-            ))}
-          </div>
+          <div className="article-content" dangerouslySetInnerHTML={{ __html: post.content }} />
 
           <div style={{ marginTop: 60, paddingTop: 40, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 16 }}>
             <Link href="/companions" style={{ padding: '14px 28px', background: '#c9a84c', color: '#080808', textDecoration: 'none', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 500 }}>

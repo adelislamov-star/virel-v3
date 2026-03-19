@@ -8,7 +8,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
 import { RichText } from '@/components/public/RichText'
-import { districtContent } from '@/data/district-content'
+// districtContent now stored directly on District model in DB
 import '../district.css'
 
 export const revalidate = 3600
@@ -30,12 +30,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
   if (!district) return {}
 
-  const custom = districtContent[districtSlug]
-
   return {
     title: `${district.name} Escorts London`,
     description:
-      custom?.metaDescription ||
       district.seoDescription ||
       `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
     alternates: { canonical: `${siteConfig.domain}/london/${slug}/` },
@@ -79,15 +76,13 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
 
   if (!district) notFound()
 
-  const custom = districtContent[districtSlug]
-
   const minPrice = models.reduce((min, m) => {
     const p = m.modelRates?.[0]?.incallPrice
     return p && (min === 0 || p < min) ? p : min
   }, 0)
 
   // FAQ — custom or generic
-  const faqItems = custom?.faq || [
+  const faqItems = (district.faq as { q: string; a: string }[] | undefined)?.length ? (district.faq as { q: string; a: string }[]) : [
     {
       q: `Are companions available in ${district.name} tonight?`,
       a: `Yes, we have ${models.length} companion${models.length !== 1 ? 's' : ''} available in ${district.name}. Check individual profiles for real-time availability or contact our team for same-day bookings.`,
@@ -163,9 +158,9 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
           <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px' }}>
             About {district.name}
           </h2>
-          {custom?.aboutParagraphs ? (
-            custom.aboutParagraphs.map((p, i) => (
-              <p key={i} style={{ ...pStyle, margin: i === custom.aboutParagraphs!.length - 1 ? '0' : '0 0 12px' }}>{p}</p>
+          {district.aboutParagraphs?.length > 0 ? (
+            district.aboutParagraphs.map((p, i) => (
+              <p key={i} style={{ ...pStyle, margin: i === district.aboutParagraphs.length - 1 ? '0' : '0 0 12px' }}>{p}</p>
             ))
           ) : (
             <>
@@ -219,13 +214,13 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       </section>
 
       {/* Standard Text — data-driven with RichText for link parsing */}
-      {custom?.standardTextParagraphs && (
+      {district.standardTextParagraphs?.length > 0 && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
           <div style={dividerStyle} />
           <div style={{ maxWidth: 680 }}>
             <h2 style={h2Style}>The Vaurel Standard</h2>
-            {custom.standardTextParagraphs.map((p, i) => (
-              <p key={i} style={{ ...pStyle, margin: i === custom.standardTextParagraphs!.length - 1 ? '0' : '0 0 12px' }}>
+            {district.standardTextParagraphs.map((p, i) => (
+              <p key={i} style={{ ...pStyle, margin: i === district.standardTextParagraphs.length - 1 ? '0' : '0 0 12px' }}>
                 <RichText text={p} />
               </p>
             ))}
@@ -256,24 +251,24 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       </section>
 
       {/* Hotels & Restaurants */}
-      {(custom?.hotels || custom?.restaurants || district.hotels?.length > 0 || district.restaurants?.length > 0) && (
+      {(district.hotels?.length > 0 || district.restaurants?.length > 0) && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
           <div style={dividerStyle} />
           <h2 style={h2Style}>Fine Dining & Hotels</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {(custom?.hotels || district.hotels)?.length > 0 && (
+            {district.hotels?.length > 0 && (
               <div>
                 <h3 style={{ fontSize: 12, letterSpacing: '.15em', textTransform: 'uppercase', color: '#C5A572', margin: '0 0 12px', fontWeight: 400 }}>Hotels</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {(custom?.hotels || district.hotels).map((h: string) => <span key={h} className="dist-tag">{h}</span>)}
+                  {district.hotels.map((h: string) => <span key={h} className="dist-tag">{h}</span>)}
                 </div>
               </div>
             )}
-            {(custom?.restaurants || district.restaurants)?.length > 0 && (
+            {district.restaurants?.length > 0 && (
               <div>
                 <h3 style={{ fontSize: 12, letterSpacing: '.15em', textTransform: 'uppercase', color: '#C5A572', margin: '0 0 12px', fontWeight: 400 }}>Restaurants</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {(custom?.restaurants || district.restaurants).map((r: string) => <span key={r} className="dist-tag">{r}</span>)}
+                  {district.restaurants.map((r: string) => <span key={r} className="dist-tag">{r}</span>)}
                 </div>
               </div>
             )}
@@ -282,13 +277,13 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
       )}
 
       {/* Nearby Areas */}
-      {(custom?.nearbyText || nearbyDistricts.length > 0) && (
+      {(district.nearbyText || nearbyDistricts.length > 0) && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
           <div style={dividerStyle} />
           <h2 style={h2Style}>Nearby Areas</h2>
-          {custom?.nearbyText ? (
+          {district.nearbyText ? (
             <div style={{ maxWidth: 680 }}>
-              <p style={{ ...pStyle, margin: 0 }}><RichText text={custom.nearbyText} /></p>
+              <p style={{ ...pStyle, margin: 0 }}><RichText text={district.nearbyText} /></p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -318,9 +313,9 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
 
       {/* CTA */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 120px', textAlign: 'center' }}>
-        {custom?.ctaText && (
+        {district.ctaText && (
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 300, color: '#f0e8dc', margin: '0 0 24px' }}>
-            {custom.ctaText}
+            {district.ctaText}
           </p>
         )}
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>

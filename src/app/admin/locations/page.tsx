@@ -15,6 +15,11 @@ interface District {
   seoTitle: string | null;
   seoDescription: string | null;
   seoKeywords: string | null;
+  aboutParagraphs: string[];
+  standardTextParagraphs: string[];
+  nearbyText: string | null;
+  faq: { question: string; answer: string }[];
+  ctaText: string | null;
   isActive: boolean;
   isPopular: boolean;
   sortOrder: number;
@@ -265,6 +270,11 @@ export default function LocationsPage() {
         seoTitle: districtModal.seoTitle || null,
         seoDescription: districtModal.seoDescription || null,
         seoKeywords: districtModal.seoKeywords || null,
+        aboutParagraphs: districtModal.aboutParagraphs ?? [],
+        standardTextParagraphs: districtModal.standardTextParagraphs ?? [],
+        nearbyText: districtModal.nearbyText || null,
+        faq: districtModal.faq ?? [],
+        ctaText: districtModal.ctaText || null,
         isPopular: districtModal.isPopular ?? false,
         isActive: districtModal.isActive ?? true,
         sortOrder: districtModal.sortOrder ?? 0,
@@ -419,6 +429,9 @@ export default function LocationsPage() {
         setDistrictModal({
           ...data,
           modelCount: data.modelLocations?.length ?? d.modelCount,
+          faq: Array.isArray(data.faq) ? data.faq : [],
+          aboutParagraphs: Array.isArray(data.aboutParagraphs) ? data.aboutParagraphs : [],
+          standardTextParagraphs: Array.isArray(data.standardTextParagraphs) ? data.standardTextParagraphs : [],
         });
       } else {
         setDistrictModal({ ...d });
@@ -442,6 +455,11 @@ export default function LocationsPage() {
       seoTitle: null,
       seoDescription: null,
       seoKeywords: null,
+      aboutParagraphs: [],
+      standardTextParagraphs: [],
+      nearbyText: null,
+      faq: [],
+      ctaText: null,
       isPopular: false,
       isActive: true,
       sortOrder: 0,
@@ -922,6 +940,149 @@ export default function LocationsPage() {
               {districtModal._isNew && (
                 <p className="text-xs text-zinc-500">Save first to generate SEO</p>
               )}
+
+              <div className="h-px bg-zinc-800" />
+
+              {/* SEO Content */}
+              <p className="text-xs uppercase tracking-wider text-zinc-500 font-medium">SEO Content</p>
+
+              {/* About Paragraphs */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">About Paragraphs</label>
+                {(districtModal.aboutParagraphs ?? []).map((p, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <textarea
+                      value={p}
+                      onChange={(e) => {
+                        const updated = [...(districtModal.aboutParagraphs ?? [])];
+                        updated[i] = e.target.value;
+                        updateDistrict('aboutParagraphs', updated);
+                      }}
+                      rows={3}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 resize-none"
+                    />
+                    <button
+                      onClick={() => {
+                        const updated = (districtModal.aboutParagraphs ?? []).filter((_, j) => j !== i);
+                        updateDistrict('aboutParagraphs', updated);
+                      }}
+                      className="text-zinc-500 hover:text-red-400 shrink-0 mt-1"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => updateDistrict('aboutParagraphs', [...(districtModal.aboutParagraphs ?? []), ''])}
+                  className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200"
+                >
+                  <Plus size={12} /> Add Paragraph
+                </button>
+              </div>
+
+              {/* Standard Text Paragraphs */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Standard Text Paragraphs</label>
+                {(districtModal.standardTextParagraphs ?? []).map((p, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <textarea
+                      value={p}
+                      onChange={(e) => {
+                        const updated = [...(districtModal.standardTextParagraphs ?? [])];
+                        updated[i] = e.target.value;
+                        updateDistrict('standardTextParagraphs', updated);
+                      }}
+                      rows={3}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 resize-none"
+                    />
+                    <button
+                      onClick={() => {
+                        const updated = (districtModal.standardTextParagraphs ?? []).filter((_, j) => j !== i);
+                        updateDistrict('standardTextParagraphs', updated);
+                      }}
+                      className="text-zinc-500 hover:text-red-400 shrink-0 mt-1"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => updateDistrict('standardTextParagraphs', [...(districtModal.standardTextParagraphs ?? []), ''])}
+                  className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200"
+                >
+                  <Plus size={12} /> Add Paragraph
+                </button>
+              </div>
+
+              {/* Nearby Text */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Nearby Text</label>
+                <textarea
+                  value={districtModal.nearbyText || ''}
+                  onChange={(e) => updateDistrict('nearbyText', e.target.value)}
+                  rows={3}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 resize-none"
+                />
+              </div>
+
+              {/* FAQ */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">FAQ</label>
+                {(districtModal.faq ?? []).map((item, i) => (
+                  <div key={i} className="flex gap-2 mb-3">
+                    <div className="flex-1 space-y-2">
+                      <textarea
+                        value={item.question}
+                        onChange={(e) => {
+                          const updated = [...(districtModal.faq ?? [])];
+                          updated[i] = { ...updated[i], question: e.target.value };
+                          updateDistrict('faq', updated);
+                        }}
+                        placeholder="Question"
+                        rows={2}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 resize-none"
+                      />
+                      <textarea
+                        value={item.answer}
+                        onChange={(e) => {
+                          const updated = [...(districtModal.faq ?? [])];
+                          updated[i] = { ...updated[i], answer: e.target.value };
+                          updateDistrict('faq', updated);
+                        }}
+                        placeholder="Answer"
+                        rows={2}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 resize-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updated = (districtModal.faq ?? []).filter((_, j) => j !== i);
+                        updateDistrict('faq', updated);
+                      }}
+                      className="text-zinc-500 hover:text-red-400 shrink-0 mt-1"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => updateDistrict('faq', [...(districtModal.faq ?? []), { question: '', answer: '' }])}
+                  className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200"
+                >
+                  <Plus size={12} /> Add FAQ
+                </button>
+              </div>
+
+              {/* CTA Text */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">CTA Text</label>
+                <input
+                  type="text"
+                  value={districtModal.ctaText || ''}
+                  onChange={(e) => updateDistrict('ctaText', e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-zinc-800">
               <button onClick={() => setDistrictModal(null)} className="px-4 py-2 text-sm rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700">Cancel</button>

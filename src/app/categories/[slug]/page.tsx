@@ -9,7 +9,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ModelCard } from '@/components/public/ModelCard'
 import { RichText } from '@/components/public/RichText'
-import { categoryContent } from '@/data/category-content'
+// categoryContent now loaded from DB (CategoryContent model)
 import '../category.css'
 
 export const revalidate = 3600
@@ -102,19 +102,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const cat = categories.find(c => c.slug === slug)
   if (!cat) notFound()
 
-  const custom = categoryContent[slug]
-
-  // Related categories: use custom list or random fallback
-  const relatedCats = custom?.relatedCategories
-    ? custom.relatedCategories
-        .map(s => categories.find(c => c.slug === s))
-        .filter(Boolean)
-    : categories
-        .filter(c => c.slug !== slug)
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 6)
-
-  const [models, districts] = await Promise.all([
+  const [models, districts, custom] = await Promise.all([
     prisma.model.findMany({
       where: buildCategoryFilter(cat),
       include: {
@@ -135,12 +123,25 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       select: { name: true, slug: true },
       take: 8,
     }),
+    prisma.categoryContent.findFirst({
+      where: { category: { slug } },
+    }),
   ])
+
+  // Related categories: use custom list or random fallback
+  const relatedCats = custom?.relatedCategories?.length
+    ? custom.relatedCategories
+        .map(s => categories.find(c => c.slug === s))
+        .filter(Boolean)
+    : categories
+        .filter(c => c.slug !== slug)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 6)
 
   const metaDescription = `${cat.name} companions in London. Hand-picked, verified. From £${siteConfig.priceFrom}/hr. ${siteConfig.name} companion agency.`
 
   // FAQ — custom or generic
-  const faqItems = custom?.faq || [
+  const faqItems = (custom?.faq as { q: string; a: string }[] | undefined)?.length ? (custom.faq as { q: string; a: string }[]) : [
     {
       q: `How many ${cat.name.toLowerCase()} escorts do you have in London?`,
       a: `We currently have ${models.length} verified ${cat.name.toLowerCase()} companion${models.length !== 1 ? 's' : ''} available in London. Our selection is updated daily as new companions join and availability changes.`,

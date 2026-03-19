@@ -309,22 +309,37 @@ model Service {
 }
 
 model Category {
-  id              String          @id @default(cuid())
+  id              String           @id @default(cuid())
   title           String
-  slug            String          @unique
+  slug            String           @unique
   h1              String?
   introHtml       String?
   descriptionHtml String?
-  status          String          @default("active")
-  isPopular       Boolean         @default(false)
+  status          String           @default("active")
+  isPopular       Boolean          @default(false)
   seoTitle        String?
   seoDescription  String?
   seoKeywords     String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   models          ModelCategory[]
+  content         CategoryContent?
 
   @@map("categories")
+}
+
+model CategoryContent {
+  id                String   @id @default(cuid())
+  categoryId        String   @unique
+  aboutParagraphs   String[]
+  standardText      String?
+  relatedCategories String[]
+  faq               Json     @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  category          Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("category_content")
 }
 
 model Attribute {
@@ -1803,24 +1818,29 @@ model ModelRate {
 }
 
 model District {
-  id             String          @id @default(cuid())
-  name           String          @unique
-  slug           String          @unique
-  tier           Int             @default(1)
-  description    String?
-  hotels         String[]
-  restaurants    String[]
-  landmarks      String[]
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String?
-  isActive       Boolean         @default(true)
-  isPopular      Boolean         @default(false)
-  sortOrder      Int             @default(0)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  modelLocations ModelLocation[]
-  transportHubs  TransportHub[]
+  id                     String          @id @default(cuid())
+  name                   String          @unique
+  slug                   String          @unique
+  tier                   Int             @default(1)
+  description            String?
+  hotels                 String[]
+  restaurants            String[]
+  landmarks              String[]
+  seoTitle               String?
+  seoDescription         String?
+  seoKeywords            String?
+  isActive               Boolean         @default(true)
+  isPopular              Boolean         @default(false)
+  sortOrder              Int             @default(0)
+  aboutParagraphs        String[]
+  standardTextParagraphs String[]
+  nearbyText             String?
+  faq                    Json?
+  ctaText                String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  modelLocations         ModelLocation[]
+  transportHubs          TransportHub[]
 
   @@map("districts")
 }

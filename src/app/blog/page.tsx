@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { siteConfig } from '@/../config/site'
-import { blogPosts } from '@/../data/blog-posts'
+import { prisma } from '@/lib/db/client'
 import './blog.css'
 
 export const metadata: Metadata = {
@@ -15,8 +15,17 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteConfig.domain}/blog` },
 }
 
-export default function BlogPage() {
-  const sorted = [...blogPosts].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+function computeReadTime(content: string): string {
+  const words = content.replace(/<[^>]*>/g, '').split(/\s+/).length
+  return `${Math.max(1, Math.ceil(words / 200))} min read`
+}
+
+export default async function BlogPage() {
+  const posts = await prisma.blogPost.findMany({
+    where: { isPublished: true },
+    orderBy: { publishedAt: 'desc' },
+    select: { slug: true, title: true, excerpt: true, category: true, publishedAt: true, content: true },
+  })
 
   return (
     <>
@@ -37,15 +46,15 @@ export default function BlogPage() {
 
         <div className="blog-grid-wrap">
           <div className="blog-grid">
-            {sorted.map(post => (
+            {posts.map(post => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="post-card">
                 <span className="post-cat">{post.category}</span>
                 <h2 className="post-title">{post.title}</h2>
-                <p className="post-excerpt">{post.description}</p>
+                <p className="post-excerpt">{post.excerpt}</p>
                 <div className="post-meta">
-                  <span>{new Date(post.publishedAt).toLocaleDateString(siteConfig.lang, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString(siteConfig.lang, { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</span>
                   <span>·</span>
-                  <span>{post.readTime}</span>
+                  <span>{computeReadTime(post.content)}</span>
                 </div>
                 <span className="post-read-more">Read Article →</span>
               </Link>
