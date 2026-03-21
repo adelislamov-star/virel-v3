@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { MetadataRoute } from 'next'
 import { siteConfig } from '@/../config/site'
 import { prisma } from '@/lib/db/client'
