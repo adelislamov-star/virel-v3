@@ -46,7 +46,7 @@ export function BookingWidget({
 
   return (
       <div className="bw-root">
-        <h2 className="bw-name">{modelName}</h2>
+        <h1 className="bw-name">{modelName}</h1>
         <div className="bw-badges">
           {isExclusive && <span className="bw-badge bw-badge-e">★ Exclusive</span>}
           {isVerified && <span className="bw-badge bw-badge-v">✓ Verified Photos</span>}

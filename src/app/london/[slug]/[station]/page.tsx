@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: hub.seoTitle || `Companions near ${hub.name} Station`,
     description: hub.seoDescription || `Find premium companions near ${hub.name} Station in London. Verified escorts available for incall and outcall.`,
-    alternates: { canonical: `${siteConfig.domain}/london/${slug}/${station}/` },
+    alternates: { canonical: `${siteConfig.domain}/london/${slug}/${station}` },
     robots: { index: false, follow: false },
   }
 }

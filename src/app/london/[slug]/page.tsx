@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description:
       district.seoDescription ||
       `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
-    alternates: { canonical: `${siteConfig.domain}/london/${slug}/` },
+    alternates: { canonical: `${siteConfig.domain}/london/${slug}` },
   }
 }
 
@@ -116,7 +116,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.domain },
           { '@type': 'ListItem', position: 2, name: 'London Escorts', item: `${siteConfig.domain}/london-escorts` },
-          { '@type': 'ListItem', position: 3, name: `${district.name} Escorts`, item: `${siteConfig.domain}/london/${slug}/` },
+          { '@type': 'ListItem', position: 3, name: `${district.name} Escorts`, item: `${siteConfig.domain}/london/${slug}` },
         ],
       },
       {

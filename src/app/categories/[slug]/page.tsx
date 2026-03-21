@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!cat) return {}
   return {
     title: `${cat.name} Escorts London`,
-    description: `${cat.name} companions in London. Hand-picked, verified. From £${siteConfig.priceFrom}/hr. ${siteConfig.name} companion agency.`,
+    description: `${cat.name} escorts in London — verified companions at Vaurel. Available across Mayfair, Kensington, Chelsea. From £${siteConfig.priceFrom}/hr.`,
     alternates: { canonical: `${siteConfig.domain}/categories/${slug}` },
   }
 }
@@ -207,11 +207,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
         {!custom && (
           <p className="cat-p" style={{ maxWidth: 680, margin: '0 0 64px' }}>
-            Discover our selection of {cat.name.toLowerCase()} companions in London, each personally vetted by the {siteConfig.name} team.
-            Whether you are looking for a dinner date, a social event companion, or a private encounter,
-            our {cat.name.toLowerCase()} escorts offer sophistication, discretion, and genuine connection.
-            All profiles feature authentic, verified photographs and detailed descriptions to help you
-            find exactly the right companion for your preferences.
+            Browse verified {cat.name.toLowerCase()} escorts in London at Vaurel.
+            Hand-picked companions available across Mayfair, Kensington, Chelsea and beyond.
+            All profiles personally verified. From £{siteConfig.priceFrom}/hr.
           </p>
         )}
       </section>

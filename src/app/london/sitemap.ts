@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { slug: true, updatedAt: true },
   })
   return districts.map(d => ({
-    url: `${BASE}/london/${d.slug}-escorts/`,
+    url: `${BASE}/london/${d.slug}-escorts`,
     lastModified: d.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.7,

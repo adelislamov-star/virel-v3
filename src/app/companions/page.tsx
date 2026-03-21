@@ -14,15 +14,16 @@ import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 
 export const metadata: Metadata = {
   title: 'London Companions',
-  description: 'Browse our exclusive selection of London companions.',
+  description: 'Browse verified London companions at Vaurel — elite escort agency. Available in Mayfair, Kensington, Chelsea & beyond. From £250/hr. 30-min response.',
   alternates: { canonical: `${siteConfig.domain}/companions` },
   openGraph: {
     title: 'London Companions',
-    description: 'Browse our exclusive selection of London companions.',
+    description: 'Browse verified London companions at Vaurel — elite escort agency. Available in Mayfair, Kensington, Chelsea & beyond. From £250/hr. 30-min response.',
     url: `${siteConfig.domain}/companions`,
     siteName: siteConfig.name,
     locale: siteConfig.locale,
     type: 'website',
+    images: [{ url: `${siteConfig.domain}/opengraph-image.png`, width: 1200, height: 630 }],
   },
 }
 

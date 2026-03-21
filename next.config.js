@@ -2,6 +2,7 @@ const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  trailingSlash: false,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -29,6 +30,27 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // ── URL normalisation: www + slash → one hop ──
+      {
+        source: '/:path+/',
+        has: [{ type: 'host', value: 'www.vaurel.co.uk' }],
+        destination: 'https://vaurel.co.uk/:path+',
+        permanent: true,
+      },
+      // www only
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.vaurel.co.uk' }],
+        destination: 'https://vaurel.co.uk/:path*',
+        permanent: true,
+      },
+      // trailing slash only
+      {
+        source: '/:path+/',
+        destination: 'https://vaurel.co.uk/:path+',
+        permanent: true,
+      },
+      // ── Legacy route redirects ──
       {
         source: '/catalog',
         destination: '/companions',
@@ -50,8 +72,8 @@ const nextConfig = {
       { source: '/admin/masters/locations',           destination: '/admin/locations',        permanent: true },
       { source: '/admin/sla',                         destination: '/admin/sla-monitor',      permanent: true },
       // Location duplicates → canonical /london/:district-escorts/
-      { source: '/escorts-in/:district',  destination: '/london/:district-escorts/', permanent: true },
-      { source: '/escorts-in-:district',  destination: '/london/:district-escorts/', permanent: true },
+      { source: '/escorts-in/:district',  destination: '/london/:district-escorts', permanent: true },
+      { source: '/escorts-in-:district',  destination: '/london/:district-escorts', permanent: true },
     ]
   },
 }

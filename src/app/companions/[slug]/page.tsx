@@ -15,7 +15,7 @@ import { siteConfig } from '@/../config/site'
 
 interface Props { params: { slug: string } }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? siteConfig.domain
+const BASE_URL = siteConfig.domain
 
 function formatServiceName(raw: string): string {
   if (!raw) return ''
@@ -129,10 +129,11 @@ async function getProfileData(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const profile = await getProfileData(params.slug)
   if (!profile) return {}
+  const lowestPrice = profile.lowestPrice ? `From £${profile.lowestPrice}/hr.` : ''
   return {
-    title: profile.seoTitle ?? profile.name,
+    title: profile.seoTitle ?? `${profile.name} — London Companion`,
     description: profile.seoDescription
-      ?? `Book ${profile.name}${profile.tagline ? ` — ${profile.tagline}` : ''}. London companion agency.`,
+      ?? `Book ${profile.name}${profile.tagline ? ` — ${profile.tagline}` : ''}. Verified London companion at Vaurel. ${lowestPrice}`.trim(),
     openGraph: {
       images: profile.primaryPhoto ? [{ url: profile.primaryPhoto }] : [],
     },
