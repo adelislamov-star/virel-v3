@@ -45,6 +45,9 @@ async function getProfileData(slug: string) {
           include: { district: true },
           orderBy: { isPrimary: 'desc' },
         },
+        categories: {
+          include: { category: true },
+        },
       },
     })
     if (!model) return null
@@ -78,6 +81,10 @@ async function getProfileData(slug: string) {
       slug: ml.district?.slug ?? '',
       isPrimary: ml.isPrimary,
     }))
+    const categories = (model.categories ?? []).map((mc) => ({
+      name: mc.category?.title ?? '',
+      slug: mc.category?.slug ?? '',
+    }))
     const primaryDistrict = districts.find((d) => d.isPrimary)?.name ?? districts[0]?.name ?? null
     return {
       id: model.id,
@@ -100,6 +107,7 @@ async function getProfileData(slug: string) {
       lowestPrice,
       services,
       districts,
+      categories,
       primaryDistrict,
       stats: model.stats ? {
         age: model.stats.age,
@@ -324,6 +332,32 @@ export default async function ModelProfilePage({ params }: Props) {
           All services are for companionship only.<br />
           Any activities between consenting adults are a matter of personal choice.
         </div>
+
+        {/* Internal SEO links */}
+        {(profile.districts.length > 0 || profile.categories.length > 0) && (
+          <div className="profile-seo-links">
+            {profile.districts.length > 0 && (
+              <div>
+                <p>Available in:</p>
+                {profile.districts.map((d: any) => (
+                  <Link key={d.slug} href={`/london/${d.slug}-escorts`}>
+                    Escorts in {d.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {profile.categories.length > 0 && (
+              <div>
+                <p>Categories:</p>
+                {profile.categories.map((c: any) => (
+                  <Link key={c.slug} href={`/categories/${c.slug}`}>
+                    {c.name} Escorts London
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <Link href="/companions" className="back-link">← All Companions</Link>
       </div>
