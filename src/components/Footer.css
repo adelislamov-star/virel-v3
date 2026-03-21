@@ -1,0 +1,17 @@
+.f-link { font-size:13px; color:#4a4540; text-decoration:none; transition:color .2s; }
+.f-link:hover { color:#ddd5c8; }
+.f-contact { font-size:11px; letter-spacing:.1em; color:#6b6560; text-decoration:none; text-transform:uppercase; transition:color .2s; }
+.f-contact:hover { color:#c9a84c; }
+.footer-inner { max-width:1280px; margin:0 auto; padding:80px 40px 40px; }
+.footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:60px; margin-bottom:60px; }
+.footer-bottom { padding-top:32px; border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+.footer-district-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
+@media (max-width:900px) {
+  .footer-inner { padding:60px 24px 32px; }
+  .footer-grid { grid-template-columns:1fr 1fr; gap:40px 24px; }
+}
+@media (max-width:640px) {
+  .footer-grid { grid-template-columns:1fr; gap:32px; }
+  .footer-district-list { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+  .footer-bottom { flex-direction:column; text-align:center; }
+}

@@ -3,6 +3,7 @@ export const revalidate = 86400
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import './faq.css'
 import { siteConfig } from '@/../config/site'
 
 export const metadata = {
@@ -140,36 +141,6 @@ export default function FAQPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <style>{`
-        .faq-root { font-family:'DM Sans',sans-serif; background:#080808; color:#ddd5c8; min-height:100vh; }
-        .faq-bc { font-size:11px; letter-spacing:.1em; color:#3a3530; padding:20px 40px; border-bottom:1px solid rgba(255,255,255,0.04); }
-        .faq-bc a { color:#3a3530; text-decoration:none; }
-        .faq-bc a:hover { color:#c9a84c; }
-
-        .faq-inner { max-width:860px; margin:0 auto; padding:80px 40px 100px; }
-        @media(max-width:600px){ .faq-inner{padding:60px 20px 80px;} }
-        .f-eyebrow { font-size:10px; letter-spacing:.25em; color:#c9a84c; text-transform:uppercase; display:block; margin-bottom:16px; }
-        .f-title { font-family:'Cormorant Garamond',serif; font-size:clamp(40px,6vw,68px); font-weight:300; color:#f0e8dc; margin:0 0 16px; line-height:1.05; }
-        .f-title em { font-style:italic; color:#c9a84c; }
-        .f-subtitle { font-size:14px; color:#6b6560; line-height:1.9; margin:0 0 72px; }
-
-        .faq-section { margin-bottom:56px; }
-        .faq-section-title { font-size:10px; letter-spacing:.22em; color:#c9a84c; text-transform:uppercase; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid rgba(201,168,76,0.15); }
-
-        .faq-list { display:flex; flex-direction:column; }
-        .faq-item { border-bottom:1px solid rgba(255,255,255,0.05); }
-        .faq-q { padding:22px 0; cursor:pointer; font-size:15px; color:#ddd5c8; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:24px; }
-        .faq-q::-webkit-details-marker { display:none; }
-        .faq-plus { color:#c9a84c; font-size:20px; font-weight:300; flex-shrink:0; width:16px; text-align:center; transition:transform .25s; line-height:1; }
-        details[open] .faq-plus { transform:rotate(45deg); }
-        .faq-a { padding:0 32px 22px 0; font-size:13px; color:#6b6560; line-height:2.1; }
-
-        .f-cta { border:1px solid rgba(255,255,255,0.07); padding:40px; text-align:center; margin-top:64px; }
-        .f-cta-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; color:#f0e8dc; margin:0 0 10px; }
-        .f-cta-text { font-size:13px; color:#6b6560; margin:0 0 24px; }
-        .f-cta-link { font-size:11px; letter-spacing:.16em; color:#c9a84c; text-decoration:none; text-transform:uppercase; border:1px solid rgba(201,168,76,0.3); padding:12px 28px; display:inline-block; transition:all .2s; }
-        .f-cta-link:hover { background:rgba(201,168,76,0.06); border-color:#c9a84c; }
-      `}</style>
 
       <div className="faq-root">
         <Header />

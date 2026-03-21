@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { siteConfig } from '@/../config/site'
+import './join.css'
 
 const SERVICES = [
   { slug: '69', label: '69' },
@@ -231,16 +232,6 @@ export default function JoinPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#e8e0d4', fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`
-        * { box-sizing: border-box; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        .join-back-btn { padding:14px 28px; border:1px solid rgba(255,255,255,0.1); background:none; color:#6b6560; font-size:11px; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; font-family:inherit; transition:border-color .2s, color .2s; }
-        .join-back-btn:hover { border-color:rgba(255,255,255,0.25); color:#9a9189; }
-        select option { background: #1a1815; }
-        ::-webkit-calendar-picker-indicator { filter: invert(0.4); }
-        .join-input:focus { border-color: rgba(201,168,76,0.4) !important; }
-      `}</style>
-
       <Header />
 
       {/* Hero */}

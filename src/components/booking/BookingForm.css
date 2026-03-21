@@ -1,0 +1,7 @@
+@keyframes durationFadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes durationSlideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+.booking-2col-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.booking-2col-grid-lg { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:640px) {
+  .booking-2col-grid, .booking-2col-grid-lg { grid-template-columns:1fr; }
+}

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { sortRates, deduplicateByLabel } from '@/lib/sortRates'
 import { durationLabel } from '@/lib/durationLabel'
 import { siteConfig } from '@/../config/site'
+import './BookingForm.css'
 
 interface Rate {
   duration_type: string
@@ -477,10 +478,6 @@ function DurationSelector({
         </>
       )}
 
-      <style>{`
-        @keyframes durationFadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes durationSlideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
-      `}</style>
     </div>
   )
 }
@@ -545,14 +542,6 @@ export function BookingForm({ model }: BookingFormProps) {
     }
   }
 
-  const formStyles = `
-    .booking-2col-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .booking-2col-grid-lg { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media (max-width:640px) {
-      .booking-2col-grid, .booking-2col-grid-lg { grid-template-columns:1fr; }
-    }
-  `
-
   if (success) return (
     <div style={{ textAlign: 'center', padding: '64px 0' }}>
       <div style={{ fontSize: 28, color: '#b8965a', marginBottom: 28 }}>&#9670;</div>
@@ -588,8 +577,6 @@ export function BookingForm({ model }: BookingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      <style>{formStyles}</style>
-
       {error && (
         <div style={{ padding: '12px 20px', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: 11, marginBottom: 24, letterSpacing: '.04em' }}>
           {error}

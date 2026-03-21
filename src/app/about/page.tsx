@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
+import './about.css'
 
 export const metadata: Metadata = {
   title: `About ${siteConfig.name} | Premium Companion Agency London`,
@@ -25,11 +26,7 @@ export default function AboutPage() {
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'About' }]} />
-      <style>{`
-        .about-val { padding:32px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); }
-        .about-cta { display:inline-block; padding:16px 40px; border:1px solid rgba(197,165,114,0.4); color:#C5A572; font-size:11px; letter-spacing:.18em; text-transform:uppercase; text-decoration:none; transition:all .25s; font-family:inherit; }
-        .about-cta:hover { background:rgba(197,165,114,0.08); border-color:#C5A572; }
-      `}</style>
+
       <Header />
 
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '96px 24px 80px' }}>

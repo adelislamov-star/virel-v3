@@ -5,6 +5,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
+import './contact.css'
 
 export const metadata = {
   title: `Contact | ${siteConfig.name} London Escorts`,
@@ -16,35 +17,6 @@ export default function ContactPage() {
   return (
     <>
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Contact' }]} />
-      <style>{`
-        .contact-root { font-family:'DM Sans',sans-serif; background:#080808; color:#ddd5c8; min-height:100vh; }
-        .contact-bc { font-size:11px; letter-spacing:.1em; color:#3a3530; padding:20px 40px; border-bottom:1px solid rgba(255,255,255,0.04); }
-        .contact-bc a { color:#3a3530; text-decoration:none; }
-        .contact-bc a:hover { color:#c9a84c; }
-        .contact-inner { max-width:800px; margin:0 auto; padding:80px 40px; }
-        @media(max-width:600px){ .contact-inner{padding:60px 20px;} }
-        .c-eyebrow { font-size:10px; letter-spacing:.25em; color:#c9a84c; text-transform:uppercase; display:block; margin-bottom:16px; }
-        .c-title { font-family:'Cormorant Garamond',serif; font-size:clamp(40px,6vw,68px); font-weight:300; color:#f0e8dc; margin:0 0 16px; line-height:1.05; }
-        .c-title em { font-style:italic; color:#c9a84c; }
-        .c-subtitle { font-size:14px; color:#6b6560; line-height:1.9; margin:0 0 64px; max-width:480px; }
-
-        .c-channels { display:flex; flex-direction:column; gap:1px; background:rgba(255,255,255,0.04); margin-bottom:64px; }
-        .c-channel { display:flex; align-items:center; justify-content:space-between; padding:28px 32px; background:#080808; text-decoration:none; transition:background .2s; }
-        .c-channel:hover { background:#0d0c0a; }
-        .c-channel-left { display:flex; align-items:center; gap:24px; }
-        .c-channel-icon { font-family:'Cormorant Garamond',serif; font-size:28px; color:#c9a84c; opacity:0.6; width:32px; text-align:center; }
-        .c-channel-name { font-size:16px; color:#ddd5c8; margin:0 0 4px; }
-        .c-channel-detail { font-size:12px; color:#4a4540; letter-spacing:.04em; }
-        .c-channel-badge { font-size:10px; letter-spacing:.14em; color:#c9a84c; text-transform:uppercase; border:1px solid rgba(201,168,76,0.25); padding:4px 12px; }
-        .c-channel:hover .c-channel-arrow { color:#c9a84c; }
-        .c-channel-arrow { color:#2a2520; font-size:16px; transition:color .2s; }
-
-        .c-join { border:1px solid rgba(255,255,255,0.07); padding:40px; }
-        .c-join-title { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; color:#f0e8dc; margin:0 0 10px; }
-        .c-join-text { font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 24px; }
-        .c-join-link { font-size:11px; letter-spacing:.16em; color:#c9a84c; text-decoration:none; text-transform:uppercase; border:1px solid rgba(201,168,76,0.3); padding:12px 24px; display:inline-block; transition:all .2s; }
-        .c-join-link:hover { background:rgba(201,168,76,0.06); border-color:#c9a84c; }
-      `}</style>
 
       <div className="contact-root">
         <Header />

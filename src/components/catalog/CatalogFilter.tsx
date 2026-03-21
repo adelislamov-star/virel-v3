@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import './CatalogFilter.css'
 
 interface Model {
   id: string
@@ -60,42 +61,6 @@ export function CatalogFilter({ models, totalCount }: Props) {
 
   return (
     <>
-      <style>{`
-        .filter-bar { display:flex; align-items:center; justify-content:space-between; padding:0 40px; border-bottom:1px solid rgba(255,255,255,0.05); }
-        @media(max-width:600px){ .filter-bar{padding:0 20px;} }
-        .filter-toggle { display:flex; align-items:center; gap:10px; padding:18px 0; cursor:pointer; background:none; border:none; font-family:inherit; }
-        .filter-label { font-size:11px; letter-spacing:.18em; color:#6b6560; text-transform:uppercase; }
-        .filter-badge { background:#ddd5c8; color:#080808; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; }
-        .filter-result-count { font-size:11px; letter-spacing:.08em; color:#3a3530; }
-
-        .filter-panel { background:#0a0a0a; border-bottom:1px solid rgba(255,255,255,0.05); padding:28px 40px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:40px; }
-        @media(max-width:900px){ .filter-panel{grid-template-columns:1fr 1fr;} }
-        @media(max-width:550px){ .filter-panel{grid-template-columns:1fr; padding:20px;} }
-        .filter-section-label { font-size:10px; letter-spacing:.2em; color:#808080; text-transform:uppercase; margin-bottom:14px; display:block; }
-        .filter-chips { display:flex; flex-wrap:wrap; gap:6px; }
-        .chip { padding:6px 14px; font-size:11px; letter-spacing:.06em; cursor:pointer; background:none; border:1px solid rgba(255,255,255,0.07); color:#6b6560; font-family:inherit; transition:all .15s; }
-        .chip:hover { border-color:rgba(255,255,255,0.18); color:#ddd5c8; }
-        .chip.on { border-color:rgba(255,255,255,0.25); color:#ddd5c8; background:rgba(255,255,255,0.04); }
-        .filter-clear { background:none; border:1px solid rgba(255,255,255,0.07); color:#6b6560; padding:6px 16px; font-size:10px; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; font-family:inherit; transition:all .2s; margin-top:22px; }
-        .filter-clear:hover { color:#ddd5c8; border-color:rgba(255,255,255,0.2); }
-
-        .cf-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:2px; padding:2px; background:rgba(255,255,255,0.03); }
-        @media(max-width:1100px){ .cf-grid{grid-template-columns:repeat(3,1fr);} }
-        @media(max-width:750px){ .cf-grid{grid-template-columns:repeat(2,1fr);} }
-        @media(max-width:480px){ .cf-grid{grid-template-columns:1fr;} }
-        .cf-card { position:relative; aspect-ratio:3/4; overflow:hidden; background:#111; display:block; text-decoration:none; }
-        .cf-card img { width:100%; height:100%; object-fit:cover; transition:transform 1s cubic-bezier(.25,.46,.45,.94); filter:grayscale(10%); }
-        .cf-card:hover img { transform:scale(1.06); filter:grayscale(0%); }
-        .cf-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.88) 0%,transparent 55%); }
-        .cf-content { position:absolute; bottom:0; left:0; right:0; padding:28px 24px; }
-        .cf-name { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; color:#fff; margin:0 0 4px; }
-        .cf-meta { font-size:10px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase; }
-        .cf-cta { display:inline-block; margin-top:14px; font-size:10px; letter-spacing:.15em; color:#ddd5c8; text-transform:uppercase; opacity:0; transform:translateY(6px); transition:opacity .25s,transform .25s; }
-        .cf-card:hover .cf-cta { opacity:1; transform:none; }
-        .cf-placeholder { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg,#0f0f0f,#1a1811); }
-        .no-results { padding:80px 40px; text-align:center; font-family:'Cormorant Garamond',serif; font-size:24px; color:#3a3530; }
-      `}</style>
-
       {/* Filter toggle bar */}
       <div className="filter-bar">
         <button className="filter-toggle" onClick={() => setFiltersOpen(v => !v)}>

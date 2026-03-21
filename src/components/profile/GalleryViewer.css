@@ -1,0 +1,2 @@
+@keyframes fadeInLb { from{opacity:0} to{opacity:1} }
+[data-lb]{animation:fadeInLb .2s ease}

@@ -5,6 +5,7 @@ import { categories, groupLabels } from '@/../data/categories'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
+import './categories.css'
 
 export const metadata: Metadata = {
   title: 'London Escorts by Category',
@@ -18,12 +19,6 @@ export default function CategoriesPage() {
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Categories' }]} />
-      <style>{`
-        .cat-card { display:block; padding:20px 24px; border:1px solid rgba(255,255,255,0.07); text-decoration:none; color:#ddd5c8; font-size:14px; transition:border-color .25s,background .25s; }
-        .cat-card:hover { border-color:rgba(197,165,114,0.4); background:rgba(197,165,114,0.04); }
-        .cat-card-name { font-size:15px; font-weight:400; color:#f0e8dc; }
-        .cat-card-sub { font-size:11px; color:#4a4540; margin-top:4px; letter-spacing:.08em; text-transform:uppercase; }
-      `}</style>
       <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>

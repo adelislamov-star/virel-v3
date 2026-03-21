@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import './find-your-match.css'
 
 const questions = [
   {
@@ -116,12 +117,6 @@ export default function FindYourMatchPage() {
 
   return (
     <main style={rootStyle}>
-      <style>{fontImport}{`
-        .match-opt { padding:24px 28px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); cursor:pointer; transition:all .25s; text-align:left; font-family:inherit; color:#ddd5c8; width:100%; }
-        .match-opt:hover { border-color:rgba(197,165,114,0.4); background:rgba(197,165,114,0.05); }
-        .match-card { border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); overflow:hidden; }
-        .match-link { display:inline-block; padding:10px 24px; font-size:11px; letter-spacing:.15em; text-transform:uppercase; text-decoration:none; transition:all .2s; font-family:inherit; }
-      `}</style>
       <Header />
 
       <section style={{ maxWidth: 680, margin: '0 auto', padding: '96px 24px 80px' }}>

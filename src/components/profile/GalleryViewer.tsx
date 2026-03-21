@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import './GalleryViewer.css'
 
 interface Photo {
   id: string
@@ -62,8 +63,6 @@ export function GalleryViewer({ photos, modelName, primaryUrl }: GalleryViewerPr
             cursor: 'zoom-out',
           }}
         >
-          <style>{`@keyframes fadeInLb { from{opacity:0} to{opacity:1} } [data-lb]{animation:fadeInLb .2s ease}`}</style>
-
           {/* Prev */}
           {photos.findIndex(p => p.url === lightbox) > 0 && (
             <button

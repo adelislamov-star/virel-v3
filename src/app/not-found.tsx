@@ -1,18 +1,11 @@
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import './not-found.css'
 
 export default function NotFound() {
   return (
     <>
-      <style>{`
-        .nf-root { font-family:'DM Sans',sans-serif; background:#0A0A0A; color:#ddd5c8; min-height:100vh; display:flex; flex-direction:column; }
-        .nf-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:120px 24px; text-align:center; }
-        .nf-title { font-family:'Cormorant Garamond',serif; font-size:clamp(48px,8vw,96px); font-weight:300; color:#f5f0e8; margin:0 0 16px; }
-        .nf-sub { font-size:14px; color:#6b6560; margin:0 0 40px; }
-        .nf-btn { display:inline-block; background:#C5A572; color:#0A0A0A; padding:16px 36px; font-size:12px; letter-spacing:.15em; text-transform:uppercase; font-weight:500; text-decoration:none; transition:background .2s; }
-        .nf-btn:hover { background:#d4b87a; }
-      `}</style>
       <div className="nf-root">
         <Header />
         <div className="nf-content">
