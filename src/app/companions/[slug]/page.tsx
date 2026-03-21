@@ -85,7 +85,6 @@ async function getProfileData(slug: string) {
       name: mc.category?.title ?? '',
       slug: mc.category?.slug ?? '',
     }))
-    console.log('[DEBUG profile]', slug, 'districts:', JSON.stringify(districts), 'categories:', JSON.stringify(categories))
     const primaryDistrict = districts.find((d) => d.isPrimary)?.name ?? districts[0]?.name ?? null
     return {
       id: model.id,
