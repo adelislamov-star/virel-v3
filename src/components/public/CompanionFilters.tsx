@@ -115,37 +115,33 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
       {/* Nationality */}
       <div className="sb-section">
         <span className="sb-label">Nationality</span>
-        {NATIONALITIES.map(n => {
-          const isActive = currentFilters.nationality?.toLowerCase() === n.toLowerCase()
-          return (
-            <button
-              key={n}
-              className={`sb-option${isActive ? ' active' : ''}`}
-              onClick={() => setFilter('nationality', isActive ? undefined : n)}
-              style={{ background: 'none', border: 'none', fontFamily: 'inherit', textAlign: 'left', width: '100%' }}
-            >
-              {isActive ? '☑ ' : '☐ '}{n}
-            </button>
-          )
-        })}
+        <select
+          value={currentFilters.nationality || ''}
+          onChange={e => setFilter('nationality', e.target.value || undefined)}
+          className="sort-select"
+          style={{ width: '100%', marginTop: 4 }}
+        >
+          <option value="">All nationalities</option>
+          {NATIONALITIES.map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
       </div>
 
       {/* District */}
       <div className="sb-section">
         <span className="sb-label">District</span>
-        {districts.map(d => {
-          const isActive = currentFilters.districtId === d.id
-          return (
-            <button
-              key={d.id}
-              className={`sb-option${isActive ? ' active' : ''}`}
-              onClick={() => setFilter('districtId', isActive ? undefined : d.id)}
-              style={{ background: 'none', border: 'none', fontFamily: 'inherit', textAlign: 'left', width: '100%' }}
-            >
-              {isActive ? '☑ ' : '☐ '}{d.name}
-            </button>
-          )
-        })}
+        <select
+          value={currentFilters.districtId || ''}
+          onChange={e => setFilter('districtId', e.target.value || undefined)}
+          className="sort-select"
+          style={{ width: '100%', marginTop: 4 }}
+        >
+          <option value="">All districts</option>
+          {districts.map(d => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Availability */}
