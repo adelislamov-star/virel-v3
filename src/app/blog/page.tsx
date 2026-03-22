@@ -10,7 +10,7 @@ import { prisma } from '@/lib/db/client'
 import './blog.css'
 
 export const metadata: Metadata = {
-  title: `London Escort Blog & Guides | ${siteConfig.name}`,
+  title: 'London Escort Blog & Guides',
   description: `Guides, tips, and insights from ${siteConfig.name} — London's premier companion agency. Discover the best districts, hotels, and everything you need to know.`,
   alternates: { canonical: `${siteConfig.domain}/blog` },
 }
