@@ -3,8 +3,7 @@ export const revalidate = 86400
 
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { siteConfig } from '@/../config/site'
 import { prisma } from '@/lib/db/client'
 import './blog.css'
@@ -30,7 +29,6 @@ export default async function BlogPage() {
   return (
     <>
       <div className="blog-root">
-        <Header />
 
         <div className="blog-breadcrumb">
           <Link href="/">HOME</Link>
@@ -62,7 +60,6 @@ export default async function BlogPage() {
           </div>
         </div>
 
-        <Footer />
       </div>
     </>
   )

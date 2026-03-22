@@ -4,8 +4,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import './find-your-match.css'
 
 const questions = [
@@ -117,7 +116,6 @@ export default function FindYourMatchPage() {
 
   return (
     <main style={rootStyle}>
-      <Header />
 
       <section style={{ maxWidth: 680, margin: '0 auto', padding: '96px 24px 80px' }}>
         <p style={{ fontSize: 10, letterSpacing: '.3em', textTransform: 'uppercase', color: '#C5A572', marginBottom: 24, textAlign: 'center' }}>
@@ -275,7 +273,6 @@ export default function FindYourMatchPage() {
         )}
       </section>
 
-      <Footer />
     </main>
   )
 }

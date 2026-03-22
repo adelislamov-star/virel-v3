@@ -1,8 +1,7 @@
 // @ts-nocheck
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { siteConfig } from '@/../config/site'
 
 export const revalidate = 86400
@@ -61,7 +60,6 @@ export default function HowItWorksPage() {
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
-      <Header />
 
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '96px 24px 80px' }}>
         {/* Breadcrumb */}
@@ -152,7 +150,6 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

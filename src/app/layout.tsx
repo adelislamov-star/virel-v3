@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import '../styles/globals.css'
 import { CookieBanner } from '@/components/public/CookieBanner'
+import { Navbar } from '@/components/layout/Navbar'
+import { FooterNew } from '@/components/layout/FooterNew'
+import { FloatingContacts } from '@/components/layout/FloatingContacts'
 import { siteConfig } from '@/../config/site'
 
 const BASE_URL = siteConfig.domain
@@ -46,7 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <Navbar />
         {children}
+        <FooterNew />
+        <FloatingContacts />
         <CookieBanner />
       </body>
     </html>

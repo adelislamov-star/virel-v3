@@ -2,8 +2,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { siteConfig } from '@/../config/site'
 import './services.css'
 
@@ -49,7 +48,6 @@ export default async function ServicesPage() {
 
   return (
     <main style={{ background: '#080808', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <Header />
 
       {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
@@ -131,7 +129,6 @@ export default async function ServicesPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

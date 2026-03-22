@@ -4,8 +4,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import './book.css'
 
 const DURATION_LABELS: Record<string, { label: string; durationMin: number; sort: number }> = {
@@ -281,7 +280,6 @@ function BookingContent() {
   if (submitted) {
     return (
       <main className="book-page">
-        <Header />
         <section className="book-success">
           <div className="book-success-icon">✓</div>
           <h1>Thank you, {clientName}!</h1>
@@ -296,14 +294,12 @@ function BookingContent() {
           )}
           <Link href="/companions" className="book-success-link">Browse More Companions</Link>
         </section>
-        <Footer />
       </main>
     )
   }
 
   return (
     <main className="book-page">
-      <Header />
       <section className="book-container">
         <p className="book-eyebrow">Book a Companion</p>
         <h1 className="book-title">Your Experience Awaits</h1>
@@ -806,7 +802,6 @@ function BookingContent() {
           </div>
         )}
       </section>
-      <Footer />
     </main>
   )
 }
@@ -824,11 +819,9 @@ export default function BookPage() {
   return (
     <Suspense fallback={
       <main className="book-page">
-        <Header />
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '120px 24px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>Loading booking form...</p>
         </div>
-        <Footer />
       </main>
     }>
       <BookingContent />

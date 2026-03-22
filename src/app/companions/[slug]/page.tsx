@@ -4,8 +4,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { CompanionGallery } from '@/components/public/CompanionGallery'
 import { BookingWidget } from '@/components/public/BookingWidget'
 import { ViewTracker } from '@/components/public/ViewTracker'
@@ -182,7 +181,6 @@ export default async function ModelProfilePage({ params }: Props) {
     <div className="profile-root">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema) }} />
       <ViewTracker slug={params.slug} />
-      <Header />
 
       {/* Breadcrumb */}
       <nav className="breadcrumb">
@@ -393,7 +391,6 @@ export default async function ModelProfilePage({ params }: Props) {
         </section>
       )}
 
-      <Footer />
     </div>
   )
 }

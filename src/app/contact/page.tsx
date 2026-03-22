@@ -1,8 +1,7 @@
 export const revalidate = 86400
 
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 import './contact.css'
@@ -19,7 +18,6 @@ export default function ContactPage() {
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Contact' }]} />
 
       <div className="contact-root">
-        <Header />
 
         <div className="contact-bc">
           <Link href="/">HOME</Link>
@@ -83,7 +81,6 @@ export default function ContactPage() {
           </div>
         </div>
 
-        <Footer />
       </div>
     </>
   )

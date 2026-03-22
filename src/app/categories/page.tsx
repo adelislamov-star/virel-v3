@@ -2,8 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { siteConfig } from '@/../config/site'
 import { categories, groupLabels } from '@/../data/categories'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 import './categories.css'
 
@@ -19,7 +18,6 @@ export default function CategoriesPage() {
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Categories' }]} />
-      <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         <nav style={{ fontSize: 12, color: '#4a4540', marginBottom: 32 }}>
@@ -67,7 +65,6 @@ export default function CategoriesPage() {
         </Link>
       </section>
 
-      <Footer />
     </main>
   )
 }

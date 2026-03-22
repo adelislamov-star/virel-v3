@@ -3,8 +3,7 @@ export const revalidate = 86400
 
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 import './about.css'
@@ -27,7 +26,6 @@ export default function AboutPage() {
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'About' }]} />
 
-      <Header />
 
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '96px 24px 80px' }}>
         <p style={{ fontSize: 10, letterSpacing: '.3em', textTransform: 'uppercase', color: '#C5A572', marginBottom: 24 }}>About Us</p>
@@ -81,7 +79,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

@@ -4,8 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
 import { siteConfig } from '@/../config/site'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { ModelCard } from '@/components/public/ModelCard'
 import '../service.css'
 
@@ -132,7 +131,6 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
-      <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         {/* Breadcrumb */}
@@ -265,7 +263,6 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
         </Link>
       </section>
 
-      <Footer />
     </main>
   )
 }

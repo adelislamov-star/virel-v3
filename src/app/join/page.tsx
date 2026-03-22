@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
+
 import { siteConfig } from '@/../config/site'
 import './join.css'
 
@@ -232,7 +232,6 @@ export default function JoinPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#e8e0d4', fontFamily: "'DM Sans', sans-serif" }}>
-      <Header />
 
       {/* Hero */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '60px 40px 48px' }}>

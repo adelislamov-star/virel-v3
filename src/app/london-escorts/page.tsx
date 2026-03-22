@@ -3,8 +3,7 @@ export const revalidate = 3600
 
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
 import { siteConfig } from '@/../config/site'
@@ -52,7 +51,6 @@ export default async function LondonEscortsPage() {
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'London Escorts' }]} />
-      <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         <nav aria-label="breadcrumb" style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', marginBottom: 40 }}>
@@ -139,7 +137,6 @@ export default async function LondonEscortsPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

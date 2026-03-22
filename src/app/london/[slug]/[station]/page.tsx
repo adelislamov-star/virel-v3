@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db/client'
 import { siteConfig } from '@/../config/site'
 import './station.css'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { ModelCard } from '@/components/public/ModelCard'
 
 export const revalidate = 3600
@@ -84,7 +83,6 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
-      <Header />
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
         {/* Breadcrumb */}
@@ -150,7 +148,6 @@ export default async function TransportHubPage({ params }: { params: Promise<{ s
         </Link>
       </section>
 
-      <Footer />
     </main>
   )
 }

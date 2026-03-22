@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { siteConfig } from '@/../config/site'
 import { categories } from '@/../data/categories'
 import { prisma } from '@/lib/db/client'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { ModelCard } from '@/components/public/ModelCard'
 import { RichText } from '@/components/public/RichText'
 // categoryContent now loaded from DB (CategoryContent model)
@@ -189,7 +188,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   return (
     <main style={{ background: '#0A0A0A', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageSchema) }} />
-      <Header />
 
       {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '96px 40px 64px' }}>
@@ -328,7 +326,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         <Link href="/companions" className="cat-cta">Browse All Companions</Link>
       </section>
 
-      <Footer />
     </main>
   )
 }

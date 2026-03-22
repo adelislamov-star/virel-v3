@@ -1,8 +1,7 @@
 export const revalidate = 86400
 
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import './faq.css'
 import { siteConfig } from '@/../config/site'
 
@@ -143,7 +142,6 @@ export default function FAQPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
       <div className="faq-root">
-        <Header />
 
         <div className="faq-bc">
           <Link href="/">HOME</Link>
@@ -180,7 +178,6 @@ export default function FAQPage() {
           </div>
         </div>
 
-        <Footer />
       </div>
     </>
   )

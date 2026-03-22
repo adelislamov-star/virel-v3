@@ -4,8 +4,7 @@ export const revalidate = 86400
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { siteConfig } from '@/../config/site'
 import { prisma } from '@/lib/db/client'
 import '../article.css'
@@ -87,7 +86,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graphSchema) }} />
 
       <div className="article-root">
-        <Header />
 
         {/* Breadcrumb */}
         <nav aria-label="breadcrumb" style={{ fontSize: 12, color: '#4a4540', padding: '20px 40px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -140,7 +138,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         )}
 
-        <Footer />
       </div>
     </>
   )

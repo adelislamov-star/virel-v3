@@ -3,8 +3,7 @@ export const revalidate = 3600
 
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 import { ModelCard } from '@/components/public/ModelCard'
 import { CompanionFilters } from '@/components/public/CompanionFilters'
 import { prisma } from '@/lib/db/client'
@@ -179,7 +178,6 @@ export default async function CompanionsPage({
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Companions' }]} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogSchema) }} />
       <div className="catalog-root">
-        <Header />
 
         {/* Header */}
         <div className="catalog-header">
@@ -275,7 +273,6 @@ export default async function CompanionsPage({
           </div>
         </div>
 
-        <Footer />
       </div>
     </>
   )

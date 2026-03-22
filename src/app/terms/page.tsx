@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { siteConfig } from '@/../config/site'
-import { Header } from '@/components/Header'
-import { Footer } from '@/components/Footer'
+
 
 export const metadata = {
   title: `Terms of Service | ${siteConfig.name}`,
@@ -22,7 +21,7 @@ const sections = [
 export default function TermsPage() {
   return (
     <main style={{ background: '#080808', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', color: '#ddd5c8' }}>
-      <Header />
+
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '80px 40px 120px' }}>
         <nav style={{ fontSize: 11, letterSpacing: '.1em', color: '#3a3530', marginBottom: 48 }}>
           <Link href="/" style={{ color: '#3a3530', textDecoration: 'none' }}>HOME</Link>
@@ -42,7 +41,6 @@ export default function TermsPage() {
           ))}
         </div>
       </div>
-      <Footer />
     </main>
   )
 }
