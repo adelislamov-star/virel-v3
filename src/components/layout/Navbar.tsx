@@ -22,7 +22,7 @@ export function Navbar() {
       <ul className="nav-links">
         <li><Link href="/companions">Companions</Link></li>
         <li><Link href="/services">Experiences</Link></li>
-        <li><Link href="/london">Locations</Link></li>
+        <li><Link href="/london/mayfair-escorts">Locations</Link></li>
         <li><Link href="/about">About</Link></li>
         <li><Link href="/discretion">Discretion</Link></li>
       </ul>
