@@ -82,7 +82,6 @@ export default async function CompanionsPage({
         stats: true,
         media: { where: { isPrimary: true, isPublic: true }, take: 1 },
         modelLocations: {
-          where: { isPrimary: true },
           include: { district: { select: { name: true } } },
           take: 1,
         },
@@ -140,10 +139,22 @@ export default async function CompanionsPage({
     filteredModels = filteredModels.filter((m: any) => (minPrices[m.id] ?? 0) < max)
   }
 
+  // Fallback districts for models without DB district data
+  const DISTRICT_FALLBACK: Record<string, string> = {
+    marsalina: 'Earls Court',
+    marzena: 'Knightsbridge',
+    angelina: 'Kensington',
+    comely: 'Mayfair',
+    veruca: 'Chelsea',
+    burana: 'Belgravia',
+    vicky: 'Notting Hill',
+    watari: 'Marylebone',
+  }
+
   // Prepare client-side data
   const clientModels = filteredModels.map((model: any) => {
     const photo = model.media[0]?.url ?? null
-    const district = model.modelLocations?.[0]?.district?.name ?? null
+    const district = model.modelLocations?.[0]?.district?.name ?? DISTRICT_FALLBACK[model.slug] ?? null
     const incallPrice = model.modelRates?.[0]?.incallPrice
       ? Number(model.modelRates[0].incallPrice)
       : minPrices[model.id] ?? null

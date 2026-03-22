@@ -46,7 +46,7 @@ export function ModelCard({
         <div className="card-name">{displayName}</div>
         <div className="card-meta">
           {nationality && <span className="card-tag">{nationality}</span>}
-          {nationality && districtName && <span className="card-sep" />}
+          {nationality && districtName && <span className="card-sep">·</span>}
           {districtName && <span className="card-location">{districtName}</span>}
         </div>
         {minIncallPrice != null && minIncallPrice > 0 && (
