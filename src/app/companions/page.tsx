@@ -6,6 +6,7 @@ import Link from 'next/link'
 
 import { CompanionsClient } from '@/components/public/CompanionsClient'
 import { CompanionFilters } from '@/components/public/CompanionFilters'
+import { SortTabs } from '@/components/public/SortTabs'
 import { prisma } from '@/lib/db/client'
 
 import { siteConfig } from '@/../config/site'
@@ -207,9 +208,10 @@ export default async function CompanionsPage({
           />
 
           <div>
-            {/* Sort bar */}
+            {/* Sort tabs */}
             <div className="results-header">
               <span className="results-count">{clientModels.length} result{clientModels.length !== 1 ? 's' : ''}</span>
+              <SortTabs current={sort} />
             </div>
 
             <CompanionsClient initialData={clientModels} />

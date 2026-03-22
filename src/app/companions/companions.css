@@ -14,17 +14,40 @@
 /* SIDEBAR */
 .sidebar { border-right: 1px solid rgba(255,255,255,0.05); padding: 32px 24px; }
 @media(max-width:900px){ .sidebar { border-right:none; border-bottom:1px solid rgba(255,255,255,0.05); padding:24px; } }
+
+/* Sidebar header: FILTER + Clear all */
+.sb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.sb-header-label { font-size: 11px; letter-spacing: .25em; color: #ddd5c8; text-transform: uppercase; font-weight: 500; }
+.sb-clear-top { font-size: 10px; letter-spacing: .1em; color: #C5A572; text-transform: uppercase; background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; transition: color .15s; }
+.sb-clear-top:hover { color: #ddd5c8; }
+
 .sb-section { margin-bottom: 28px; }
 .sb-label { font-size: 10px; letter-spacing: .2em; color: #808080; text-transform: uppercase; margin-bottom: 12px; display: block; }
-.sb-option { display: block; padding: 6px 0; font-size: 12px; color: #6b6560; cursor: pointer; text-decoration: none; transition: color .15s; }
+
+/* Checkbox-style options */
+.sb-option { display: block; padding: 6px 0; font-size: 12px; color: #6b6560; cursor: pointer; text-decoration: none; transition: color .15s; background: none; border: none; font-family: inherit; text-align: left; width: 100%; }
 .sb-option:hover { color: #ddd5c8; }
 .sb-option.active { color: #C5A572; }
+
+/* Price pill chips */
+.sb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sb-chip { padding: 6px 14px; font-size: 11px; letter-spacing: .04em; color: #6b6560; border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; background: none; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+.sb-chip:hover { color: #ddd5c8; border-color: rgba(255,255,255,0.2); }
+.sb-chip.active { color: #C5A572; border-color: rgba(197,165,114,.5); background: rgba(197,165,114,.08); }
+
 .sb-clear { display: inline-block; margin-top: 16px; padding: 8px 16px; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6b6560; border: 1px solid rgba(255,255,255,0.07); text-decoration: none; transition: all .2s; background: none; cursor: pointer; font-family: inherit; }
 .sb-clear:hover { color: #ddd5c8; border-color: rgba(255,255,255,0.2); }
 
 /* RESULTS */
 .results-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .results-count { font-size: 11px; letter-spacing: .08em; color: #3a3530; }
+
+/* Sort tabs — horizontal row with gold underline on active */
+.sort-tabs { display: flex; gap: 0; }
+.sort-tab { padding: 8px 16px; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6b6560; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+.sort-tab:hover { color: #ddd5c8; }
+.sort-tab.active { color: #C5A572; border-bottom-color: #C5A572; }
+
 .sort-select { background: transparent; border: 1px solid rgba(255,255,255,0.07); color: #6b6560; padding: 6px 12px; font-size: 11px; font-family: inherit; cursor: pointer; }
 .sort-select option { background: #111; }
 
