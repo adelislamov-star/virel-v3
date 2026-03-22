@@ -4,7 +4,7 @@ export const revalidate = 3600
 import { Metadata } from 'next'
 import Link from 'next/link'
 
-import { ModelCard } from '@/components/public/ModelCard'
+import { CompanionsClient } from '@/components/public/CompanionsClient'
 import { CompanionFilters } from '@/components/public/CompanionFilters'
 import { prisma } from '@/lib/db/client'
 
@@ -27,8 +27,6 @@ export const metadata: Metadata = {
   },
 }
 
-const PAGE_SIZE = 20
-
 export default async function CompanionsPage({
   searchParams,
 }: {
@@ -43,7 +41,6 @@ export default async function CompanionsPage({
   const age = typeof searchParams.age === 'string' ? searchParams.age : undefined
   const service = typeof searchParams.service === 'string' ? searchParams.service : undefined
   const sort = typeof searchParams.sort === 'string' ? searchParams.sort : 'recommended'
-  const page = Math.max(1, parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1', 10) || 1)
 
   // Build stats filter (merged so multiple stats conditions don't overwrite each other)
   const statsFilter: any = {}
@@ -76,12 +73,10 @@ export default async function CompanionsPage({
     ? { createdAt: 'desc' as const }
     : [{ isExclusive: 'desc' as const }, { isVerified: 'desc' as const }, { createdAt: 'desc' as const }]
 
-  const [models, totalCount, allDistricts] = await Promise.all([
+  const [models, allDistricts] = await Promise.all([
     prisma.model.findMany({
       where,
       orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
       include: {
         stats: true,
         media: { where: { isPrimary: true, isPublic: true }, take: 1 },
@@ -95,7 +90,6 @@ export default async function CompanionsPage({
         },
       },
     }),
-    prisma.model.count({ where }),
     prisma.district.findMany({
       where: { isActive: true },
       orderBy: [{ tier: 'asc' }, { sortOrder: 'asc' }],
@@ -145,29 +139,37 @@ export default async function CompanionsPage({
     filteredModels = filteredModels.filter((m: any) => (minPrices[m.id] ?? 0) < max)
   }
 
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  // Prepare client-side data
+  const clientModels = filteredModels.map((model: any) => {
+    const photo = model.media[0]?.url ?? null
+    const district = model.modelLocations?.[0]?.district?.name ?? null
+    const incallPrice = model.modelRates?.[0]?.incallPrice
+      ? Number(model.modelRates[0].incallPrice)
+      : minPrices[model.id] ?? null
 
-  // Build URL for pagination/filters
-  function buildUrl(overrides: Record<string, string | undefined>) {
-    const params = new URLSearchParams()
-    const all = { hairColor, nationality, districtId, availability, minPrice, maxPrice, age, service, sort, ...overrides }
-    for (const [k, v] of Object.entries(all)) {
-      if (v && v !== 'any' && v !== 'recommended' && k !== 'page') params.set(k, v)
+    return {
+      id: model.id,
+      name: model.name,
+      slug: model.slug,
+      tagline: model.tagline,
+      availability: model.availability,
+      isVerified: model.isVerified,
+      isExclusive: model.isExclusive,
+      districtName: district,
+      minIncallPrice: incallPrice,
+      coverPhotoUrl: photo,
     }
-    if (overrides.page && overrides.page !== '1') params.set('page', overrides.page)
-    const qs = params.toString()
-    return `/companions${qs ? `?${qs}` : ''}`
-  }
+  })
 
   const catalogSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `London Companions — ${siteConfig.name}`,
     url: `${siteConfig.domain}/companions`,
-    numberOfItems: totalCount,
-    itemListElement: filteredModels.map((m: any, i: number) => ({
+    numberOfItems: clientModels.length,
+    itemListElement: clientModels.slice(0, 10).map((m: any, i: number) => ({
       '@type': 'ListItem',
-      position: (page - 1) * PAGE_SIZE + i + 1,
+      position: i + 1,
       url: `${siteConfig.domain}/companions/${m.slug}`,
       name: m.name,
     })),
@@ -193,7 +195,7 @@ export default async function CompanionsPage({
             Every profile verified, every photo authentic.
           </p>
           <p className="catalog-count">
-            Showing {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}–{Math.min(page * PAGE_SIZE, totalCount)} of {totalCount} companion{totalCount !== 1 ? 's' : ''}
+            {clientModels.length} companion{clientModels.length !== 1 ? 's' : ''}
           </p>
         </div>
 
@@ -207,69 +209,10 @@ export default async function CompanionsPage({
           <div>
             {/* Sort bar */}
             <div className="results-header">
-              <span className="results-count">{filteredModels.length} result{filteredModels.length !== 1 ? 's' : ''}</span>
+              <span className="results-count">{clientModels.length} result{clientModels.length !== 1 ? 's' : ''}</span>
             </div>
 
-            {filteredModels.length === 0 ? (
-              <div className="no-results">
-                <p>No companions found matching your filters.</p>
-                <Link href="/companions" className="sb-clear" style={{ display: 'inline-block', marginTop: 24 }}>
-                  Clear All Filters
-                </Link>
-              </div>
-            ) : (
-              <div className="results-grid">
-                {filteredModels.map((model: any) => {
-                  const photo = model.media[0]?.url
-                  const district = model.modelLocations?.[0]?.district?.name ?? null
-                  const incallPrice = model.modelRates?.[0]?.incallPrice
-                    ? Number(model.modelRates[0].incallPrice)
-                    : minPrices[model.id] ?? null
-
-                  return (
-                    <ModelCard
-                      key={model.id}
-                      name={model.name}
-                      slug={model.slug}
-                      tagline={model.tagline}
-                      coverPhotoUrl={photo}
-                      availability={model.availability}
-                      isVerified={model.isVerified}
-                      isExclusive={model.isExclusive}
-                      districtName={district}
-                      minIncallPrice={incallPrice}
-                    />
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <nav className="pagination">
-                <Link
-                  href={buildUrl({ page: String(Math.max(1, page - 1)) })}
-                  className={`pg-link${page <= 1 ? ' disabled' : ''}`}
-                >
-                  ← Prev
-                </Link>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <Link
-                    key={p}
-                    href={buildUrl({ page: String(p) })}
-                    className={`pg-link${p === page ? ' active' : ''}`}
-                  >
-                    {p}
-                  </Link>
-                ))}
-                <Link
-                  href={buildUrl({ page: String(Math.min(totalPages, page + 1)) })}
-                  className={`pg-link${page >= totalPages ? ' disabled' : ''}`}
-                >
-                  Next →
-                </Link>
-              </nav>
-            )}
+            <CompanionsClient initialData={clientModels} />
           </div>
         </div>
 

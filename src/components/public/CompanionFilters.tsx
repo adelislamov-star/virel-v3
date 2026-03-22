@@ -37,8 +37,8 @@ const AGE_RANGES = [
   { label: '30+', value: '30plus' },
 ]
 const NATIONALITIES = [
-  'Brazilian', 'British', 'Colombian', 'Czech', 'Eastern European',
-  'French', 'Italian', 'Russian', 'Spanish', 'Turkish',
+  'Brazilian', 'Eastern European', 'British', 'Italian',
+  'French', 'Spanish', 'Colombian', 'Other',
 ]
 
 export function CompanionFilters({ districts, currentFilters }: Props) {
@@ -115,33 +115,37 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
       {/* Nationality */}
       <div className="sb-section">
         <span className="sb-label">Nationality</span>
-        <select
-          value={currentFilters.nationality || ''}
-          onChange={e => setFilter('nationality', e.target.value || undefined)}
-          className="sort-select"
-          style={{ width: '100%', marginTop: 4 }}
-        >
-          <option value="">All nationalities</option>
-          {NATIONALITIES.map(n => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
+        {NATIONALITIES.map(n => {
+          const isActive = currentFilters.nationality?.toLowerCase() === n.toLowerCase()
+          return (
+            <button
+              key={n}
+              className={`sb-option${isActive ? ' active' : ''}`}
+              onClick={() => setFilter('nationality', isActive ? undefined : n)}
+              style={{ background: 'none', border: 'none', fontFamily: 'inherit', textAlign: 'left', width: '100%' }}
+            >
+              {isActive ? '☑ ' : '☐ '}{n}
+            </button>
+          )
+        })}
       </div>
 
       {/* District */}
       <div className="sb-section">
         <span className="sb-label">District</span>
-        <select
-          value={currentFilters.districtId || ''}
-          onChange={e => setFilter('districtId', e.target.value || undefined)}
-          className="sort-select"
-          style={{ width: '100%', marginTop: 4 }}
-        >
-          <option value="">All districts</option>
-          {districts.map(d => (
-            <option key={d.id} value={d.id}>{d.name}</option>
-          ))}
-        </select>
+        {districts.map(d => {
+          const isActive = currentFilters.districtId === d.id
+          return (
+            <button
+              key={d.id}
+              className={`sb-option${isActive ? ' active' : ''}`}
+              onClick={() => setFilter('districtId', isActive ? undefined : d.id)}
+              style={{ background: 'none', border: 'none', fontFamily: 'inherit', textAlign: 'left', width: '100%' }}
+            >
+              {isActive ? '☑ ' : '☐ '}{d.name}
+            </button>
+          )
+        })}
       </div>
 
       {/* Availability */}
