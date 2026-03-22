@@ -19,6 +19,7 @@ interface Props {
   nationalities: string[]
   hairColors: string[]
   experiences: Experience[]
+  ageRanges: { label: string; value: string }[]
   currentFilters: {
     hairColor?: string
     nationality?: string
@@ -27,6 +28,7 @@ interface Props {
     minPrice?: string
     maxPrice?: string
     service?: string
+    age?: string
     sort?: string
   }
 }
@@ -58,7 +60,7 @@ function FilterGroup({
   )
 }
 
-export function CompanionFilters({ districts, nationalities, hairColors, experiences, currentFilters }: Props) {
+export function CompanionFilters({ districts, nationalities, hairColors, experiences, ageRanges, currentFilters }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -190,7 +192,25 @@ export function CompanionFilters({ districts, nationalities, hairColors, experie
         </FilterGroup>
       )}
 
-      {/* 6. Tonight — last */}
+      {/* 6. Age — from DB, only if data exists */}
+      {ageRanges.length > 0 && (
+        <FilterGroup title="Age">
+          {ageRanges.map(a => {
+            const isActive = currentFilters.age === a.value
+            return (
+              <button
+                key={a.value}
+                className={`sb-option${isActive ? ' active' : ''}`}
+                onClick={() => setFilter('age', isActive ? undefined : a.value)}
+              >
+                {a.label}
+              </button>
+            )
+          })}
+        </FilterGroup>
+      )}
+
+      {/* 7. Tonight — last */}
       <FilterGroup title="Tonight">
         <button
           className={`sb-option${currentFilters.availability === 'available-now' ? ' active' : ''}`}

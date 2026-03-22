@@ -40,6 +40,7 @@ export default async function CompanionsPage({
   const minPrice = typeof searchParams.minPrice === 'string' ? searchParams.minPrice : undefined
   const maxPrice = typeof searchParams.maxPrice === 'string' ? searchParams.maxPrice : undefined
   const service = typeof searchParams.service === 'string' ? searchParams.service : undefined
+  const age = typeof searchParams.age === 'string' ? searchParams.age : undefined
   const sort = typeof searchParams.sort === 'string' ? searchParams.sort : 'recommended'
 
   // Build stats filter (merged so multiple stats conditions don't overwrite each other)
@@ -50,6 +51,10 @@ export default async function CompanionsPage({
   if (nationality && nationality !== 'any') {
     statsFilter.nationality = { equals: nationality, mode: 'insensitive' }
   }
+  if (age === '18-24') { statsFilter.age = { gte: 18, lte: 24 } }
+  else if (age === '25-30') { statsFilter.age = { gte: 25, lte: 30 } }
+  else if (age === '30plus') { statsFilter.age = { gte: 30 } }
+
   // Build where clause
   const where: any = {
     status: 'active',
@@ -69,7 +74,7 @@ export default async function CompanionsPage({
     ? { createdAt: 'desc' as const }
     : [{ isExclusive: 'desc' as const }, { isVerified: 'desc' as const }, { createdAt: 'desc' as const }]
 
-  const [models, allDistricts, filterNationalities, filterHairColors, filterExperiences] = await Promise.all([
+  const [models, allDistricts, filterNationalities, filterHairColors, filterExperiences, filterAges] = await Promise.all([
     prisma.model.findMany({
       where,
       orderBy,
@@ -120,6 +125,15 @@ export default async function CompanionsPage({
       select: { slug: true, publicName: true, title: true },
       orderBy: { sortOrder: 'asc' },
     }),
+    // Ages from active models
+    prisma.modelStats.findMany({
+      where: {
+        age: { not: null },
+        model: { status: 'active', deletedAt: null },
+      },
+      select: { age: true },
+      orderBy: { age: 'asc' },
+    }),
   ])
 
   const nationalities = filterNationalities
@@ -132,6 +146,12 @@ export default async function CompanionsPage({
     slug: s.slug,
     label: s.publicName ?? s.title,
   }))
+  const ages = filterAges.map((s: any) => s.age).filter(Boolean) as number[]
+  const ageRanges = [
+    ...(ages.some(a => a >= 18 && a <= 24) ? [{ label: '18–24', value: '18-24' }] : []),
+    ...(ages.some(a => a >= 25 && a <= 30) ? [{ label: '25–30', value: '25-30' }] : []),
+    ...(ages.some(a => a >= 30)            ? [{ label: '30+',   value: '30plus' }] : []),
+  ]
 
   // Fetch min prices via Prisma
   let minPrices: Record<string, number> = {}
@@ -252,7 +272,8 @@ export default async function CompanionsPage({
             nationalities={nationalities}
             hairColors={hairColors}
             experiences={experiences}
-            currentFilters={{ hairColor, nationality, districtId, availability, minPrice, maxPrice, service, sort }}
+            ageRanges={ageRanges}
+            currentFilters={{ hairColor, nationality, districtId, availability, minPrice, maxPrice, service, age, sort }}
           />
 
           <div>
