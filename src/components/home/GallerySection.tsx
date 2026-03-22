@@ -4,6 +4,7 @@ import Link from 'next/link'
 interface CompanionCard {
   slug: string
   name: string
+  tagline: string | null
   photoUrl: string | null
   district: string | null
 }
@@ -51,6 +52,7 @@ export function GallerySection({ companions }: GallerySectionProps) {
             </div>
             <div className="gc-body">
               <div className="gc-name">{toTitleCase(c.name)}</div>
+              {c.tagline && <div className="gc-tagline">{c.tagline}</div>}
               {c.district && <div className="gc-loc">{c.district}</div>}
             </div>
           </Link>
