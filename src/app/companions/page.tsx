@@ -39,7 +39,6 @@ export default async function CompanionsPage({
   const availability = typeof searchParams.availability === 'string' ? searchParams.availability : undefined
   const minPrice = typeof searchParams.minPrice === 'string' ? searchParams.minPrice : undefined
   const maxPrice = typeof searchParams.maxPrice === 'string' ? searchParams.maxPrice : undefined
-  const age = typeof searchParams.age === 'string' ? searchParams.age : undefined
   const service = typeof searchParams.service === 'string' ? searchParams.service : undefined
   const sort = typeof searchParams.sort === 'string' ? searchParams.sort : 'recommended'
 
@@ -51,10 +50,6 @@ export default async function CompanionsPage({
   if (nationality && nationality !== 'any') {
     statsFilter.nationality = { equals: nationality, mode: 'insensitive' }
   }
-  if (age === '18-24') { statsFilter.age = { gte: 18, lte: 24 } }
-  else if (age === '25-30') { statsFilter.age = { gte: 25, lte: 30 } }
-  else if (age === '30plus') { statsFilter.age = { gte: 30 } }
-
   // Build where clause
   const where: any = {
     status: 'active',
@@ -74,7 +69,7 @@ export default async function CompanionsPage({
     ? { createdAt: 'desc' as const }
     : [{ isExclusive: 'desc' as const }, { isVerified: 'desc' as const }, { createdAt: 'desc' as const }]
 
-  const [models, allDistricts] = await Promise.all([
+  const [models, allDistricts, filterNationalities, filterHairColors, filterExperiences] = await Promise.all([
     prisma.model.findMany({
       where,
       orderBy,
@@ -95,7 +90,48 @@ export default async function CompanionsPage({
       orderBy: [{ tier: 'asc' }, { sortOrder: 'asc' }],
       select: { id: true, name: true, slug: true },
     }),
+    // Unique nationalities from active models
+    prisma.modelStats.findMany({
+      where: {
+        nationality: { not: null },
+        model: { status: 'active', deletedAt: null },
+      },
+      select: { nationality: true },
+      distinct: ['nationality'],
+      orderBy: { nationality: 'asc' },
+    }),
+    // Unique hair colours from active models
+    prisma.modelStats.findMany({
+      where: {
+        hairColour: { not: null },
+        model: { status: 'active', deletedAt: null },
+      },
+      select: { hairColour: true },
+      distinct: ['hairColour'],
+      orderBy: { hairColour: 'asc' },
+    }),
+    // Experience services for filter
+    prisma.service.findMany({
+      where: {
+        isActive: true,
+        isPublic: true,
+        slug: { in: ['gfe', 'dinner-date', 'travel-companion', 'overnight', 'duo'] },
+      },
+      select: { slug: true, publicName: true, title: true },
+      orderBy: { sortOrder: 'asc' },
+    }),
   ])
+
+  const nationalities = filterNationalities
+    .map((s: any) => s.nationality)
+    .filter(Boolean) as string[]
+  const hairColors = filterHairColors
+    .map((s: any) => s.hairColour)
+    .filter(Boolean) as string[]
+  const experiences = filterExperiences.map((s: any) => ({
+    slug: s.slug,
+    label: s.publicName ?? s.title,
+  }))
 
   // Fetch min prices via Prisma
   let minPrices: Record<string, number> = {}
@@ -213,7 +249,10 @@ export default async function CompanionsPage({
         <div className="catalog-layout">
           <CompanionFilters
             districts={allDistricts}
-            currentFilters={{ hairColor, nationality, districtId, availability, minPrice, maxPrice, age, service, sort }}
+            nationalities={nationalities}
+            hairColors={hairColors}
+            experiences={experiences}
+            currentFilters={{ hairColor, nationality, districtId, availability, minPrice, maxPrice, service, sort }}
           />
 
           <div>
