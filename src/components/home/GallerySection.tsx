@@ -35,23 +35,24 @@ export function GallerySection({ companions }: GallerySectionProps) {
       <div className="gallery-grid">
         {companions.map((c) => (
           <Link key={c.slug} href={`/companions/${c.slug}`} className="gc">
-            {c.photoUrl ? (
-              <Image
-                src={c.photoUrl}
-                alt={`${toTitleCase(c.name)} — London companion Vaurel`}
-                fill
-                style={{ objectFit: 'cover', objectPosition: 'center 10%' }}
-                sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
-              />
-            ) : (
-              <div style={{ width: '100%', height: '100%', background: '#161410' }} />
-            )}
-            <div className="gc-overlay" />
+            <div className="gc-photo">
+              {c.photoUrl ? (
+                <Image
+                  src={c.photoUrl}
+                  alt={`${toTitleCase(c.name)} — London companion Vaurel`}
+                  fill
+                  style={{ objectFit: 'cover', objectPosition: 'center 10%' }}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: '#161410' }} />
+              )}
+              <span className="gc-btn">View Profile</span>
+            </div>
             <div className="gc-body">
               <div className="gc-name">{toTitleCase(c.name)}</div>
               {c.district && <div className="gc-loc">{c.district}</div>}
             </div>
-            <span className="gc-btn">View Profile</span>
           </Link>
         ))}
       </div>
