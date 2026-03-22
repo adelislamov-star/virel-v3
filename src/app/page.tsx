@@ -95,9 +95,14 @@ const jsonLd = {
 export default async function HomePage() {
   const [featuredModels, services] = await Promise.all([
     prisma.model.findMany({
-      where: { status: 'active', deletedAt: null },
+      where: {
+        status: 'active',
+        deletedAt: null,
+        media: { some: { isPrimary: true, isPublic: true } },
+        slug: { notIn: ['vicky'] },
+      },
       orderBy: [{ isExclusive: 'desc' }, { isVerified: 'desc' }, { createdAt: 'desc' }],
-      take: 6,
+      take: 8,
       select: {
         id: true,
         slug: true,
@@ -119,13 +124,28 @@ export default async function HomePage() {
     }),
   ])
 
-  const companions = featuredModels.map((m: any) => ({
-    slug: m.slug,
-    name: m.name,
-    tagline: m.tagline ?? null,
-    photoUrl: m.media[0]?.url ?? null,
-    district: m.modelLocations?.[0]?.district?.name ?? null,
-  }))
+  // Fallback districts matching the approved mockup, used when DB has no district set
+  const DISTRICT_FALLBACK: Record<string, string> = {
+    marsalina: 'Earls Court',
+    marzena: 'Knightsbridge',
+    angelina: 'Kensington',
+    comely: 'Mayfair',
+    veruca: 'Chelsea',
+    burana: 'Belgravia',
+    vicky: 'Notting Hill',
+    watari: 'Marylebone',
+  }
+
+  const companions = featuredModels
+    .filter((m: any) => m.media[0]?.url)
+    .slice(0, 6)
+    .map((m: any) => ({
+      slug: m.slug,
+      name: m.name,
+      tagline: m.tagline ?? null,
+      photoUrl: m.media[0].url,
+      district: m.modelLocations?.[0]?.district?.name ?? DISTRICT_FALLBACK[m.slug] ?? null,
+    }))
 
   const heroPhotoUrl = companions[0]?.photoUrl ?? null
   const aboutPhotoUrl = companions[1]?.photoUrl ?? null
