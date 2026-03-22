@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 interface District {
@@ -44,6 +45,19 @@ const DISTRICT_NAMES = [
   'Belgravia', 'Notting Hill', 'Marylebone', 'Soho', 'Earls Court',
 ]
 
+function FilterGroup({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="fg">
+      <button className="fg-header" onClick={() => setOpen(!open)}>
+        <span className="sb-label">{title}</span>
+        <span className={`fg-chevron${open ? ' open' : ''}`}>›</span>
+      </button>
+      {open && <div className="fg-body">{children}</div>}
+    </div>
+  )
+}
+
 export function CompanionFilters({ districts, currentFilters }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -80,7 +94,6 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
 
   const hasFilters = Object.values(currentFilters).some(v => v && v !== 'recommended')
 
-  // Match district names to DB district IDs
   const districtOptions = DISTRICT_NAMES.map(name => {
     const match = districts.find(d => d.name.toLowerCase() === name.toLowerCase())
     return match ? { id: match.id, name: match.name } : null
@@ -96,9 +109,18 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
         )}
       </div>
 
-      {/* Price — pill chips */}
-      <div className="sb-section">
-        <span className="sb-label">Price per hour</span>
+      {/* Availability — open by default */}
+      <FilterGroup title="Availability" defaultOpen>
+        <button
+          className={`sb-option${currentFilters.availability === 'available-now' ? ' active' : ''}`}
+          onClick={() => setFilter('availability', currentFilters.availability === 'available-now' ? undefined : 'available-now')}
+        >
+          {currentFilters.availability === 'available-now' ? '☑ ' : '☐ '}Available Now
+        </button>
+      </FilterGroup>
+
+      {/* Price */}
+      <FilterGroup title="Price per hour">
         <div className="sb-chips">
           {PRICE_RANGES.map(r => (
             <button
@@ -110,28 +132,10 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
             </button>
           ))}
         </div>
-      </div>
+      </FilterGroup>
 
-      {/* Hair Colour — checkboxes */}
-      <div className="sb-section">
-        <span className="sb-label">Hair Colour</span>
-        {HAIR_COLORS.map(h => {
-          const isActive = currentFilters.hairColor?.toLowerCase() === h.toLowerCase()
-          return (
-            <button
-              key={h}
-              className={`sb-option${isActive ? ' active' : ''}`}
-              onClick={() => setFilter('hairColor', isActive ? undefined : h)}
-            >
-              {isActive ? '☑ ' : '☐ '}{h}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Nationality — checkboxes */}
-      <div className="sb-section">
-        <span className="sb-label">Nationality</span>
+      {/* Nationality */}
+      <FilterGroup title="Nationality">
         {NATIONALITIES.map(n => {
           const isActive = currentFilters.nationality?.toLowerCase() === n.toLowerCase()
           return (
@@ -144,11 +148,26 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
             </button>
           )
         })}
-      </div>
+      </FilterGroup>
 
-      {/* District — checkboxes */}
-      <div className="sb-section">
-        <span className="sb-label">District</span>
+      {/* Hair Colour */}
+      <FilterGroup title="Hair Colour">
+        {HAIR_COLORS.map(h => {
+          const isActive = currentFilters.hairColor?.toLowerCase() === h.toLowerCase()
+          return (
+            <button
+              key={h}
+              className={`sb-option${isActive ? ' active' : ''}`}
+              onClick={() => setFilter('hairColor', isActive ? undefined : h)}
+            >
+              {isActive ? '☑ ' : '☐ '}{h}
+            </button>
+          )
+        })}
+      </FilterGroup>
+
+      {/* District */}
+      <FilterGroup title="District">
         {districtOptions.map(d => {
           const isActive = currentFilters.districtId === d.id
           return (
@@ -161,22 +180,10 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
             </button>
           )
         })}
-      </div>
+      </FilterGroup>
 
-      {/* Availability — checkbox */}
-      <div className="sb-section">
-        <span className="sb-label">Availability</span>
-        <button
-          className={`sb-option${currentFilters.availability === 'available-now' ? ' active' : ''}`}
-          onClick={() => setFilter('availability', currentFilters.availability === 'available-now' ? undefined : 'available-now')}
-        >
-          {currentFilters.availability === 'available-now' ? '☑ ' : '☐ '}Available Now
-        </button>
-      </div>
-
-      {/* Age — checkboxes */}
-      <div className="sb-section">
-        <span className="sb-label">Age</span>
+      {/* Age */}
+      <FilterGroup title="Age">
         {AGE_RANGES.map(a => {
           const isActive = currentFilters.age === a.value
           return (
@@ -189,7 +196,7 @@ export function CompanionFilters({ districts, currentFilters }: Props) {
             </button>
           )
         })}
-      </div>
+      </FilterGroup>
     </aside>
   )
 }

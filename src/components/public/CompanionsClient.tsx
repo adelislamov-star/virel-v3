@@ -7,10 +7,8 @@ interface ModelData {
   id: string
   name: string
   slug: string
-  tagline: string | null
+  nationality: string | null
   availability: string | null
-  isVerified: boolean
-  isExclusive: boolean
   districtName: string | null
   minIncallPrice: number | null
   coverPhotoUrl: string | null
@@ -42,11 +40,9 @@ export function CompanionsClient({ initialData }: { initialData: ModelData[] }) 
             key={m.id}
             name={m.name}
             slug={m.slug}
-            tagline={m.tagline}
+            nationality={m.nationality}
             coverPhotoUrl={m.coverPhotoUrl}
             availability={m.availability}
-            isVerified={m.isVerified}
-            isExclusive={m.isExclusive}
             districtName={m.districtName}
             minIncallPrice={m.minIncallPrice}
           />

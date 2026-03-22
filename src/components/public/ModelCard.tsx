@@ -4,11 +4,9 @@ import Image from 'next/image'
 export interface ModelCardProps {
   name: string
   slug: string
-  tagline: string | null
+  nationality: string | null
   coverPhotoUrl: string | null
   availability: string | null
-  isVerified: boolean
-  isExclusive: boolean
   districtName: string | null
   minIncallPrice: number | null
 }
@@ -18,52 +16,43 @@ function toTitleCase(s: string) {
 }
 
 export function ModelCard({
-  name, slug, tagline, coverPhotoUrl, availability,
-  isVerified, isExclusive, districtName, minIncallPrice,
+  name, slug, nationality, coverPhotoUrl, availability,
+  districtName, minIncallPrice,
 }: ModelCardProps) {
   const displayName = toTitleCase(name)
+  const isAvailable = availability === 'Available Now'
+
   return (
-      <Link href={`/companions/${slug}`} className="mc-card">
+    <Link href={`/companions/${slug}`} className="card">
+      <div className="card-img">
         {coverPhotoUrl ? (
           <Image
-            width={400}
-            height={500}
             src={coverPhotoUrl}
             alt={`${displayName} — London companion Vaurel`}
-            style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
+            fill
             sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 33vw"
+            style={{ objectFit: 'cover' }}
           />
         ) : (
-          <div className="mc-placeholder">
-            <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 64, color: '#2a2520', fontWeight: 300 }}>
-              {displayName.charAt(0)}
-            </span>
-            <span style={{ fontSize: 10, letterSpacing: '.18em', color: '#2a2520', textTransform: 'uppercase', marginTop: 8 }}>
-              Photo Coming Soon
-            </span>
+          <div className="card-placeholder">
+            <span className="card-placeholder-letter">{displayName.charAt(0)}</span>
           </div>
         )}
-        <div className="mc-overlay" />
-        <div className="mc-content">
-          {availability === 'Available Now' && (
-            <div className="mc-avail">
-              <span className="mc-avail-dot" />
-              Available Now
-            </div>
-          )}
-          <h3 className="mc-name">{displayName}</h3>
-          {tagline && <p className="mc-tagline">{tagline}</p>}
-          {districtName && <p className="mc-district">📍 {districtName}</p>}
-          {minIncallPrice != null && minIncallPrice > 0 && (
-            <p className="mc-price">From £{minIncallPrice.toLocaleString('en-GB')}/hr</p>
-          )}
-          {(isVerified || isExclusive) && (
-            <div className="mc-badges">
-              {isVerified && <span className="mc-badge">✓ Verified</span>}
-              {isExclusive && <span className="mc-badge mc-badge-excl">★ Exclusive</span>}
-            </div>
-          )}
+        <div className="card-img-overlay" />
+        <span className={`card-avail${isAvailable ? ' online' : ''}`} />
+        <span className="card-enquire">View Profile</span>
+      </div>
+      <div className="card-info">
+        <div className="card-name">{displayName}</div>
+        <div className="card-meta">
+          {nationality && <span className="card-tag">{nationality}</span>}
+          {nationality && districtName && <span className="card-sep" />}
+          {districtName && <span className="card-location">{districtName}</span>}
         </div>
-      </Link>
+        {minIncallPrice != null && minIncallPrice > 0 && (
+          <div className="card-price">From £{minIncallPrice.toLocaleString('en-GB')} / hr</div>
+        )}
+      </div>
+    </Link>
   )
 }
