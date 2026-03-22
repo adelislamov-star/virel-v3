@@ -4,13 +4,20 @@ import Link from 'next/link'
 interface CompanionCard {
   slug: string
   name: string
-  tagline: string | null
   photoUrl: string | null
   district: string | null
 }
 
 interface GallerySectionProps {
   companions: CompanionCard[]
+}
+
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 export function GallerySection({ companions }: GallerySectionProps) {
@@ -31,7 +38,7 @@ export function GallerySection({ companions }: GallerySectionProps) {
             {c.photoUrl ? (
               <Image
                 src={c.photoUrl}
-                alt={`${c.name} — London companion Vaurel`}
+                alt={`${toTitleCase(c.name)} — London companion Vaurel`}
                 fill
                 style={{ objectFit: 'cover', objectPosition: 'center 10%' }}
                 sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
@@ -41,8 +48,7 @@ export function GallerySection({ companions }: GallerySectionProps) {
             )}
             <div className="gc-overlay" />
             <div className="gc-body">
-              <div className="gc-name">{c.name}</div>
-              {c.tagline && <div className="gc-tagline">{c.tagline}</div>}
+              <div className="gc-name">{toTitleCase(c.name)}</div>
               {c.district && <div className="gc-loc">{c.district}</div>}
             </div>
             <span className="gc-btn">View Profile</span>

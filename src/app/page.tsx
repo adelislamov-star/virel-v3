@@ -102,7 +102,6 @@ export default async function HomePage() {
         id: true,
         slug: true,
         name: true,
-        tagline: true,
         media: { where: { isPrimary: true, isPublic: true }, take: 1, select: { url: true } },
         modelLocations: {
           where: { isPrimary: true },
@@ -122,7 +121,6 @@ export default async function HomePage() {
   const companions = featuredModels.map((m: any) => ({
     slug: m.slug,
     name: m.name,
-    tagline: m.tagline,
     photoUrl: m.media[0]?.url ?? null,
     district: m.modelLocations?.[0]?.district?.name ?? null,
   }))
