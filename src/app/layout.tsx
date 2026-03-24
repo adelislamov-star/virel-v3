@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import '../styles/globals.css'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { CookieBanner } from '@/components/public/CookieBanner'
 import { Navbar } from '@/components/layout/Navbar'
 import { FooterNew } from '@/components/layout/FooterNew'
@@ -54,6 +56,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <FooterNew />
         <FloatingContacts />
         <CookieBanner />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
