@@ -10,7 +10,7 @@ import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 
 export const metadata: Metadata = {
-  title: 'London Escorts — Discreet Companion Agency | Vaurel',
+  title: 'London Escorts — Discreet Companion Agency',
   description: "Vaurel is London's most discreet escort agency. Personally verified companions in Mayfair, Knightsbridge, Chelsea & Kensington. From £250/hr. Personal response in 15 min.",
   alternates: { canonical: `${siteConfig.domain}/london-escorts` },
   openGraph: {
