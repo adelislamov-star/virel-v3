@@ -9,6 +9,16 @@ export function CtaSection() {
       <div className="cta-inner">
         <h2 className="cta-h2">Ready to make<br /><em>an arrangement?</em></h2>
         <p className="cta-sub">Personal response &middot; 15 minutes &middot; Available 24/7</p>
+        <p style={{
+          fontSize: 13,
+          color: 'rgba(248,244,238,0.18)',
+          maxWidth: 560,
+          margin: '0 auto 36px',
+          lineHeight: 1.9,
+          letterSpacing: '.02em'
+        }}>
+          Vaurel is London&apos;s most discreet escort agency — connecting discerning clients with personally verified companions across the city. Available 24 hours, seven days a week.
+        </p>
         <div className="cta-btns">
           <Link href="/companions" className="btn-gold">Browse Companions</Link>
           <a href="https://wa.me/447000000000" className="btn-outline">WhatsApp Us</a>
