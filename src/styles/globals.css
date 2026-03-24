@@ -447,3 +447,11 @@ html {
 .back-link:hover { color:#f5f0e8; }
 .content-sections { padding:0 80px 80px; max-width:900px; }
 @media(max-width:900px) { .content-sections { padding:0 24px 60px; } }
+
+/* london-escorts SEO block responsive */
+@media (max-width: 860px) {
+  .le-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+}

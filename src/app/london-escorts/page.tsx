@@ -10,8 +10,8 @@ import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
 
 export const metadata: Metadata = {
-  title: 'London Escorts — Premier Companion Agency',
-  description: 'London escorts agency — verified, discreet, sophisticated. Available across all London districts. From £250/hr. Response within 30 minutes.',
+  title: 'London Escorts — Discreet Companion Agency | Vaurel',
+  description: "Vaurel is London's most discreet escort agency. Personally verified companions in Mayfair, Knightsbridge, Chelsea & Kensington. From £250/hr. Personal response in 15 min.",
   alternates: { canonical: `${siteConfig.domain}/london-escorts` },
   openGraph: {
     title: 'London Escorts — Premier Companion Agency | Vaurel',
@@ -134,6 +134,73 @@ export default async function LondonEscortsPage() {
           >
             View All Companions
           </Link>
+        </div>
+      </section>
+
+      {/* ── SEO Content Block ── */}
+      <section className="le-seo" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 100px' }}>
+        <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,rgba(201,168,76,0.18),transparent)', marginBottom: 72 }} />
+        <div className="le-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'start' }}>
+          <div>
+            <p style={{ fontSize: 10, letterSpacing: '.3em', textTransform: 'uppercase', color: '#BF9B5A', marginBottom: 14 }}>About Our Agency</p>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(28px,2.8vw,40px)', fontWeight: 300, color: '#f0e8dc', lineHeight: 1.1, margin: '0 0 28px' }}>
+              London&apos;s Most Discreet<br />
+              <em style={{ fontStyle: 'italic', color: 'rgba(240,232,220,0.4)' }}>Escort Agency</em>
+            </h2>
+            <p style={{ fontSize: 14, lineHeight: 2, color: '#8a8580', marginBottom: 18 }}>
+              Vaurel is a privately operated London escort agency specialising in discreet companion introductions for discerning clients. Unlike directories or aggregator platforms, every companion listed with Vaurel has been personally met and verified by our team — meaning the photographs are authentic, the profiles are accurate, and the person you see is the person you will meet.
+            </p>
+            <p style={{ fontSize: 14, lineHeight: 2, color: '#6b6560', marginBottom: 18 }}>
+              Our companions are available across London&apos;s most sought-after postcodes:{' '}
+              <Link href="/london/mayfair-escorts" style={{ color: '#BF9B5A', textDecoration: 'none' }}>Mayfair</Link> (W1),{' '}
+              <Link href="/london/knightsbridge-escorts" style={{ color: '#BF9B5A', textDecoration: 'none' }}>Knightsbridge</Link> (SW1X),{' '}
+              <Link href="/london/chelsea-escorts" style={{ color: '#BF9B5A', textDecoration: 'none' }}>Chelsea</Link> (SW3),{' '}
+              <Link href="/london/kensington-escorts" style={{ color: '#BF9B5A', textDecoration: 'none' }}>Kensington</Link> (W8),{' '}
+              <Link href="/london/belgravia-escorts" style={{ color: '#BF9B5A', textDecoration: 'none' }}>Belgravia</Link> (SW1W) and{' '}
+              <Link href="/london/marylebone-escorts" style={{ color: '#BF9B5A', textDecoration: 'none' }}>Marylebone</Link> (W1U).
+              Whether you require an in-call appointment at a companion&apos;s private central London address or an out-call to your hotel suite, we arrange everything with the same standard of care and complete discretion.
+            </p>
+            <p style={{ fontSize: 14, lineHeight: 2, color: '#5a5550' }}>
+              We respond to every enquiry personally — no automated replies, no queues. Our typical response time is under 15 minutes, 24 hours a day, seven days a week. Rates begin from £{siteConfig.priceFrom} per hour and reflect the calibre of companion and the standard of the introduction.
+            </p>
+          </div>
+          <div>
+            <p style={{ fontSize: 10, letterSpacing: '.3em', textTransform: 'uppercase', color: '#BF9B5A', marginBottom: 14 }}>Why Choose Vaurel</p>
+            <div>
+              {([
+                ['Personally verified companions', 'Every companion is met in person by our team before being listed. Identity confirmed, photographs reviewed, profiles approved. You will never encounter a misrepresentation.'],
+                ['Not a directory', 'We do not aggregate third-party profiles. Every companion is exclusive to Vaurel and introduced personally — which is why our standards remain consistently high.'],
+                ['Absolute discretion, always', 'Your enquiry, your booking, and your personal details are handled in complete confidence. We do not retain client data beyond what is necessary.'],
+                ['24/7 personal response', 'Our team answers every message personally. You will never receive an automated reply. Same-day and last-minute bookings are accommodated whenever possible.'],
+                ['Companions who inhabit London', "Our roster includes companions who move naturally through London's finest settings — Michelin-starred restaurants, five-star hotels, private members clubs. They are not performing sophistication. They inhabit it."],
+              ] as [string, string][]).map(([title, body]) => (
+                <div key={title} style={{ padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+                  <div style={{ width: 20, height: 1, background: '#BF9B5A', marginTop: 11, flexShrink: 0 }} />
+                  <div>
+                    <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontWeight: 300, color: '#f0e8dc', margin: '0 0 6px', lineHeight: 1.2 }}>{title}</p>
+                    <p style={{ fontSize: 12, lineHeight: 1.85, color: 'rgba(255,255,255,0.18)', margin: 0 }}>{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: 64, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <p style={{ fontSize: 10, letterSpacing: '.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.1)', marginBottom: 14 }}>Browse by experience</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {([
+              ['Girlfriend Experience', '/services/gfe'],
+              ['Dinner Date Escorts', '/services/dinner-date'],
+              ['Overnight Escorts London', '/services/overnight'],
+              ['Travel Companions', '/services/travel-companion'],
+              ['Duo Bookings', '/services/duo'],
+              ['Verified Escorts London', '/companions'],
+            ] as [string, string][]).map(([label, href]) => (
+              <Link key={href} href={href} style={{ padding: '7px 16px', fontSize: 11, letterSpacing: '.08em', color: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.07)', textDecoration: 'none' }}>
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
