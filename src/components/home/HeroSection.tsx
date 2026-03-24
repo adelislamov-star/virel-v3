@@ -24,7 +24,10 @@ export function HeroSection({ heroPhotoUrl }: HeroSectionProps) {
       </div>
       <div className="hero-body">
         <p className="hero-kicker">London &middot; Private Companionship</p>
-        <h1 className="hero-h1">
+        <h1
+          className="hero-h1"
+          aria-label="London Escort Agency — Carefully Selected, Discreet"
+        >
           Carefully<br />selected.<br /><em>Discreet.</em>
         </h1>
         <p className="hero-sub">
@@ -34,6 +37,9 @@ export function HeroSection({ heroPhotoUrl }: HeroSectionProps) {
           <Link href="/companions" className="btn-gold">Meet Our Companions</Link>
           <a href="https://wa.me/447000000000" className="btn-outline">Make an Enquiry</a>
         </div>
+        <p className="hero-seo-sub">
+          London's premier escort agency — discreet companion introductions across Mayfair, Knightsbridge &amp; Chelsea.
+        </p>
       </div>
     </section>
   )

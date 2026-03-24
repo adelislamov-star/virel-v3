@@ -13,8 +13,14 @@ export function AboutSection({ photoUrl }: AboutSectionProps) {
           <h2 className="sec-h2" style={{ marginBottom: 20 }}>
             Arranged with<br /><em>care and discretion</em>
           </h2>
-          <p style={{ fontSize: 14, lineHeight: 1.95, color: 'rgba(248,244,238,0.52)', marginBottom: 0 }}>
-            Vaurel is a private companion agency based in London. We work with a carefully selected group of companions — each personally met, verified, and introduced by our team. Every arrangement is handled with complete professionalism and absolute discretion.
+          <p style={{ fontSize: 14, lineHeight: 1.95, color: 'rgba(248,244,238,0.52)', marginBottom: 14 }}>
+            Vaurel is a private companion agency based in London. We work with a carefully selected group of companions — each personally met, verified, and introduced by our team.
+          </p>
+          <p style={{ fontSize: 14, lineHeight: 1.95, color: 'rgba(248,244,238,0.36)', marginBottom: 14 }}>
+            Every arrangement is handled with complete professionalism and absolute discretion. We do not operate as a directory — our companions are exclusive to Vaurel, and every introduction is arranged personally by a member of our team.
+          </p>
+          <p style={{ fontSize: 14, lineHeight: 1.95, color: 'rgba(248,244,238,0.28)', marginBottom: 0 }}>
+            We cover all areas of London, including Mayfair, Knightsbridge, Chelsea, Kensington, Belgravia and the City. Whether you require an in-call appointment or an outcall to your hotel, we will accommodate your requirements with the same level of care.
           </p>
           <div className="about-pillars">
             <div className="ap">

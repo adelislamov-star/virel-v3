@@ -42,7 +42,7 @@ const jsonLd = {
       '@id': 'https://vaurel.co.uk/#business',
       name: 'Vaurel',
       description: 'Private companion agency in London.',
-      url: 'https://vaurel.co.uk',
+      url: 'https://vaurel.co.uk/',
       email: 'bookings@vaurel.co.uk',
       address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
       areaServed: { '@type': 'City', name: 'London' },
@@ -52,7 +52,7 @@ const jsonLd = {
     {
       '@type': 'WebSite',
       '@id': 'https://vaurel.co.uk/#website',
-      url: 'https://vaurel.co.uk',
+      url: 'https://vaurel.co.uk/',
       name: 'Vaurel',
       potentialAction: {
         '@type': 'SearchAction',
@@ -126,6 +126,7 @@ export default async function HomePage() {
 
   // Fallback districts matching the approved mockup, used when DB has no district set
   const DISTRICT_FALLBACK: Record<string, string> = {
+    'giorgina-vegas': 'Marble Arch',
     marsalina: 'Earls Court',
     marzena: 'Knightsbridge',
     angelina: 'Kensington',
