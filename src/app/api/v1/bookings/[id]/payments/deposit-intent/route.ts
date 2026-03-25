@@ -1,7 +1,7 @@
 // CREATE PAYMENT INTENT FOR DEPOSIT
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { createDepositIntent } from '@/lib/stripe/client';
+async function createDepositIntent(_id: string, _amount: number): Promise<any> { throw new Error('Stripe not configured') }
 
 export const runtime = 'nodejs';
 
