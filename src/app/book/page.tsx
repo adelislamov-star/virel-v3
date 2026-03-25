@@ -169,24 +169,30 @@ function BookingContent() {
       .filter(Boolean)
       .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
 
-    // Synthesise a 3-hour option if 2h and extra-hour rates both exist
-    // and there is no native 3h rate already configured
-    const hasNative3h = baseRates.some((r: any) => r.durationType === '3hours')
-    if (!hasNative3h && twoHourRate?.price > 0 && extraHourRate?.price > 0) {
+    // Synthesise or fill a 3-hour price from 2h + extra-hour when possible
+    if (twoHourRate?.price > 0 && extraHourRate?.price > 0) {
       const threeHourPrice = twoHourRate.price + extraHourRate.price
-      const insertIdx = baseRates.findIndex((r: any) => r.sortOrder > 5) // 2h sort=5
-      const synth = {
-        id: '__3hours_synth',
-        callRateMasterId: null,
-        label: '3 Hours',
-        durationMin: 180,
-        sortOrder: 5.5,
-        price: threeHourPrice,
-        durationType: '3hours',
-        available: true,
+      const native3h = baseRates.find((r: any) => r.durationType === '3hours')
+      if (native3h && !native3h.available) {
+        // Native 3h exists but has no price — fill it with computed price
+        native3h.price = threeHourPrice
+        native3h.available = true
+      } else if (!native3h) {
+        // No native 3h at all — insert a synthetic one after 2h
+        const insertIdx = baseRates.findIndex((r: any) => r.sortOrder > 5)
+        const synth = {
+          id: '__3hours_synth',
+          callRateMasterId: null,
+          label: '3 Hours',
+          durationMin: 180,
+          sortOrder: 5.5,
+          price: threeHourPrice,
+          durationType: '3hours',
+          available: true,
+        }
+        if (insertIdx === -1) baseRates.push(synth)
+        else baseRates.splice(insertIdx, 0, synth)
       }
-      if (insertIdx === -1) baseRates.push(synth)
-      else baseRates.splice(insertIdx, 0, synth)
     }
 
     return baseRates
