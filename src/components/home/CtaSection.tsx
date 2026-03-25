@@ -29,7 +29,7 @@ export function CtaSection() {
           <button className="btn-outline" onClick={openModal}>Make an Enquiry</button>
         </div>
         <div className="cta-contacts">
-          <a href="https://t.me/vaurel_bookings" className="cta-contact">
+          <a href="https://t.me/+447562279678" className="cta-contact">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21.5 2.5L2 10l7 2.5 2 7.5 3-4 5 3.5z"/></svg>
             Telegram
           </a>
