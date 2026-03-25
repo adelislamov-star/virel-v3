@@ -1,5 +1,5 @@
 // @ts-nocheck
-export const revalidate = 86400
+export const dynamic = 'force-dynamic'
 
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -12,14 +12,6 @@ import '../article.css'
 function computeReadTime(content: string): string {
   const words = content.replace(/<[^>]*>/g, '').split(/\s+/).length
   return `${Math.max(1, Math.ceil(words / 200))} min read`
-}
-
-export async function generateStaticParams() {
-  const posts = await prisma.blogPost.findMany({
-    where: { isPublished: true },
-    select: { slug: true },
-  })
-  return posts.map(p => ({ slug: p.slug }))
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
