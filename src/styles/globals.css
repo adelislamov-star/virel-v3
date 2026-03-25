@@ -259,7 +259,7 @@ html {
 .gc-photo{position:relative;aspect-ratio:3/4;overflow:hidden}
 .gc-photo img,.gc-photo>span{width:100%!important;height:100%!important;object-fit:cover;object-position:center 10%;filter:brightness(0.76) saturate(0.78);transition:transform .9s cubic-bezier(.25,.1,.25,1),filter .5s;display:block!important}
 .gc:hover .gc-photo img,.gc:hover .gc-photo>span{transform:scale(1.04);filter:brightness(0.86) saturate(0.86)}
-.gc-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.88);opacity:0;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#F8F4EE;border:1px solid rgba(248,244,238,0.28);padding:10px 24px;white-space:nowrap;background:rgba(12,11,9,0.42);backdrop-filter:blur(4px);transition:opacity .3s,transform .3s;z-index:3}
+.gc-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.88);opacity:0;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#F8F4EE;white-space:nowrap;background:none;border:none;padding:0;text-shadow:0 1px 6px rgba(0,0,0,0.7);transition:opacity .3s,transform .3s;z-index:3}
 .gc:hover .gc-btn{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .gc-body{padding:18px 4px 22px}
 .gc-name{font-family:var(--font-cormorant),Georgia,serif;font-size:22px;font-weight:300;color:#F8F4EE;margin-bottom:5px;line-height:1}
