@@ -16,7 +16,6 @@ const DURATION_LABELS: Record<string, { label: string; durationMin: number; sort
   '3hours': { label: '3 Hours', durationMin: 180, sort: 6 },
   '4hours': { label: '4 Hours', durationMin: 240, sort: 7 },
   'overnight': { label: 'Overnight (9 hrs)', durationMin: 540, sort: 8 },
-  'extra_hour': { label: 'Extra Hour', durationMin: 60, sort: 9 },
 }
 
 const DURATION_MIN_MAP: Record<number, string> = {
