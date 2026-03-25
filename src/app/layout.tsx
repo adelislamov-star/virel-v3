@@ -6,6 +6,7 @@ import { CookieBanner } from '@/components/public/CookieBanner'
 import { Navbar } from '@/components/layout/Navbar'
 import { FooterNew } from '@/components/layout/FooterNew'
 import { FloatingContacts } from '@/components/layout/FloatingContacts'
+import { BookingModalProvider } from '@/components/public/BookingModalProvider'
 import { siteConfig } from '@/../config/site'
 
 const BASE_URL = siteConfig.domain
@@ -51,11 +52,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <Navbar />
-        {children}
-        <FooterNew />
-        <FloatingContacts />
-        <CookieBanner />
+        <BookingModalProvider>
+          <Navbar />
+          {children}
+          <FooterNew />
+          <FloatingContacts />
+          <CookieBanner />
+        </BookingModalProvider>
         <Analytics />
         <SpeedInsights />
       </body>

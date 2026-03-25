@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useBookingModal } from '@/components/public/BookingModalProvider'
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const { openModal } = useBookingModal()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60)
@@ -35,7 +37,7 @@ export function Navbar() {
         </a>
         <div className="nav-div" />
         <Link href="/signin" className="nav-signin">Sign In</Link>
-        <a href="https://wa.me/447000000000" className="nav-cta">Enquire</a>
+        <button className="nav-cta" onClick={openModal}>Enquire</button>
       </div>
     </nav>
   )
