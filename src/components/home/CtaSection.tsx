@@ -1,6 +1,10 @@
+'use client'
+
 import Link from 'next/link'
+import { useBookingModal } from '@/components/public/BookingModalProvider'
 
 export function CtaSection() {
+  const { openModal } = useBookingModal()
   return (
     <section className="cta-section">
       <div className="cta-lines">
@@ -21,7 +25,7 @@ export function CtaSection() {
         </p>
         <div className="cta-btns">
           <Link href="/companions" className="btn-gold">Browse Companions</Link>
-          <a href="https://wa.me/447562279678" className="btn-outline">WhatsApp Us</a>
+          <button className="btn-outline" onClick={openModal}>Make an Enquiry</button>
         </div>
         <div className="cta-contacts">
           <a href="https://t.me/+447562279678" className="cta-contact">

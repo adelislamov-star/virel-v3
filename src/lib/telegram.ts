@@ -7,7 +7,7 @@ export async function sendTelegramMessage(
   text: string,
   parseMode: 'Markdown' | 'HTML' = 'Markdown',
 ): Promise<boolean> {
-  const token = process.env.TELEGRAM_DIVA_BOT_TOKEN
+  const token = process.env.TELEGRAM_VAUREL_BOT_TOKEN
   if (!token) {
     console.log('[TELEGRAM] Bot token not configured — would send to:', chatId)
     console.log('[TELEGRAM] Message preview:', text.slice(0, 100))
