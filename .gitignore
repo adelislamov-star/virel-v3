@@ -47,6 +47,8 @@ check-table.js
 .env*.local
 nul
 .claude/worktrees/
+.wrangler/
+tsconfig.tsbuildinfo
 
 # Vercel env exports (contain secrets)
 .env.vercel-check

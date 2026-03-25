@@ -1,8 +1,11 @@
 // CRON: SLA CHECK — Runs daily via Vercel Cron
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequest } from '@/lib/cronAuth';
 import { prisma } from '@/lib/db/client';
-async function checkBreaches() { return 0 }
+// import { checkBreaches } from '@/lib/sla/tracker';
+async function checkBreaches() { return 0; }
 
 export async function GET(req: NextRequest) {
   const authError = verifyCronRequest(req);
