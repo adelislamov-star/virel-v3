@@ -32,8 +32,8 @@ export function FooterNew() {
         <div className="ft-col">
           <div className="ft-col-h">Contact</div>
           <ul>
-            <li><a href="https://t.me/vaurel_bookings">Telegram</a></li>
-            <li><a href="https://wa.me/447000000000">WhatsApp</a></li>
+            <li><a href="https://t.me/+447562279678">Telegram</a></li>
+            <li><a href="https://wa.me/447562279678">WhatsApp</a></li>
             <li><a href="mailto:bookings@vaurel.co.uk">Email</a></li>
             <li><Link href="/signin">Sign In</Link></li>
           </ul>

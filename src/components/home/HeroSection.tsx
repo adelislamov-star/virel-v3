@@ -35,7 +35,7 @@ export function HeroSection({ heroPhotoUrl }: HeroSectionProps) {
         </p>
         <div className="hero-btns">
           <Link href="/companions" className="btn-gold">Meet Our Companions</Link>
-          <a href="https://wa.me/447000000000" className="btn-outline">Make an Enquiry</a>
+          <a href="https://wa.me/447562279678" className="btn-outline">Make an Enquiry</a>
         </div>
         <p className="hero-seo-sub">
           London's premier escort agency — discreet companion introductions across Mayfair, Knightsbridge &amp; Chelsea.

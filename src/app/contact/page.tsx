@@ -48,12 +48,12 @@ export default function ContactPage() {
               </div>
             </a>
 
-            <a href="https://wa.me/447000000000" className="c-channel" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/447562279678" className="c-channel" target="_blank" rel="noopener noreferrer">
               <div className="c-channel-left">
                 <span className="c-channel-icon">◉</span>
                 <div>
                   <p className="c-channel-name">WhatsApp</p>
-                  <p className="c-channel-detail">+44 7000 000 000 · available 24/7</p>
+                  <p className="c-channel-detail">+44 75 6227 9678 · available 24/7</p>
                 </div>
               </div>
               <span className="c-channel-arrow">→</span>
