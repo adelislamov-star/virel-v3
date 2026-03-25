@@ -51,7 +51,10 @@ async function getProfileData(slug: string) {
     })
     if (!model) return null
     const primaryPhoto = model.media.find((m) => m.isPrimary)?.url ?? model.media[0]?.url ?? null
-    const galleryUrls = model.media.filter((m) => m.isPublic && m.url !== primaryPhoto).map((m) => m.url)
+    const seen = new Set<string>(primaryPhoto ? [primaryPhoto] : [])
+    const galleryUrls = model.media
+      .filter((m) => m.url && m.url !== primaryPhoto && !seen.has(m.url) && (seen.add(m.url), true))
+      .map((m) => m.url)
     const rates = model.modelRates
       .filter((mr) => mr.incallPrice != null || mr.outcallPrice != null)
       .map((mr) => ({

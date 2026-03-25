@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Props) {
-  const allPhotos = [coverPhotoUrl, ...galleryPhotoUrls].filter(Boolean) as string[]
+  const allPhotos = [...new Set([coverPhotoUrl, ...galleryPhotoUrls].filter(Boolean) as string[])]
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const touchStartX = useRef<number | null>(null)
@@ -67,8 +67,8 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
           {/* Dot indicators — mobile only */}
           {allPhotos.length > 1 && (
             <div className="cg-dots">
-              {allPhotos.map((_, i) => (
-                <span key={i} className={`cg-dot${i === activeIndex ? ' active' : ''}`} onClick={e => { e.stopPropagation(); setActiveIndex(i) }} />
+              {allPhotos.map((url, i) => (
+                <span key={url} className={`cg-dot${i === activeIndex ? ' active' : ''}`} onClick={e => { e.stopPropagation(); setActiveIndex(i) }} />
               ))}
             </div>
           )}
@@ -77,7 +77,7 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
         {allPhotos.length > 1 && (
           <div className="cg-thumbs">
             {allPhotos.map((url, i) => (
-              <div key={i} className={`cg-thumb${i === activeIndex ? ' active' : ''}`} onClick={() => setActiveIndex(i)}>
+              <div key={url} className={`cg-thumb${i === activeIndex ? ' active' : ''}`} onClick={() => setActiveIndex(i)}>
                 <Image src={url} alt={`${name} thumbnail ${i + 1}`} width={72} height={96} style={{ objectFit: 'cover' }} />
               </div>
             ))}
