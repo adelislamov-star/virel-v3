@@ -137,12 +137,24 @@ function BookingContent() {
   const buildMergedRates = () => {
     if (!modelDetail?.modelRates?.length) return []
 
-    return modelDetail.modelRates
+    // First pass: build all rates and identify 2h + extra-hour for synthesising 3h
+    let twoHourRate: any = null
+    let extraHourRate: any = null
+
+    const baseRates = modelDetail.modelRates
       .map((mr: any) => {
         const master = mr.callRateMaster
         if (!master || !master.isActive) return null
         const price = callType === 'incall' ? mr.incallPrice : mr.outcallPrice
         const durationKey = DURATION_MIN_MAP[master.durationMin] || master.label?.toLowerCase().replace(/\s+/g, '')
+
+        // Track 2-hour and extra-hour rates for 3h synthesis
+        if (durationKey === '2hours') twoHourRate = { price }
+        if (durationKey === 'extrahour' || durationKey === 'extra_hour' || master.label?.toLowerCase().includes('extra hour')) {
+          extraHourRate = { price }
+          return null // exclude Extra Hour from the list
+        }
+
         return {
           id: mr.id,
           callRateMasterId: mr.callRateMasterId,
@@ -156,6 +168,28 @@ function BookingContent() {
       })
       .filter(Boolean)
       .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+
+    // Synthesise a 3-hour option if 2h and extra-hour rates both exist
+    // and there is no native 3h rate already configured
+    const hasNative3h = baseRates.some((r: any) => r.durationType === '3hours')
+    if (!hasNative3h && twoHourRate?.price > 0 && extraHourRate?.price > 0) {
+      const threeHourPrice = twoHourRate.price + extraHourRate.price
+      const insertIdx = baseRates.findIndex((r: any) => r.sortOrder > 5) // 2h sort=5
+      const synth = {
+        id: '__3hours_synth',
+        callRateMasterId: null,
+        label: '3 Hours',
+        durationMin: 180,
+        sortOrder: 5.5,
+        price: threeHourPrice,
+        durationType: '3hours',
+        available: true,
+      }
+      if (insertIdx === -1) baseRates.push(synth)
+      else baseRates.splice(insertIdx, 0, synth)
+    }
+
+    return baseRates
   }
 
   const displayRates = buildMergedRates()
