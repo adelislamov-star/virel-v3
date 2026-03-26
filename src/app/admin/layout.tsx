@@ -120,6 +120,7 @@ interface CurrentUser {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  if (pathname === '/admin/login') return <>{children}</>;
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [badges, setBadges] = useState<Badges>({});
