@@ -53,7 +53,7 @@ async function getProfileData(slug: string) {
     const primaryPhoto = model.media.find((m) => m.isPrimary)?.url ?? model.media[0]?.url ?? null
     const seen = new Set<string>(primaryPhoto ? [primaryPhoto] : [])
     const galleryUrls = model.media
-      .filter((m) => m.url && m.url !== primaryPhoto && !seen.has(m.url) && (seen.add(m.url), true))
+      .filter((m) => m.url && !m.url.includes('_thumb') && m.url !== primaryPhoto && !seen.has(m.url) && (seen.add(m.url), true))
       .map((m) => m.url)
     const rates = model.modelRates
       .filter((mr) => mr.incallPrice != null || mr.outcallPrice != null)
