@@ -31,7 +31,13 @@ async function getProfileData(slug: string) {
       where: { slug, status: 'active', deletedAt: null },
       include: {
         stats: true,
-        media: { where: { isPublic: true }, orderBy: { sortOrder: 'asc' } },
+        media: {
+          where: {
+            isPublic: true,
+            NOT: { url: { contains: '0-1773713444099' } }
+          },
+          orderBy: { sortOrder: 'asc' }
+        },
         modelRates: {
           include: { callRateMaster: true },
           orderBy: { callRateMaster: { sortOrder: 'asc' } },
@@ -52,9 +58,10 @@ async function getProfileData(slug: string) {
     })
     if (!model) return null
     const primaryPhoto = model.media.find((m) => m.isPrimary)?.url ?? model.media[0]?.url ?? null
-    const seen = new Set<string>(primaryPhoto ? [primaryPhoto] : [])
+    const cleanPrimary = primaryPhoto?.replace(/_thumb(\.[^.]+)$/, '$1') ?? null
+    const seen = new Set<string>(cleanPrimary ? [cleanPrimary] : [])
     const galleryUrls = model.media
-      .filter((m) => m.url && !m.url.includes('_thumb') && m.url !== primaryPhoto && !seen.has(m.url) && (seen.add(m.url), true))
+      .filter((m) => m.url && !m.url.includes('_thumb') && m.url !== cleanPrimary && !seen.has(m.url) && (seen.add(m.url), true))
       .map((m) => m.url)
     const rates = model.modelRates
       .filter((mr) => mr.incallPrice != null || mr.outcallPrice != null)
@@ -104,7 +111,7 @@ async function getProfileData(slug: string) {
       nearestStation: model.nearestStation,
       telegramTag: model.telegram ? (model as any).telegramPhone ?? null : null,
       whatsapp: model.whatsapp ?? null,
-      primaryPhoto,
+      primaryPhoto: cleanPrimary,
       galleryUrls,
       rates,
       lowestPrice,
