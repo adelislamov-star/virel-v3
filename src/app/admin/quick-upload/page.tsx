@@ -10,6 +10,16 @@ type ParseError = { message: string } | null
 
 function uid() { return Math.random().toString(36).slice(2) }
 
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new window.Image()
+    img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.naturalWidth, height: img.naturalHeight }) }
+    img.onerror = reject
+    img.src = url
+  })
+}
+
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((res, rej) => {
     const r = new FileReader()
@@ -123,9 +133,14 @@ export default function QuickUploadPage() {
     const imgFiles: PhotoFile[] = []
     let anketaFile: File | null = null
 
-    // Classify files synchronously
+    // Classify files
     for (const f of files) {
       if (f.type.startsWith('image/')) {
+        const { width, height } = await getImageDimensions(f)
+        if (width > height) {
+          log(`⚠️ Skipped ${f.name}: landscape orientation not supported`)
+          continue
+        }
         imgFiles.push({ file: f, previewUrl: URL.createObjectURL(f), id: uid() })
       } else if (isAnketaFile(f)) {
         anketaFile = f

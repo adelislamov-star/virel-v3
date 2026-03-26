@@ -55,6 +55,16 @@ export default function MediaTab({ model }: Props) {
   // UPLOAD
   // -------------------------------------------
 
+  function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new window.Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.naturalWidth, height: img.naturalHeight }); };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
   async function uploadFiles(files: FileList | File[]) {
     const fileArray = Array.from(files);
     if (!fileArray.length) return;
@@ -64,6 +74,16 @@ export default function MediaTab({ model }: Props) {
     const errors: string[] = [];
 
     for (const file of fileArray) {
+      // Block landscape images
+      if (file.type.startsWith('image/')) {
+        const { width, height } = await getImageDimensions(file);
+        if (width > height) {
+          errors.push(`${file.name}: Landscape orientation not allowed`);
+          setUploadProgress(prev => [...prev, `❌ ${file.name}: Landscape photo — gallery requires portrait (vertical) images`]);
+          continue;
+        }
+      }
+
       setUploadProgress(prev => [...prev, `Uploading ${file.name}...`]);
 
       const formData = new FormData();

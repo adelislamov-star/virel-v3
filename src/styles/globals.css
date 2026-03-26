@@ -413,6 +413,8 @@ html {
 .breadcrumb a:hover { color:#ddd5c8; }
 .profile-main { display:grid; grid-template-columns:60% 40%; gap:0; padding:0 80px 80px; }
 @media(max-width:900px) { .profile-main { grid-template-columns:1fr; padding:0 24px 40px; } }
+.profile-gallery-col { padding-right:40px; }
+@media(max-width:900px) { .profile-gallery-col { padding-right:0; } .breadcrumb { padding:16px 24px; } }
 .profile-sidebar { }
 .section-label { font-size:9px; letter-spacing:.3em; text-transform:uppercase; color:rgba(232,224,212,0.45); margin-bottom:24px; margin-top:60px; }
 .bio-text { font-family:var(--font-cormorant),serif; font-size:20px; font-weight:300; line-height:1.7; color:#e8e0d4; border-left:1px solid rgba(255,255,255,0.07); padding-left:28px; }

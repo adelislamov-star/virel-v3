@@ -52,7 +52,7 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
       <div className="cg-wrap" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {/* Main photo */}
         <div className="cg-main" onClick={() => setLightboxOpen(true)} style={{ cursor: 'zoom-in' }}>
-          <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'cover', objectPosition: 'center top' }} sizes="60vw" priority={activeIndex === 0} />
+          <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'cover', objectPosition: 'center top' }} sizes="(max-width: 900px) 100vw, 60vw" priority={activeIndex === 0} />
           {/* Watermark */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
             <span style={{ fontSize: 44, fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, letterSpacing: '0.5em', color: 'rgba(197, 165, 114, 0.4)', textTransform: 'uppercase' }}>VAUREL</span>

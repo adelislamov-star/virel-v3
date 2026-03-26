@@ -11,6 +11,7 @@ import { ViewTracker } from '@/components/public/ViewTracker'
 import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
 import { siteConfig } from '@/../config/site'
+import '@/app/companions/companions.css'
 
 interface Props { params: { slug: string } }
 
@@ -196,7 +197,7 @@ export default async function ModelProfilePage({ params }: Props) {
 
       {/* Main: Gallery + Booking Widget */}
       <div className="profile-main">
-        <div style={{ paddingRight: 40 }}>
+        <div className="profile-gallery-col">
           <CompanionGallery
             coverPhotoUrl={profile.primaryPhoto}
             galleryPhotoUrls={profile.galleryUrls}
