@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useRevalidate } from '@/hooks/useRevalidate';
 
 interface MediaItem {
   id: string;
@@ -30,6 +31,7 @@ export default function MediaTab({ model }: Props) {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { revalidate } = useRevalidate();
 
   const modelId = model.id;
 
@@ -102,6 +104,9 @@ export default function MediaTab({ model }: Props) {
           setUploadProgress(prev =>
             prev.map(p => p.includes(file.name) ? `✅ ${file.name}` : p)
           );
+          if (model?.slug) {
+            await revalidate(`/companions/${model.slug}`);
+          }
         } else {
           errors.push(`${file.name}: ${data.error?.message}`);
           setUploadProgress(prev =>
@@ -166,13 +171,16 @@ export default function MediaTab({ model }: Props) {
   async function saveOrder() {
     setSaving(true);
     try {
-      await fetch(`/api/v1/models/${modelId}/media`, {
+      const res = await fetch(`/api/v1/models/${modelId}/media`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order: media.map((m, idx) => ({ id: m.id, sortOrder: idx })),
         }),
       });
+      if (res.ok && model?.slug) {
+        await revalidate(`/companions/${model.slug}`);
+      }
     } finally {
       setSaving(false);
     }
@@ -184,26 +192,35 @@ export default function MediaTab({ model }: Props) {
 
   async function setPrimary(mediaId: string) {
     setMedia(prev => prev.map(m => ({ ...m, isPrimary: m.id === mediaId })));
-    await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
+    const res = await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPrimary: true }),
     });
+    if (res.ok && model?.slug) {
+      await revalidate(`/companions/${model.slug}`);
+    }
   }
 
   async function togglePublic(mediaId: string, current: boolean) {
     setMedia(prev => prev.map(m => m.id === mediaId ? { ...m, isPublic: !current } : m));
-    await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
+    const res = await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublic: !current }),
     });
+    if (res.ok && model?.slug) {
+      await revalidate(`/companions/${model.slug}`);
+    }
   }
 
   async function deleteItem(mediaId: string) {
     if (!confirm('Delete this file?')) return;
     setMedia(prev => prev.filter(m => m.id !== mediaId));
-    await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, { method: 'DELETE' });
+    if (res.ok && model?.slug) {
+      await revalidate(`/companions/${model.slug}`);
+    }
   }
 
   // -------------------------------------------

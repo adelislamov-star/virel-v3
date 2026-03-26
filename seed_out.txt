@@ -1,0 +1,14 @@
+Seeding roles...
+  Role: OWNER
+  Role: OPS_MANAGER
+  Role: OPERATOR
+  Role: CONTENT_MANAGER
+  Role: FINANCE
+  Role: INTEGRATIONS_ADMIN
+  Role: READ_ONLY
+Owner user already exists: admin@vaurel.co.uk
+  OWNER role assigned
+
+Done. Login with:
+  Email: admin@vaurel.co.uk
+  Password: vaurel2024!

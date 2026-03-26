@@ -1,0 +1,40 @@
+=== Seeding Category Content === 
+Seeding category content for 10 categories...
+  ⚠ Category not found: russian — skipping
+  ⚠ Category not found: gfe — skipping
+  ⚠ Category not found: blonde — skipping
+  ⚠ Category not found: brunette — skipping
+  ⚠ Category not found: elite — skipping
+  ⚠ Category not found: vip — skipping
+  ⚠ Category not found: dinner-date — skipping
+  ⚠ Category not found: mature — skipping
+  ⚠ Category not found: busty — skipping
+  ⚠ Category not found: high-class — skipping
+Done
+=== Seeding District Content === 
+Seeding district content for 10 districts...
+  ✓ mayfair
+  ✓ knightsbridge
+  ✓ chelsea
+  ✓ kensington
+  ✓ belgravia
+  ✓ south-kensington
+  ✓ marylebone
+  ✓ soho
+  ✓ notting-hill
+  ✓ canary-wharf
+Done
+=== Seeding Blog Posts === 
+Seeding 10 blog posts...
+  ✓ what-is-girlfriend-experience-london
+  ✓ how-to-book-escort-london
+  ✓ incall-vs-outcall-london
+  ✓ best-hotels-mayfair-london
+  ✓ best-restaurants-knightsbridge-london
+  ✓ what-is-dinner-date-escort
+  ✓ escort-agency-vs-independent-escort-london
+  ✓ russian-escorts-london-guide
+  ✓ private-dining-london-guide
+  ✓ luxury-hotels-london-guide
+Done
+=== ALL DONE === 

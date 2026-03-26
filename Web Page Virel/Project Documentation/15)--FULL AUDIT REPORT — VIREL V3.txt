@@ -1,0 +1,415 @@
+# FULL AUDIT REPORT — VIREL V3
+**Дата:** 15 марта 2026 | **Статус:** Production
+
+---
+
+## 1. EXECUTIVE SUMMARY
+
+**Система нестабильна в нескольких критических точках. Back-Office частично контролирует Frontend — но цепочка рвётся на уровне данных о ценах, SEO и district-страниц.**
+
+Главные риски:
+- **Главная страница падает с runtime-ошибкой** (Prisma error #42703) при каждом рендере из-за несоответствия схемы данных о ценах
+- **SEO-модуль полностью нерабочий** — 0 pages tracked, SEO-поля в District хранятся в БД, но страницы рендерят hardcoded данные
+- **Дублирующиеся URL** для каждого района (`/escorts-in/mayfair` и `/london/mayfair-escorts/`) — потенциальный дублированный контент для поисковиков
+- **React hydration errors** (#418, #423, #425) на companion-страницах — видимые клиенту сбои
+- **Два параллельных механизма хранения цен** (Prisma ORM ModelRate + extension table model\_rates с другой схемой) — системный архитектурный разлом
+- **Метаданные service-страниц** — шаблонные, не используют SEO-поля из БД
+- Архитектура работоспособна для операционного управления (bookings, leads, clients), но data chain для public frontend частично сломана
+
+---
+
+## 2. SYSTEM DATA FLOW MAP
+
+```
+Back-Office action
+  → client-side form (validation: basic, некоторые поля без валидации)
+  → PATCH/POST/PUT API (Next.js Route Handler, /api/v1/*)
+  → requireRole() auth check (OWNER | OPS_MANAGER)
+  → prisma.entity.update/create (direct DB write)
+  → logAudit() (audit log записывается ✅)
+  → revalidatePath() — ЧАСТИЧНАЯ ✅/❌
+  → Next.js Data Cache invalidation (force-dynamic на большинстве страниц ✅)
+  → Frontend page.tsx (SSR, force-dynamic — читает напрямую из Prisma) ✅
+  → React render
+  → SEO output — ЧАСТИЧНО СЛОМАНО ❌
+  → Client-visible page
+```
+
+**Где цепочка сильная:**
+- DB write → admin read: надёжно (Prisma, direct DB)
+- Auth layer: работает (requireRole)
+- Audit log: работает
+- Companion страница: данные модели отображаются корректно
+- Services CRUD → `/services/*`: работает при наличии данных
+
+**Где цепочка рвётся:**
+
+| Шаг | Проблема |
+|-----|----------|
+| Homepage render | `$queryRaw` запрашивает `incall_price`/`outcall_price` которых нет в `model_rates` → runtime crash |
+| Companions list / District pages | Та же ошибка `$queryRaw`, обёрнута в `try/catch` → цены не отображаются молча |
+| SEO fields → rendered page | `seoTitle`/`seoDescription` из District.seoTitle в БД есть, но страница использует hardcoded объект `DISTRICTS` |
+| SEO Health module | Таблица `seo_pages` в БД пустая, admin показывает 0 — SEO мониторинг не наполняется |
+| service page metadata | Шаблонное, не читает `service.seoTitle`/`service.seoDescription` из БД |
+| `/london/[district]-escorts/` | Параллельный URL для каждого района, без cross-redirect |
+
+---
+
+## 3. FINDINGS BY CATEGORY
+
+### 3.1 Data Architecture
+
+**F-001 | Две несовместимые схемы таблицы `model_rates` | Confirmed | Critical**
+
+В системе существуют одновременно:
+- `prisma/schema.prisma` → `model ModelRate` с полями `modelId`, `callRateMasterId`, `incallPrice`, `outcallPrice` — используется Prisma ORM
+- `src/lib/db/ensure-tables.ts` → DDL: `model_rates` с `model_id`, `duration_type`, `call_type`, `price` — создаётся через raw SQL
+
+Это две разные таблицы с одним именем `model_rates`. Prisma ORM использует свою версию (с `incallPrice`/`outcallPrice`), а raw SQL-запросы в `page.tsx` пытаются читать поля `incall_price`/`outcall_price` из extension-версии таблицы. Companion-страница успешно читает ставки через Prisma ORM — значит Prisma-версия таблицы существует. Extension-версия с `duration_type`/`call_type`/`price` либо не создана, либо пустая.
+
+**F-002 | Location ≠ District — два параллельных entity для одного понятия | Confirmed | High**
+
+В схеме существуют: `model Location` (`locations`) и `model District` (`districts`). Location используется для привязки моделей и букингов. District используется для SEO, transport hubs, tiers. Страница `/escorts-in/[district]` делает `prisma.location.findFirst({ where: { slug: params.district } })` — то есть ищет по `locations`, а не `districts`. Если Mayfair существует в `districts`, но не в `locations`, модели не будут найдены.
+
+**F-003 | Model — гигантская God-model, 80+ полей в одной таблице | Confirmed | Medium**
+
+Модель `Model` содержит физический адрес, платёжные методы, социальные контакты, SEO-поля, аналитику, availability — всё в одной таблице. Это затрудняет поддержку, создаёт риск partial update.
+
+### 3.2 CRUD Logic
+
+**F-004 | Service UPDATE принимает `body` без валидации — любое поле перезапишется | Confirmed | High**
+
+В `PUT /api/v1/services/[id]`:
+```ts
+const service = await prisma.service.update({ where: { id }, data: body })
+```
+`body` передаётся в Prisma напрямую без whitelist/validation. Можно перезаписать `slug`, `status`, `isPublic` случайным образом или передав невалидное значение. Slug при изменении не создаёт redirect.
+
+**F-005 | Delete сервиса — нет проверки на использование в SEO-страницах или sitemap | Confirmed | Medium**
+
+При DELETE сервиса удаляются `modelService` записи, но нет проверки: есть ли страница `/services/[slug]` в sitemap или seo_pages. После удаления URL остаётся в sitemap до следующего rebuild. Нет redirect.
+
+**F-006 | revalidatePath coverage неполная | Confirmed | High**
+
+При изменении services — `revalidatePath('/services')` и `revalidatePath('/admin/services')` вызываются. НО:
+- Нет `revalidatePath('/services/[slug]')` для конкретной страницы
+- Нет `revalidatePath('/')` после изменения сервиса (главная показывает featured services)
+- При изменении District (slug, name, SEO) — нет revalidatePath для `/escorts-in/[district]`
+- Все public-страницы используют `export const dynamic = 'force-dynamic'` — значит revalidatePath технически не нужен, но это создаёт нагрузку: каждый запрос делает DB query
+
+### 3.3 API Contracts
+
+**F-007 | service page использует `mr.incallPrice` / `mr.outcallPrice` из `modelRates` — поля существуют в Prisma-схеме, но равны null при текущей модели данных | Confirmed | High**
+
+`src/app/companions/[slug]/page.tsx` line 118:
+```ts
+incallPrice: mr.incallPrice ? Number(mr.incallPrice) : null
+```
+`ModelRate` в Prisma имеет `incallPrice Float?` и `outcallPrice Float?`. Если эти поля не заполняются при создании rate через rates API, они будут null. Companion page покажет "On request" везде — что и видно на странице Vicky где outcall = "On request".
+
+**F-008 | ModelCard получает `minIncallPrice` но на service page передаётся `m.modelRates?.[0]?.incallPrice` | Confirmed | Medium**
+
+В `services/[slug]/page.tsx` line передаёт `minIncallPrice={m.modelRates?.[0]?.incallPrice}` — это первый rate по sortOrder, не минимальный. Если у модели несколько rates, card может показывать не минимальную цену.
+
+**F-009 | `route-v2.ts` в bookings — старый файл параллельно с `route.ts` | Likely | Medium**
+
+Существует `src/app/api/bookings/route-v2.ts` параллельно с `route.ts`. Неизвестно, используется ли v2. Потенциальный источник несогласованного поведения.
+
+### 3.4 Cache / Synchronization
+
+**F-010 | Все public pages: `force-dynamic` — нет кэширования, каждый запрос = DB query | Confirmed | Medium**
+
+`page.tsx`, `companions/[slug]/page.tsx`, `services/[slug]/page.tsx`, `escorts-in/[district]/page.tsx` — все используют `export const dynamic = 'force-dynamic'`. Это гарантирует свежесть данных, но исключает SSG/ISR. На Vercel serverless каждый page view делает прямой Prisma-запрос к PostgreSQL. При росте трафика — bottleneck.
+
+**F-011 | revalidatePath после изменения District не вызывается | Confirmed | High**
+
+При PUT `/api/v1/districts/[id]` — нет проверки наличия `revalidatePath`. Учитывая `force-dynamic` — технически не критично для данных, но если в будущем перейдут на ISR, данные не обновятся.
+
+### 3.5 Frontend Rendering
+
+**F-012 | React Hydration Errors #418, #423, #425 на companion-страницах | Confirmed | High**
+
+В браузере при загрузке `/companions/vicky` — 8 React exceptions. Ошибки #425 (Minified React error) означают несоответствие между SSR HTML и client-side hydration. Вероятная причина: компонент использует browser-specific значение (Date, window, Math.random) или клиентский JS изменяет DOM до hydration. Визуально страница работает, но это технический долг с риском сбоев.
+
+**F-013 | SEO title страницы `/companions/vicky` — дублирование "Virel London | Virel London" | Confirmed | Medium**
+
+`<title>Vicky | Virel London | Virel London</title>` — title suffix дублируется. Это ошибка в template, которая идёт во все companion-страницы.
+
+**F-014 | Service page metadata не использует `service.seoTitle` / `service.seoDescription` из БД | Confirmed | High**
+
+В `src/app/services/[slug]/page.tsx`:
+```ts
+title: `${displayName} London | Virel`,
+description: `${displayName} service with premium London companions...`,
+```
+Hardcoded template. `service.seoTitle` и `service.seoDescription` хранятся в БД и доступны в admin, но `generateMetadata()` их игнорирует. Изменение SEO-полей сервиса в Back-Office не меняет metadata страницы.
+
+**F-015 | District SEO — hardcoded объект `DISTRICTS` в коде, игнорирует данные из `districts` таблицы | Confirmed | Critical**
+
+Страница `/escorts-in/[district]/page.tsx` использует:
+```ts
+const info = DISTRICTS[params.district]
+```
+Это статический TypeScript-объект в коде. Таблица `districts` в БД имеет поля `seoTitle`, `seoDescription`, `seoKeywords` — но они не используются. Admin Locations → SEO поля — недостижимы для frontend.
+
+### 3.6 Relations
+
+**F-016 | ModelService delete при service delete — работает, но model card может показывать неправильные services | Likely | Medium**
+
+При удалении сервиса `deleteMany({ where: { serviceId: id } })` выполняется. Но companion-страница показывает services как теги без проверки `isEnabled` или существования. Требует проверки.
+
+**F-017 | primaryLocationId в Model ↔ Location | Confirmed | Medium**
+
+Model.primaryLocationId ссылается на `locations` таблицу. District-страница использует `prisma.location.findFirst({ where: { slug: params.district } })`. Значит должна существовать запись в `locations` с тем же slug что и в `districts`. Если admin создаёт District, но не создаёт Location — модели не найдутся.
+
+### 3.7 Validation
+
+**F-018 | Service PUT — body без whitelist, slug можно изменить без redirect | Confirmed | High**
+
+При изменении slug через admin → новый URL работает, старый отдаёт 404. Нет автоматического redirect 301. SEO страдает.
+
+**F-019 | Service POST — slug генерируется из title, но если slug уже занят возвращает 409, без предложения альтернативы | Confirmed | Low**
+
+UX: пользователь видит ошибку "Service already exists" без подсказки что именно конфликтует.
+
+### 3.8 Permissions and Workflow
+
+**F-020 | Service POST не требует auth | Confirmed | High**
+
+В `POST /api/v1/services/route.ts` — нет `requireRole()`. GET и POST открыты. PUT и DELETE защищены. Создание сервиса не требует авторизации.
+
+**F-021 | Model status workflow — draft/active/inactive без явного published-gate | Confirmed | Medium**
+
+Модель с `status: 'draft'` фильтруется на public-страницах (`where: { status: 'active' }`). Но нет промежуточного review/approval — admin может случайно сохранить incomplete модель как active.
+
+### 3.9 Logs and Observability
+
+**F-022 | logAudit() реализован, но SEO changes не логируются | Confirmed | Medium**
+
+`logAudit()` вызывается в PUT/DELETE services и models. Но изменения District SEO-полей — нет `logAudit` в `/api/v1/districts/[id]/route.ts` (требует проверки).
+
+**F-023 | Prisma error на homepage — не попадает в Sentry с достаточным контекстом | Likely | Medium**
+
+Ошибка `try/catch {}` на homepage — пустой catch. Ошибка поглощается молча, Sentry не получает контекст о том что именно сломалось и для каких model IDs.
+
+### 3.10 Performance
+
+**F-024 | N+1 риск на companions list | Likely | Medium**
+
+Companions page загружает models с `include: { media, stats, modelLocations, modelRates }` — один большой query. Затем делает отдельный `$queryRaw` для prices. При 50+ моделях — тяжёлый запрос.
+
+### 3.11 Routing / Slug / URL
+
+**F-025 | Два URL-пространства для районов — дублированный контент | Confirmed | Critical**
+
+Sitemap содержит одновременно:
+- `https://virel-v3.vercel.app/escorts-in/mayfair`
+- `https://virel-v3.vercel.app/london/mayfair-escorts/`
+
+Оба URL активны, оба имеют разные canonical, разные H1, но одинаковый смысл. Это классический duplicate content для Google. Оба URL в sitemap — Google будет делить вес между ними.
+
+**F-026 | Slug change в service → 404 на старом URL | Confirmed | High**
+
+Нет middleware или redirect table. После смены slug старые backlinks и Google-индекс ведут на 404.
+
+### 3.12 Search and Filters
+
+**F-027 | Services filter на companions page — работает через client-side filtereing по уже загруженным данным | Likely | Medium**
+
+Не является server-side filtering. При большом числе моделей — все загружаются, потом фильтруются в браузере.
+
+### 3.13 SEO
+
+**F-028 | service.seoTitle/seoDescription в БД — недоступны для `generateMetadata()` | Confirmed | Critical**
+
+Подробно в F-014. Все 61 public service-страницы используют template-метаданные.
+
+**F-029 | district SEO полностью отвязан от БД | Confirmed | Critical**
+
+Подробно в F-015. 25 districts в БД — все с пустыми SEO-полями с точки зрения frontend.
+
+**F-030 | SEO Health module пустой — нет tracking | Confirmed | High**
+
+`seo_pages` таблица пустая. SEO health dashboard показывает 0. Admin не видит статус индексации ни одной страницы.
+
+**F-031 | Title template на companion pages дублирует бренд | Confirmed | Medium**
+
+"Vicky | Virel London | Virel London" — явная ошибка в Next.js metadata template.
+
+**F-032 | Schema.org на service page — тип Organization вместо Service | Confirmed | Medium**
+
+На странице `/services/erotic-massage` injected schema включает Organization schema из глобального layout + Service schema из page. Первая Organization schema — boilerplate без конкретного контента. Schema разметка Service не включает `offers` или `priceRange`.
+
+**F-033 | Sitemap включает internal service slugs — "fk", "dfk" | Confirmed | Medium**
+
+`/services/fk`, `/services/dfk` — технические аббревиатуры в sitemap и URL. Не SEO-friendly, не human-readable.
+
+### 3.14 Back-Office UX
+
+**F-034 | SEO поля в Services admin — редактируются, но не влияют на frontend | Confirmed | Critical**
+
+Пользователь Back-Office меняет `seoTitle` для сервиса, видит "сохранено" — но страница сервиса на frontend игнорирует это поле. Misleading UX.
+
+**F-035 | District admin имеет SEO поля — но они не используются на frontend | Confirmed | Critical**
+
+То же что F-034 для Districts.
+
+**F-036 | 79 services (18 members-only) — нет признака в UI зачем services members-only | Likely | Low**
+
+Неясно видно, чем отличается members-only от public с точки зрения UX для admin.
+
+### 3.15 Client-facing UX
+
+**F-037 | Цены на главной и district-страницах не отображаются — silent error | Confirmed | High**
+
+Из-за ошибки `$queryRaw` (`incall_price` не существует), `minPrices` остаётся пустым. Карточки на главной странице и district-страницах показывают... что именно? ModelCard получает `minIncallPrice={undefined}` → не показывает цену вообще. Клиент не видит цену до открытия профиля.
+
+**F-038 | "On request" везде для outcall — это реальные данные или следствие пустых полей | Requires verification**
+
+На странице Vicky: outcall почти везде "On request". Это может быть реальными данными или может быть `outcallPrice: null` везде в БД из-за того что при загрузке через quick-upload outcall не заполнялся.
+
+---
+
+## 4. MASTER DEFECT TABLE
+
+| ID | Category | Problem | Exact location | Symptom | Root cause | Business impact | UX impact | SEO impact | Priority | Confidence | Recommended fix |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F-001 | Data Architecture | Две схемы model_rates | ensure-tables.ts vs schema.prisma | Homepage 500 / silent fail на price queries | Extension table и Prisma ORM model несовместимы | Главная страница падает | Цены не видны | Нет | Critical | Confirmed | Убрать $queryRaw, использовать только Prisma ORM ModelRate |
+| F-014 | SEO | service.seoTitle игнорируется в generateMetadata | src/app/services/[slug]/page.tsx | Все service-страницы — template meta | generateMetadata не читает seoTitle из БД | SEO-усилия admin обнуляются | Нет | Дублированные шаблонные meta | Critical | Confirmed | Добавить seoTitle/seoDesc в generateMetadata |
+| F-015 | SEO | District SEO hardcoded | escorts-in/[district]/page.tsx | Изменение SEO в admin Locations не работает | DISTRICTS объект в коде | SEO непоправляем без деплоя | Нет | Невозможен SEO-контроль | Critical | Confirmed | generateMetadata читать из prisma.district |
+| F-025 | Routing/URL | Дублированные URL районов | sitemap.xml | Два URL для каждого района в sitemap | Две route-системы: /escorts-in/ и /london/*/ | Потеря SEO-веса | Нет | Duplicate content | Critical | Confirmed | Один канонический URL, redirect 301 с другого |
+| F-020 | Permissions | Service POST без auth | /api/v1/services/route.ts | Любой может создать сервис | Нет requireRole() в POST | Спам, нежелательный контент | Нет | Мусорные страницы | Critical | Confirmed | Добавить requireRole(['OWNER', 'OPS_MANAGER']) |
+| F-034 | Back-Office UX | SEO fields в admin не влияют на frontend | admin/masters/services | Admin меняет SEO, ничего не происходит | F-014 | Потеря доверия к системе | Высокий | SEO теряется | Critical | Confirmed | Fix F-014 и F-015 |
+| F-004 | CRUD | Service PUT без whitelist | /api/v1/services/[id]/route.ts | Любое поле перезаписывается | data: body без validation | Риск corrupt данных | Нет | Slug-overwrite = 404 | High | Confirmed | Whitelist разрешённых полей |
+| F-006 | Cache/Sync | revalidatePath неполный | Несколько API routes | Изменения видны с задержкой/неполно | Отсутствие revalidate для ряда paths | Несвежий контент | Средний | Стагнация meta | High | Confirmed | Добавить revalidatePath для /services/[slug], / |
+| F-012 | Frontend | React hydration errors | /companions/[slug] | 8 exceptions в консоли | SSR/client mismatch | Нестабильность рендера | Риск визуальных артефактов | Нет | High | Confirmed | Найти и устранить browser-specific код в SSR |
+| F-013 | Frontend | Title дублирует бренд | layout/metadata | "Virel London | Virel London" | Ошибка в title template | Нет | Непрофессионально | Duplicate title brand | High | Confirmed | Исправить metadata template |
+| F-017 | Relations | Location ≠ District | escorts-in/[district]/page.tsx | Модели не находятся по district slug | Разные таблицы для одного понятия | Пустые district-страницы | Нет | Пустые location pages | High | Confirmed | Синхронизировать Location и District slugs |
+| F-018 | Validation | Slug change без redirect | /api/v1/services/[id] | Old URL → 404 | Нет redirect mechanism | SEO потери при любом rename | Нет | 404 вместо 301 | High | Confirmed | Таблица redirects или middleware |
+| F-026 | Routing | Slug change = 404 | Весь routing | Old links broken | Нет redirect table | Broken backlinks | Нет | SEO equity loss | High | Confirmed | Redirect table + middleware |
+| F-030 | SEO | SEO Health module пустой | /admin/seo | 0 pages tracked | seo_pages таблица не наполняется | Нет SEO visibility | Высокий | Нет мониторинга | High | Confirmed | Наполнить seo_pages при деплое/cron |
+| F-037 | Client UX | Цены не отображаются на картах | /, /companions, /escorts-in | Нет цены на карточках | F-001 | Снижение конверсии | Высокий | Нет | High | Confirmed | Fix F-001 |
+| F-007 | API Contract | incallPrice/outcallPrice null | /companions/[slug] | "On request" для всех rates | Поля не заполняются при создании | Цены не видны клиенту | Высокий | Нет | High | Confirmed | Проверить rates-сохранение, заполнить данные |
+| F-002 | Data Architecture | Location vs District duality | schema.prisma | Разная логика для одного понятия | Два entity для районов | Операционная путаница | Средний | Нет | Medium | Confirmed | Унифицировать или связать Location↔District |
+| F-009 | API Contract | route-v2.ts параллельно с route.ts | /api/bookings/ | Неопределённое поведение | Мёртвый или параллельный код | Непредсказуемость | Нет | Нет | Medium | Likely | Удалить или задокументировать |
+| F-010 | Cache | force-dynamic на всех страницах | Все public page.tsx | Высокая нагрузка на БД | Нет ISR/SSG | Стоимость и latency | Средний | Нет | Medium | Confirmed | Перейти на ISR с revalidate для static content |
+| F-032 | SEO | Schema.org неполный | /services/[slug] | Service schema без prices | Schema boilerplate | SEO rich snippets недоступны | Нет | Упущенные rich results | Medium | Confirmed | Добавить offers/priceRange в schema |
+| F-033 | SEO | Technical slugs в sitemap | sitemap.xml | /services/fk в Google | Slug = аббревиатура | SEO unfriendly | Нет | Poor URL quality | Medium | Confirmed | Переименовать slug, добавить redirect |
+| F-023 | Observability | Silent catch на homepage | src/app/page.tsx | Ошибка не логируется | try {} catch {} пустой | Нет диагностики | Нет | Нет | Medium | Confirmed | Добавить Sentry.captureException в catch |
+| F-031 | SEO | Duplicate brand in title | metadata template | "Virel London | Virel London" | Template error | Нет | Нет | Дублированный title | Medium | Confirmed | Исправить Next.js metadata template |
+| F-019 | Validation | Slug conflict — нет понятной ошибки | Service POST | "Service already exists" | Нет helpful message | Нет | UX friction | Нет | Low | Confirmed | Уточнить error message |
+| F-036 | Back-Office UX | members-only без объяснения | admin/services | Admin не понимает разницу | Нет tooltip/help | Операционная путаница | Низкий | Нет | Low | Likely | Добавить tooltip |
+
+---
+
+## 5. ARCHITECTURAL WEAKNESSES
+
+**W-01. Два источника истины для цен (Critical)**
+Prisma ORM `ModelRate` (incall/outcallPrice, callRateMaster) и raw SQL `model_rates` extension table (duration_type, call_type, price) существуют параллельно. Companion page использует ORM, homepage/companions list/district pages используют raw SQL с другой схемой. Нет единой модели.
+
+**W-02. SEO полностью отвязана от данных (Critical)**
+District SEO — hardcoded в TypeScript. Service SEO — в БД, но не читается в metadata. SEO Health module — пустой. В результате Back-Office SEO-редактирование не имеет никакого эффекта на frontend для 2/3 типов страниц.
+
+**W-03. Location / District дуализм (High)**
+Два entity (`locations`, `districts`) описывают одно и то же — районы Лондона. Model привязана к Location. SEO-данные хранятся в District. Frontend district-страница ищет Location по slug. Если синхронизация нарушена — страницы пустые.
+
+**W-04. Partial cache invalidation (High)**
+`revalidatePath` вызывается избирательно и неполно. Часть страниц `force-dynamic` (обходит проблему, но дорого), часть — нет. Нет централизованного механизма инвалидации.
+
+**W-05. Дублированные URL-схемы для районов (Critical)**
+`/escorts-in/[district]` и `/london/[district]-escorts/` — оба активны, оба в sitemap, без cross-canonical. Это структурная SEO-проблема.
+
+**W-06. Нет redirect-механизма при slug change (High)**
+Любое переименование сервиса или модели разрушает все входящие ссылки без автоматического 301.
+
+**W-07. God-model Model (Medium)**
+80+ полей в одной таблице. Каждый UPDATE на модель — полный row lock. Partial updates создают риск inconsistency.
+
+---
+
+## 6. SAFE IMPROVEMENT PLAN
+
+### Block A — Critical Fixes (делать немедленно)
+
+**A-1. Исправить $queryRaw на homepage, companions, district-pages**
+*Что:* Заменить SQL с `incall_price`/`outcall_price` на корректный запрос по реальной схеме.
+*Файлы:* `src/app/page.tsx`, `src/app/companions/page.tsx`, `src/app/escorts-in/[district]/page.tsx`
+*Почему важно:* Homepage падает при каждом рендере. Цены не видны нигде.
+*Риск:* Низкий — только SQL-запрос.
+*Fix:* `SELECT model_id, MIN(price) as min_price FROM model_rates WHERE model_id = ANY($1) AND is_active = true GROUP BY model_id` — или перейти на Prisma ORM `prisma.modelRate.findMany({ where: { modelId: { in: modelIds } }, orderBy: { incallPrice: 'asc' }, take: 1 })`.
+
+**A-2. Подключить service.seoTitle/seoDescription в generateMetadata**
+*Что:* В `services/[slug]/page.tsx` — `generateMetadata` должен использовать `service.seoTitle ?? template`, `service.seoDescription ?? template`.
+*Риск:* Нулевой. Только fallback к существующему шаблону если поле пустое.
+
+**A-3. Заменить hardcoded DISTRICTS объект на DB-driven данные**
+*Что:* В `escorts-in/[district]/page.tsx` — `generateMetadata` и данные H1/description должны читаться из `prisma.district.findFirst({ where: { slug: params.district } })`.
+*Риск:* Средний — нужно убедиться что districts таблица заполнена для всех slug.
+*Порядок:* Сначала проверить наличие данных в districts БД → потом менять код.
+
+**A-4. Защитить POST /api/v1/services/route.ts**
+*Что:* Добавить `requireRole(['OWNER', 'OPS_MANAGER'])` в POST handler.
+*Риск:* Нулевой.
+
+**A-5. Исправить title template — дублирование бренда**
+*Что:* Найти metadata template в layout и убрать дублирование "Virel London".
+*Риск:* Нулевой.
+
+**A-6. Выбрать один URL для районов и настроить redirect**
+*Что:* Определиться с каноническим URL (`/escorts-in/[district]` или `/london/[district]-escorts/`). Настроить 301-redirect с неканонического. Убрать неканонический из sitemap.
+*Риск:* Средний — Google должен переиндексировать.
+
+### Block B — Stability Improvements (следующие 2–3 недели)
+
+**B-1. Whitelist полей в Service PUT**
+Явно указать разрешённые поля вместо `data: body`.
+
+**B-2. Redirect table при slug change**
+Добавить таблицу `redirects` в схему. При изменении slug — автоматически записывать `{ from: oldSlug, to: newSlug, statusCode: 301 }`. Middleware читает таблицу.
+
+**B-3. Исправить React hydration errors**
+Найти browser-specific код (Date.now(), Math.random(), window) в companion-страницах и перенести в `useEffect` или обернуть в `Suspense`.
+
+**B-4. Наполнить SEO Health module**
+Написать cron-задачу или скрипт, который обходит все public URLs из sitemap и записывает их в `seo_pages`. Либо — заполнять `seo_pages` при создании/изменении service, district, model.
+
+**B-5. Добавить Sentry.captureException во все пустые catch блоки**
+Особенно в homepage price-query и других public-страницах.
+
+**B-6. Синхронизировать Location ↔ District**
+Либо объединить таблицы (долгосрочно), либо добавить триггер/логику: при создании District автоматически создавать соответствующий Location с тем же slug.
+
+**B-7. Переименовать технические slugs сервисов**
+`fk` → `french-kiss`, `dfk` → `deep-french-kiss`. Добавить redirects. Обновить sitemap.
+
+### Block C — Structural Improvements (через месяц+)
+
+**C-1. Унифицировать систему цен**
+Либо полностью перейти на Prisma ORM ModelRate (incall/outcallPrice + CallRateMaster), либо полностью на extension table (duration_type + call_type + price). Сейчас система висит между двумя подходами. Companion detail page использует ORM-версию и работает. Списковые страницы пытаются использовать extension-версию и ломаются. Рекомендация: всё перевести на ORM-версию, обновить ensure-tables для полного соответствия схеме.
+
+**C-2. Перейти с force-dynamic на ISR где возможно**
+Service pages, district pages: `revalidate = 300` (5 минут). При изменении данных — явный `revalidatePath`. Снизит нагрузку на БД в 10x.
+
+**C-3. Разделить God-model Model**
+Выделить `ModelAddress`, `ModelContact`, `ModelSEO` как отдельные связанные модели. Снизит риск partial-update и улучшит читаемость.
+
+**C-4. Создать redirect middleware**
+`src/middleware.ts` — читает из `redirects` таблицы (кэш в Redis) и отдаёт 301 при совпадении path.
+
+---
+
+## 7. TARGET ARCHITECTURE
+
+Целевое здоровое состояние системы:
+
+**Данные:** Единая схема `model_rates` — только через Prisma ORM, `incallPrice`/`outcallPrice` или чёткий migration на `price+callType`. Одна таблица для районов (`districts`), `locations` — техническая привязка для bukking/inquiry, District slug = Location slug (enforced).
+
+**CRUD:** Service/District PUT принимает whitelist полей. Изменение slug автоматически создаёт redirect запись. `logAudit` на всех мутациях.
+
+**SEO:** `generateMetadata` для всех типов страниц читает `seoTitle`/`seoDescription` из БД с fallback на template. `seo_pages` наполняется при каждом деплое/изменении. Один canonical URL на район.
+
+**Cache:** ISR с `revalidate = 300` на service/district pages. `revalidatePath` вызывается при каждом изменении соответствующей entity. Homepage — `revalidate = 60`.
+
+**Frontend:** Нет hydration errors. ModelCard получает цену всегда через одну кодовую ветку. Все price-queries через Prisma ORM.
+
+**Observability:** Все catch-блоки

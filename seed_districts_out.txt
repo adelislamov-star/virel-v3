@@ -1,0 +1,29 @@
+Starting district content seed for 25 districts...
+
+  OK: mayfair
+  OK: knightsbridge
+  OK: chelsea
+  OK: kensington
+  OK: belgravia
+  OK: marylebone
+  OK: soho
+  OK: notting-hill
+  OK: canary-wharf
+  OK: south-kensington
+  OK: sloane-square
+  OK: westminster
+  OK: battersea
+  OK: bayswater
+  OK: covent-garden
+  OK: earls-court
+  OK: hyde-park
+  OK: maida-vale
+  OK: paddington
+  OK: shoreditch
+  OK: st-johns-wood
+  OK: victoria
+  OK: marble-arch
+  OK: fulham
+  OK: gloucester-road
+
+Done. 25 updated, 0 failed.

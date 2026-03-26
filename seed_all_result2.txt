@@ -1,0 +1,47 @@
+=== Seeding Categories === 
+Seeding 30 categories...
+  ✓ blonde
+  ✓ brunette
+  ✓ redhead
+  ✓ petite
+  ✓ slim
+  ✓ curvy
+  ✓ busty
+  ✓ tall
+  ✓ mature
+  ✓ young
+  ✓ russian
+  ✓ ukrainian
+  ✓ polish
+  ✓ czech
+  ✓ french
+  ✓ italian
+  ✓ spanish
+  ✓ brazilian
+  ✓ latin
+  ✓ asian
+  ✓ eastern-european
+  ✓ gfe
+  ✓ vip
+  ✓ elite
+  ✓ high-class
+  ✓ dinner-date
+  ✓ overnight
+  ✓ travel-companion
+  ✓ bisexual
+  ✓ party
+Done
+=== Seeding Category Content === 
+Seeding category content for 10 categories...
+  ✓ russian
+  ✓ gfe
+  ✓ blonde
+  ✓ brunette
+  ✓ elite
+  ✓ vip
+  ✓ dinner-date
+  ✓ mature
+  ✓ busty
+  ✓ high-class
+Done
+=== ALL DONE === 

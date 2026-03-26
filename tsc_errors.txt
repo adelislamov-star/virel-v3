@@ -1,0 +1,6 @@
+src/scripts/seedCategoryContent.ts(28,9): error TS2322: Type 'CategoryFaq[]' is not assignable to type 'JsonNull | InputJsonValue | undefined'.
+  Type 'CategoryFaq[]' is not assignable to type 'InputJsonObject'.
+    Index signature for type 'string' is missing in type 'CategoryFaq[]'.
+src/scripts/seedCategoryContent.ts(34,9): error TS2322: Type 'CategoryFaq[]' is not assignable to type 'JsonNull | InputJsonValue | undefined'.
+  Type 'CategoryFaq[]' is not assignable to type 'InputJsonObject'.
+    Index signature for type 'string' is missing in type 'CategoryFaq[]'.
