@@ -1,6 +1,6 @@
 // Seed script — run: npx tsx src/scripts/seedCategoryContent.ts
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { categoryContent } from '../data/category-content';
 
 const prisma = new PrismaClient();
@@ -25,13 +25,13 @@ async function main() {
         aboutParagraphs: data.aboutParagraphs,
         standardText: data.standardText,
         relatedCategories: data.relatedCategories,
-        faq: data.faq,
+        faq: data.faq as unknown as Prisma.InputJsonValue,
       },
       update: {
         aboutParagraphs: data.aboutParagraphs,
         standardText: data.standardText,
         relatedCategories: data.relatedCategories,
-        faq: data.faq,
+        faq: data.faq as unknown as Prisma.InputJsonValue,
       },
     });
 

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const event = constructWebhookEvent(body, signature);
+    const event = constructWebhookEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '');
     
     switch (event.type) {
       case 'payment_intent.succeeded':

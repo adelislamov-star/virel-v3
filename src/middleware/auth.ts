@@ -2,7 +2,7 @@
 
 import { NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import RBAC, { Permission } from '@/lib/rbac';
+import { RBAC, Permission } from '@/lib/rbac';
 
 const prisma = new PrismaClient();
 

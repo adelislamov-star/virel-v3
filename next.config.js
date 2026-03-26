@@ -4,10 +4,10 @@ const { withSentryConfig } = require('@sentry/nextjs');
 const nextConfig = {
   trailingSlash: false,
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   images: {
     formats: ['image/webp'],
