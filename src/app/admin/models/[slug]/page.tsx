@@ -41,7 +41,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 
 export default function ModelEditPage() {
   const params = useParams();
-  const modelId = params.id as string;
+  const slug = params.slug as string;
 
   const [deleting, setDeleting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,9 +60,13 @@ export default function ModelEditPage() {
 
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Database ID derived from loaded model — used for all write API calls
+  const modelId: string = model?.id ?? '';
+
   const loadModel = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/models/${modelId}`);
+      // Fetch by slug — API GET accepts both id and slug
+      const res = await fetch(`/api/v1/models/${slug}`);
       const data = await res.json();
       if (data.success) {
         setModel(data.data.model);
@@ -76,7 +80,7 @@ export default function ModelEditPage() {
     } finally {
       setLoading(false);
     }
-  }, [modelId]);
+  }, [slug]);
 
   useEffect(() => { loadModel(); }, [loadModel]);
 

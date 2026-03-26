@@ -322,7 +322,7 @@ export default function ModelsPage() {
               </div>
 
               <button
-                onClick={() => window.location.href = `/admin/models/${model.id}`}
+                onClick={() => window.location.href = `/admin/models/${model.slug}`}
                 className="w-full px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
               >
                 Edit Profile

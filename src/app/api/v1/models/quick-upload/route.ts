@@ -1335,7 +1335,7 @@ export async function POST(request: NextRequest) {
         ratesCreated: insertedRates,
         photosUploaded: uploadedPhotos,
       },
-      redirectTo: `/admin/models/${model.id}`,
+      redirectTo: `/admin/models/${model.slug}`,
     })
   } catch (error: any) {
     console.error('[quick-upload] Fatal error:', error)

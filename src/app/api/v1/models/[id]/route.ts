@@ -18,8 +18,12 @@ export async function GET(
     if (!isActor(auth)) return auth;
     await ensureExtensionTables();
 
+    // Accept both UUID (id) and slug
+    const idOrSlug = params.id;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
     const model = await prisma.model.findUnique({
-      where: { id: params.id },
+      where: isUUID ? { id: idOrSlug } : { slug: idOrSlug },
       include: {
         stats: true,
         primaryLocation: true,
@@ -31,14 +35,16 @@ export async function GET(
         }
       }
     });
-    
+
     if (!model) {
       return NextResponse.json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Model not found' }
       }, { status: 404 });
     }
-    
+
+    const modelId = model.id;
+
     // Get rates
     let rates: any[] = [];
     try {
@@ -46,29 +52,29 @@ export async function GET(
         SELECT mr.*, crm.label, crm."durationMin", crm."sortOrder"
         FROM model_rates mr
         JOIN call_rate_masters crm ON crm.id = mr."callRateMasterId"
-        WHERE mr."modelId" = '${params.id}'
+        WHERE mr."modelId" = $1
         ORDER BY crm."sortOrder"
-      `) as any[];
+      `, modelId) as any[];
     } catch {}
-    
+
     // Get address
     let address: any[] = [];
     try {
       address = await prisma.$queryRawUnsafe(`
-        SELECT * FROM model_addresses 
-        WHERE model_id = '${params.id}' AND is_active = true
+        SELECT * FROM model_addresses
+        WHERE model_id = $1 AND is_active = true
         LIMIT 1
-      `) as any[];
+      `, modelId) as any[];
     } catch {}
-    
+
     // Get work preferences
     let workPrefs: any[] = [];
     try {
       workPrefs = await prisma.$queryRawUnsafe(`
-        SELECT * FROM model_work_preferences 
-        WHERE model_id = '${params.id}'
+        SELECT * FROM model_work_preferences
+        WHERE model_id = $1
         LIMIT 1
-      `) as any[];
+      `, modelId) as any[];
     } catch {}
     
     return NextResponse.json({
