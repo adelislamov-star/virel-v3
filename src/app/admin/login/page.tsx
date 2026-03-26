@@ -34,7 +34,7 @@ export default function LoginPage() {
     <div
       className="min-h-screen flex items-center justify-center"
       style={{
-        backgroundImage: "url('/cat.jpg')",
+        backgroundImage: "url('/cat.jpeg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
