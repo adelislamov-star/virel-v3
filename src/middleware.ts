@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
   const isAdminPage = pathname.startsWith('/admin');
   const isApiAuth = pathname.startsWith('/api/auth/');
   const isApiV1 = pathname.startsWith('/api/v1/');
+  const isApiAdmin = pathname.startsWith('/api/admin/');
 
   const token = request.cookies.get('vaurel-token')?.value;
 
@@ -20,8 +21,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // API v1 routes: reject if no token (auth routes are excluded)
-  if (isApiV1 && !isApiAuth && !token) {
+  // API v1 + API admin routes: reject if no token (auth routes are excluded)
+  if ((isApiV1 || isApiAdmin) && !isApiAuth && !token) {
     console.error('[middleware] No vaurel-token cookie for:', pathname);
     return NextResponse.json(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'No auth token. Please log in.' } },
@@ -33,5 +34,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*', '/api/v1/:path*'],
+  matcher: ['/admin', '/admin/:path*', '/api/v1/:path*', '/api/admin/:path*'],
 };
