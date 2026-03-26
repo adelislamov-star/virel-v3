@@ -10,7 +10,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    formats: ['image/avif', 'image/webp'],
+    formats: ['image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'pub-5deecadad4ab46f9bf12b2691c52ec6d.r2.dev' },
       { protocol: 'https', hostname: 'pub-7f32296778704801a71de1ffa1b9ca8d.r2.dev' },
