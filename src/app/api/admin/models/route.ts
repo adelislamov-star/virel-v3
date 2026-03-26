@@ -2,16 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { randomUUID } from 'crypto'
 import { ensureExtensionTables } from '@/lib/db/ensure-tables'
+import { toSlug } from '@/lib/slug'
 
 export const runtime = 'nodejs';
-
-function slugify(name: string) {
-  return name.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,9 +12,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Unique slug
-    let slug = slugify(body.name)
-    const existing = await prisma.model.findUnique({ where: { slug } })
-    if (existing) slug = `${slug}-${Date.now()}`
+    let slug = toSlug(body.name)
+    let candidate = slug
+    let counter = 2
+    while (await prisma.model.findUnique({ where: { slug: candidate } })) {
+      candidate = `${slug}-${counter}`
+      counter++
+    }
+    slug = candidate
 
     // Public code
     const publicCode = `${body.name.toUpperCase().replace(/\s+/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
@@ -29,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Location by tube station
     let primaryLocationId: string | null = null
     if (body.tubeStation) {
-      const locSlug = slugify(body.tubeStation)
+      const locSlug = toSlug(body.tubeStation)
       let loc = await prisma.location.findFirst({ where: { slug: locSlug } })
       if (!loc) {
         loc = await prisma.location.create({

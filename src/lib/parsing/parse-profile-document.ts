@@ -4,6 +4,8 @@
 // Step 1: Insert line breaks before known field keywords to normalize.
 // Step 2: Parse each field with regex.
 
+import { toSlug } from '@/lib/slug'
+
 export interface ParsedRate {
   duration: string
   callType: 'incall' | 'outcall'
@@ -48,16 +50,6 @@ export interface ParsedProfile {
   services: ParsedService[]
 }
 
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[()]/g, '')
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
 
 // Known field headers — insert \n before each to normalize single-line documents
 const FIELD_MARKERS = [
@@ -329,7 +321,7 @@ export function parseProfileDocument(rawText: string): ParsedProfile {
 
       services.push({
         name: serviceName,
-        slug: slugify(serviceName),
+        slug: toSlug(serviceName),
         enabled,
         extraPrice,
       })
