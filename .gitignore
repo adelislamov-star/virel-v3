@@ -59,3 +59,15 @@ tsconfig.tsbuildinfo
 .env.production
 *.txt
 src/lib/google-drive.ts
+
+# Build and seed output logs
+build_*.txt
+seed_*.txt
+tsc_*.txt
+ts_errors.txt
+v_out.txt
+v_err.txt
+push_*.txt
+prisma_*.txt
+count_out.txt
+CVirelpush_out.txt
