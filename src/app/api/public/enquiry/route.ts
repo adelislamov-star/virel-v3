@@ -6,9 +6,9 @@ export const runtime = 'nodejs'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, contact, date, duration, location, companion, message } = body
+    const { name, contact, date, time, duration, callType, companion, message } = body
 
-    if (!name || !contact || !date || !duration || !location) {
+    if (!name || !contact) {
       return NextResponse.json(
         { success: false, error: 'Required fields missing' },
         { status: 400 }
@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
       ``,
       `👤 *Name:* ${name}`,
       `📱 *Contact:* ${contact}`,
-      `📅 *Date:* ${date}`,
-      `⏱ *Duration:* ${duration}`,
-      `📍 *Location:* ${location}`,
+      date      ? `📅 *Date:* ${date}` : null,
+      time      ? `🕐 *Time:* ${time}` : null,
+      duration  ? `⏱ *Duration:* ${duration}` : null,
+      callType  ? `📍 *Location type:* ${callType}` : null,
       companion ? `💃 *Companion:* ${companion}` : null,
       message   ? `📝 *Message:* ${message}`   : null,
       ``,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import './BookingModal.css'
 
 interface BookingModalProps {
   isOpen: boolean
@@ -9,20 +10,96 @@ interface BookingModalProps {
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
+interface Companion {
+  id: string
+  name: string
+  slug: string
+  coverPhotoUrl: string | null
+}
+
+interface Rate {
+  id: string
+  label: string
+  durationMin: number
+  sortOrder: number
+  incallPrice: number | null
+  outcallPrice: number | null
+}
+
+const TIME_SLOTS: string[] = []
+for (let h = 8; h < 24; h++) {
+  TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:00`)
+  TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:30`)
+}
+
+const DURATION_OPTIONS = [
+  { key: '30min', label: '30 Minutes', min: 30 },
+  { key: '45min', label: '45 Minutes', min: 45 },
+  { key: '1hour', label: '1 Hour', min: 60 },
+  { key: '90min', label: '90 Minutes', min: 90 },
+  { key: '2hours', label: '2 Hours', min: 120 },
+  { key: '3hours', label: '3 Hours', min: 180 },
+  { key: 'overnight', label: 'Overnight', min: 540 },
+]
+
+const DURATION_MIN_MAP: Record<number, string> = {
+  30: '30min', 45: '45min', 60: '1hour', 90: '90min',
+  120: '2hours', 180: '3hours', 540: 'overnight',
+}
+
+function SectionHeader({ number, title, optional }: { number: string; title: string; optional?: boolean }) {
+  return (
+    <div className="bm-section-header">
+      <span className="bm-section-number">{number}</span>
+      <span className="bm-section-title">{title}</span>
+      <div className="bm-section-line" />
+      {optional && <span className="bm-section-optional">optional</span>}
+    </div>
+  )
+}
+
 export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [status, setStatus] = useState<Status>('idle')
   const [step, setStep] = useState<1 | 2>(1)
-  const firstInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Step 1 state
+  const [companions, setCompanions] = useState<Companion[]>([])
+  const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null)
+  const [companionOpen, setCompanionOpen] = useState(false)
+  const [callType, setCallType] = useState<'incall' | 'outcall'>('incall')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [timeOpen, setTimeOpen] = useState(false)
+  const [duration, setDuration] = useState('')
+  const [durationOpen, setDurationOpen] = useState(false)
+  const [message, setMessage] = useState('')
+
+  // Rates from companion
+  const [rates, setRates] = useState<Rate[]>([])
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
-      setTimeout(() => firstInputRef.current?.focus(), 100)
+      // Fetch companions
+      fetch('/api/public/models?limit=100')
+        .then(r => r.json())
+        .then(res => setCompanions(res.data || []))
+        .catch(() => {})
     } else {
       document.body.style.overflow = ''
       setStatus('idle')
       setStep(1)
+      setSelectedCompanion(null)
+      setCompanionOpen(false)
+      setCallType('incall')
+      setDate('')
+      setTime('')
+      setTimeOpen(false)
+      setDuration('')
+      setDurationOpen(false)
+      setMessage('')
+      setRates([])
     }
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
@@ -41,17 +118,91 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
   }, [step])
 
+  // Load rates when companion changes
+  useEffect(() => {
+    if (!selectedCompanion) {
+      setRates([])
+      return
+    }
+    fetch(`/api/public/models/${selectedCompanion.slug}`)
+      .then(r => r.json())
+      .then(res => {
+        if (!res.success || !res.data?.modelRates) return
+        const parsed = res.data.modelRates
+          .map((mr: any) => {
+            const master = mr.callRateMaster
+            if (!master || !master.isActive) return null
+            return {
+              id: mr.id,
+              label: master.label,
+              durationMin: master.durationMin,
+              sortOrder: master.sortOrder,
+              incallPrice: mr.incallPrice,
+              outcallPrice: mr.outcallPrice,
+            }
+          })
+          .filter(Boolean)
+          .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+        setRates(parsed)
+      })
+      .catch(() => {})
+  }, [selectedCompanion])
+
   if (!isOpen) return null
+
+  const today = new Date().toISOString().split('T')[0]
+
+  // Build duration list — merge with rates if companion selected
+  const getDurationDisplay = () => {
+    if (rates.length === 0) {
+      // No companion — show durations without prices
+      return DURATION_OPTIONS.map(d => ({
+        key: d.key,
+        label: d.label,
+        price: null as number | null,
+      }))
+    }
+    // With companion — show rates with prices, filter to non-Extra Hour
+    return rates
+      .filter(r => {
+        const key = DURATION_MIN_MAP[r.durationMin]
+        return key && key !== 'extra_hour'
+      })
+      .map(r => {
+        const key = DURATION_MIN_MAP[r.durationMin]
+        const opt = DURATION_OPTIONS.find(d => d.key === key)
+        const price = callType === 'incall' ? r.incallPrice : r.outcallPrice
+        return {
+          key: key || r.label,
+          label: opt?.label || r.label,
+          price: price && price > 0 ? price : null,
+        }
+      })
+  }
+
+  const durationDisplay = getDurationDisplay()
+  const selectedDurationLabel = durationDisplay.find(d => d.key === duration)?.label || ''
+  const selectedDurationPrice = durationDisplay.find(d => d.key === duration)?.price
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setStatus('loading')
     const data = Object.fromEntries(new FormData(e.currentTarget))
+    // Merge step 1 hidden fields + step 2 form fields
+    const payload = {
+      ...data,
+      companion: selectedCompanion?.name || '',
+      callType,
+      date,
+      time,
+      duration: selectedDurationLabel || duration,
+      message,
+    }
     try {
       const res = await fetch('/api/public/enquiry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error()
       setStatus('success')
@@ -69,11 +220,11 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="bm-panel">
-        <button className="bm-close" onClick={onClose} aria-label="Close">✕</button>
+        <button className="bm-close" onClick={onClose} aria-label="Close">&#10005;</button>
 
         {status === 'success' ? (
           <div className="bm-success">
-            <div className="bm-success-icon">✓</div>
+            <div className="bm-success-icon">&#10003;</div>
             <h2 className="bm-success-title">Enquiry Received</h2>
             <p className="bm-success-text">
               We will respond personally within 15 minutes.
@@ -91,60 +242,185 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             <form className="bm-form" onSubmit={handleSubmit} noValidate>
               {/* ── Step 1: Booking Details ── */}
               <div style={{ display: step === 1 ? 'contents' : 'none' }}>
-                <div className="bm-field">
-                  <label className="bm-label" htmlFor="bm-companion">
-                    Preferred Companion <span className="bm-optional">(optional)</span>
-                  </label>
-                  <input
-                    ref={firstInputRef}
-                    id="bm-companion" name="companion" type="text"
-                    className="bm-input"
-                    placeholder="Name, or leave blank for a recommendation"
-                  />
-                </div>
 
-                <div className="bm-row">
-                  <div className="bm-field">
-                    <label className="bm-label" htmlFor="bm-date">Date</label>
-                    <input
-                      id="bm-date" name="date" type="date"
-                      className="bm-input bm-input-date"
-                      required
-                    />
+                {/* 01 — SELECT COMPANION */}
+                <div className="bm-section">
+                  <SectionHeader number="01" title="Select Companion" optional />
+                  <div className="bm-dropdown">
+                    <button
+                      className={`bm-dropdown-trigger ${companionOpen ? 'open' : ''}`}
+                      onClick={() => setCompanionOpen(!companionOpen)}
+                      type="button"
+                    >
+                      {selectedCompanion ? (
+                        <span className="bm-companion-selected">
+                          {selectedCompanion.coverPhotoUrl ? (
+                            <img src={selectedCompanion.coverPhotoUrl} alt="" className="bm-companion-avatar" />
+                          ) : (
+                            <span className="bm-companion-avatar-ph">
+                              {selectedCompanion.name?.charAt(0)}
+                            </span>
+                          )}
+                          <span>{selectedCompanion.name}</span>
+                        </span>
+                      ) : (
+                        <span className="bm-placeholder">Select a companion...</span>
+                      )}
+                      <span className="bm-chevron">&#9660;</span>
+                    </button>
+
+                    {companionOpen && (
+                      <>
+                        <div className="bm-dropdown-overlay" onClick={() => setCompanionOpen(false)} />
+                        <div className="bm-dropdown-list">
+                          {companions.map(c => (
+                            <div
+                              key={c.id}
+                              className={`bm-companion-option ${selectedCompanion?.id === c.id ? 'selected' : ''}`}
+                              onClick={() => {
+                                setSelectedCompanion(c)
+                                setCompanionOpen(false)
+                                setDuration('')
+                              }}
+                            >
+                              {c.coverPhotoUrl ? (
+                                <img src={c.coverPhotoUrl} alt="" className="bm-companion-avatar" />
+                              ) : (
+                                <span className="bm-companion-avatar-ph">
+                                  {c.name?.charAt(0)}
+                                </span>
+                              )}
+                              <span className="bm-companion-name">{c.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="bm-field">
-                    <label className="bm-label" htmlFor="bm-duration">Duration</label>
-                    <select id="bm-duration" name="duration" className="bm-input bm-select" required>
-                      <option value="">Select…</option>
-                      <option value="1 hour">1 hour</option>
-                      <option value="2 hours">2 hours</option>
-                      <option value="3 hours">3 hours</option>
-                      <option value="Dinner date">Dinner date</option>
-                      <option value="Overnight">Overnight</option>
-                      <option value="Weekend">Weekend</option>
-                    </select>
+                </div>
+
+                {/* 02 — LOCATION PREFERENCE */}
+                <div className="bm-section">
+                  <SectionHeader number="02" title="Location Preference" />
+                  <div className="bm-location-cards">
+                    <button
+                      className={`bm-location-card ${callType === 'incall' ? 'active' : ''}`}
+                      onClick={() => { setCallType('incall'); setDuration('') }}
+                      type="button"
+                    >
+                      <span className="bm-location-card-title">Incall</span>
+                      <span className="bm-location-card-desc">Our private location</span>
+                    </button>
+                    <button
+                      className={`bm-location-card ${callType === 'outcall' ? 'active' : ''}`}
+                      onClick={() => { setCallType('outcall'); setDuration('') }}
+                      type="button"
+                    >
+                      <span className="bm-location-card-title">Outcall</span>
+                      <span className="bm-location-card-desc">Your hotel or residence</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="bm-field">
-                  <label className="bm-label" htmlFor="bm-location">Location</label>
-                  <input
-                    id="bm-location" name="location" type="text"
-                    className="bm-input"
-                    placeholder="Hotel, area or postcode in London"
-                    required
-                  />
+                {/* 03 — DATE & TIME */}
+                <div className="bm-section">
+                  <SectionHeader number="03" title="Date & Time" />
+                  <div className="bm-datetime-row">
+                    <div>
+                      <span className="bm-field-label">Date</span>
+                      <input
+                        type="date"
+                        className="bm-book-input"
+                        min={today}
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <span className="bm-field-label">Time</span>
+                      <div className="bm-dropdown">
+                        <button
+                          className={`bm-dropdown-trigger ${timeOpen ? 'open' : ''}`}
+                          onClick={() => setTimeOpen(!timeOpen)}
+                          type="button"
+                        >
+                          {time ? <span>{time}</span> : <span className="bm-placeholder">Select time...</span>}
+                          <span className="bm-chevron">&#9660;</span>
+                        </button>
+                        {timeOpen && (
+                          <>
+                            <div className="bm-dropdown-overlay" onClick={() => setTimeOpen(false)} />
+                            <div className="bm-dropdown-list">
+                              {TIME_SLOTS.map(t => (
+                                <div
+                                  key={t}
+                                  className={`bm-duration-option ${time === t ? 'selected' : ''}`}
+                                  onClick={() => { setTime(t); setTimeOpen(false) }}
+                                >
+                                  <span className="bm-duration-option-label">{t}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="bm-field">
-                  <label className="bm-label" htmlFor="bm-message">
-                    Message <span className="bm-optional">(optional)</span>
-                  </label>
+                {/* 04 — DURATION */}
+                <div className="bm-section">
+                  <SectionHeader number="04" title="Duration" />
+                  <div className="bm-dropdown">
+                    <button
+                      className={`bm-dropdown-trigger ${durationOpen ? 'open' : ''}`}
+                      onClick={() => setDurationOpen(!durationOpen)}
+                      type="button"
+                    >
+                      {duration ? (
+                        <span>
+                          {selectedDurationLabel}
+                          {selectedDurationPrice != null && ` \u2014 \u00A3${selectedDurationPrice.toLocaleString()}`}
+                        </span>
+                      ) : (
+                        <span className="bm-placeholder">Select duration...</span>
+                      )}
+                      <span className="bm-chevron">&#9660;</span>
+                    </button>
+
+                    {durationOpen && (
+                      <>
+                        <div className="bm-dropdown-overlay" onClick={() => setDurationOpen(false)} />
+                        <div className="bm-dropdown-list">
+                          {durationDisplay.map(d => (
+                            <div
+                              key={d.key}
+                              className={`bm-duration-option ${duration === d.key ? 'selected' : ''}`}
+                              onClick={() => { setDuration(d.key); setDurationOpen(false) }}
+                            >
+                              <span className="bm-duration-option-label">{d.label}</span>
+                              {d.price != null && (
+                                <span className="bm-duration-option-price">
+                                  &pound;{d.price.toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Special requests */}
+                <div className="bm-section">
+                  <SectionHeader number="05" title="Special Requests" optional />
                   <textarea
-                    id="bm-message" name="message"
-                    className="bm-input bm-textarea"
-                    placeholder="Any preferences or special requests…"
+                    className="bm-book-textarea"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
                     rows={3}
+                    placeholder="Any preferences or special requests..."
                   />
                 </div>
 
@@ -153,7 +429,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                   className="btn-gold bm-submit"
                   onClick={() => setStep(2)}
                 >
-                  Continue →
+                  Continue &rarr;
                 </button>
               </div>
 
@@ -190,7 +466,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
                 <div className="bm-step-btns">
                   <button type="button" className="bm-back" onClick={() => setStep(1)}>
-                    ← Back
+                    &larr; Back
                   </button>
                   <button
                     type="submit"
@@ -198,7 +474,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                     disabled={status === 'loading'}
                     style={{ flex: 1 }}
                   >
-                    {status === 'loading' ? 'Sending…' : 'Send Enquiry'}
+                    {status === 'loading' ? 'Sending\u2026' : 'Send Enquiry'}
                   </button>
                 </div>
               </div>
