@@ -24,9 +24,7 @@ After every task:
 
 
 
-User triggers deploy manually in browser:
-
-https://api.vercel.com/v1/integrations/deploy/prj\_bOjDo27XJ0kgKFxsbKXS2paWC6f5/6Kfab1ipLA
+Deploy happens automatically on push to main via Vercel GitHub integration.
 
 
 
