@@ -21,9 +21,10 @@ export async function GET(
     // Accept both UUID (id) and slug
     const idOrSlug = params.id;
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const isCUID = /^c[a-z0-9]{20,}$/.test(idOrSlug);
 
     const model = await prisma.model.findUnique({
-      where: isUUID ? { id: idOrSlug } : { slug: idOrSlug },
+      where: (isUUID || isCUID) ? { id: idOrSlug } : { slug: idOrSlug },
       include: {
         stats: true,
         primaryLocation: true,
