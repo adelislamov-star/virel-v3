@@ -15,7 +15,8 @@
     "seed": "npx tsx scripts/seed-test-data.ts",
     "seed:masters": "npx tsx scripts/seed-masters.ts",
     "db-wipe": "npx tsx scripts/db-wipe-models.ts",
-    "drive-import": "npx tsx scripts/drive-import.ts"
+    "drive-import": "npx tsx scripts/drive-import.ts",
+    "r2-wipe": "npx tsx scripts/r2-wipe.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
