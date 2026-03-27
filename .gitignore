@@ -71,3 +71,4 @@ push_*.txt
 prisma_*.txt
 count_out.txt
 CVirelpush_out.txt
+.env.drive
