@@ -16,6 +16,7 @@ interface Service {
   isActive: boolean;
   status: string;
   sortOrder: number;
+  defaultExtraPrice: number | null;
   seoTitle: string | null;
   seoDescription: string | null;
   seoKeywords: string | null;
@@ -155,7 +156,12 @@ export default function ServicesPage() {
       });
       const json = await res.json();
       if (json.success) {
-        setItems((prev) => prev.map((s) => s.id === service.id ? { ...s, isActive: !s.isActive } : s));
+        const newVal = !service.isActive;
+        setItems((prev) => prev.map((s) => s.id === service.id ? { ...s, isActive: newVal } : s));
+        setStats((prev) => ({
+          ...prev,
+          active: newVal ? prev.active + 1 : prev.active - 1,
+        }));
       }
     } catch {
       showToast('Failed to update status', 'error');
@@ -180,6 +186,9 @@ export default function ServicesPage() {
         isPopular: modal.isPopular ?? false,
         isActive: modal.isActive ?? true,
         sortOrder: modal.sortOrder ?? 0,
+        defaultExtraPrice: modal.defaultExtraPrice !== null && modal.defaultExtraPrice !== undefined
+          ? parseFloat(String(modal.defaultExtraPrice))
+          : null,
         seoTitle: modal.seoTitle || null,
         seoDescription: modal.seoDescription || null,
         seoKeywords: modal.seoKeywords || null,
@@ -220,6 +229,13 @@ export default function ServicesPage() {
       } else if (json.success) {
         showToast('Deleted successfully', 'success');
         setItems((prev) => prev.filter((s) => s.id !== service.id));
+        setStats((prev) => ({
+          ...prev,
+          total: prev.total - 1,
+          public: service.isPublic ? prev.public - 1 : prev.public,
+          membersOnly: !service.isPublic ? prev.membersOnly - 1 : prev.membersOnly,
+          active: service.isActive ? prev.active - 1 : prev.active,
+        }));
       } else {
         showToast(json.error?.message || 'Delete failed', 'error');
       }
@@ -295,6 +311,7 @@ export default function ServicesPage() {
       isPopular: false,
       isActive: true,
       sortOrder: 0,
+      defaultExtraPrice: null,
       seoTitle: null,
       seoDescription: null,
       seoKeywords: null,
@@ -405,16 +422,17 @@ export default function ServicesPage() {
                 <th className="px-4 py-3 font-medium w-16">Models</th>
                 <th className="px-4 py-3 font-medium w-12">Popular</th>
                 <th className="px-4 py-3 font-medium w-12">Sort</th>
+                <th className="px-4 py-3 font-medium w-20">Extra</th>
                 <th className="px-4 py-3 font-medium w-16">Active</th>
                 <th className="px-4 py-3 font-medium w-28">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-zinc-500">Loading...</td></tr>
+                <tr><td colSpan={11} className="px-4 py-12 text-center text-zinc-500">Loading...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-zinc-500">No services found</td></tr>
+                <tr><td colSpan={11} className="px-4 py-12 text-center text-zinc-500">No services found</td></tr>
               )}
               {!loading && filtered.map((item, idx) => (
                 <tr key={item.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors">
@@ -436,6 +454,13 @@ export default function ServicesPage() {
                     {item.isPopular && <Star size={14} className="text-amber-400 fill-amber-400 inline" />}
                   </td>
                   <td className="px-4 py-3 text-zinc-400">{item.sortOrder}</td>
+                  <td className="px-4 py-3">
+                    {item.defaultExtraPrice != null ? (
+                      <span className="text-xs text-amber-400 font-medium">+£{item.defaultExtraPrice}</span>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => toggleActive(item)}
@@ -595,6 +620,34 @@ export default function ServicesPage() {
                       onChange={(e) => updateModal('sortOrder', parseInt(e.target.value) || 0)}
                       className="w-32 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
                     />
+                  </div>
+                  {/* Extra Cost */}
+                  <div className="border border-zinc-700/60 rounded-xl p-4 bg-zinc-800/30 space-y-3">
+                    <label className="flex items-center gap-3 text-sm text-zinc-300 cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={() => updateModal('defaultExtraPrice', modal.defaultExtraPrice != null ? null : 0)}
+                        className={`relative w-9 h-5 rounded-full transition-colors ${modal.defaultExtraPrice != null ? 'bg-emerald-500' : 'bg-zinc-600'}`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${modal.defaultExtraPrice != null ? 'left-[18px]' : 'left-0.5'}`} />
+                      </button>
+                      <span className="font-medium">Extra Cost</span>
+                      <span className="text-zinc-500 text-xs">(additional charge for this service)</span>
+                    </label>
+                    {modal.defaultExtraPrice != null && (
+                      <div className="flex items-center gap-2 pl-11">
+                        <span className="text-zinc-400 text-sm">£</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="10"
+                          value={modal.defaultExtraPrice ?? 0}
+                          onChange={(e) => updateModal('defaultExtraPrice', parseFloat(e.target.value) || 0)}
+                          className="w-36 bg-zinc-800 border border-amber-500/40 rounded-lg px-3 py-2 text-sm text-amber-400 font-medium focus:outline-none focus:border-amber-500"
+                        />
+                        <span className="text-zinc-500 text-xs">default extra per booking</span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
