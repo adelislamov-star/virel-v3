@@ -129,7 +129,7 @@ export default function ServicesPage() {
     const catB = b.category?.toLowerCase() ?? '';
     if (catA !== catB) return catA.localeCompare(catB);
     if (catFilter) return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-    return (a.title ?? '').localeCompare(b.title ?? '');
+    return (a.title ?? '').localeCompare(b.title ?? '', 'en', { sensitivity: 'base' });
   });
 
   // Stats from API
@@ -513,22 +513,26 @@ export default function ServicesPage() {
                     {item.isPopular && <Star size={14} className="text-amber-400 fill-amber-400 inline" />}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => moveService(item, 'up')}
-                        className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
-                        title="Move up"
-                      >
-                        <ChevronUp size={14} />
-                      </button>
-                      <button
-                        onClick={() => moveService(item, 'down')}
-                        className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
-                        title="Move down"
-                      >
-                        <ChevronDown size={14} />
-                      </button>
-                    </div>
+                    {catFilter ? (
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          onClick={() => moveService(item, 'up')}
+                          className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
+                          title="Move up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          onClick={() => moveService(item, 'down')}
+                          className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
+                          title="Move down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {item.defaultExtraPrice != null ? (
