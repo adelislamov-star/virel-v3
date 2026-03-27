@@ -39,6 +39,19 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
   );
 }
 
+const NAV_SECTIONS = [
+  { id: 'basic',    label: 'Basic Info' },
+  { id: 'contact',  label: 'Contact' },
+  { id: 'physical', label: 'Physical' },
+  { id: 'marketing',label: 'Marketing' },
+  { id: 'wardrobe', label: 'Wardrobe' },
+  { id: 'locations',label: 'Locations' },
+  { id: 'services', label: 'Services' },
+  { id: 'rates',    label: 'Rates' },
+  { id: 'payment',  label: 'Payment' },
+  { id: 'availability', label: 'Availability' },
+] as const;
+
 export default function ModelEditPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -50,6 +63,9 @@ export default function ModelEditPage() {
   const [model, setModel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [dirtySections, setDirtySections] = useState<Set<string>>(new Set());
+  const markDirty = (section: string) => setDirtySections(prev => new Set(prev).add(section));
+  const markClean = (section: string) => setDirtySections(prev => { const next = new Set(prev); next.delete(section); return next; });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
 
   const { revalidate } = useRevalidate();
@@ -255,47 +271,106 @@ export default function ModelEditPage() {
         </div>
       )}
 
-      {/* Section: Basic Info (existing component) */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+      {/* Completion Bar */}
+      {publishAudit && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-zinc-400">Profile completion</span>
+              <span className={`text-xs font-semibold ${publishAudit.score >= 80 ? 'text-emerald-400' : publishAudit.score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                {publishAudit.score}%
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${publishAudit.score >= 80 ? 'bg-emerald-500' : publishAudit.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                style={{ width: `${publishAudit.score}%` }}
+              />
+            </div>
+          </div>
+          {publishAudit.missing?.length > 0 && (
+            <div className="text-xs text-zinc-500 hidden md:block">
+              Missing: <span className="text-zinc-300">{publishAudit.missing.slice(0,3).join(', ')}{publishAudit.missing.length > 3 ? ` +${publishAudit.missing.length - 3}` : ''}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main layout: sticky nav + content */}
+      <div className="flex gap-6 items-start">
+
+        {/* Sticky sidebar nav */}
+        <div className="hidden lg:block w-44 flex-shrink-0 sticky top-6">
+          <nav className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 space-y-0.5">
+            {NAV_SECTIONS.map(({ id, label }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                className="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors group"
+              >
+                <span>{label}</span>
+                {dirtySections.has(id) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                )}
+              </a>
+            ))}
+          </nav>
+        </div>
+
+        {/* Sections */}
+        <div className="flex-1 space-y-4 min-w-0">
+
+      {/* Section: Basic Info */}
+      <div id="basic" className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-800">
           <h2 className="text-base font-semibold text-white">Basic Info</h2>
         </div>
         <div className="p-6">
-          <BasicInfoTab model={model} onSave={saveModel} saving={saving} />
+          <BasicInfoTab model={model} onSave={saveModel} saving={saving} onDirty={() => markDirty('basic')} />
         </div>
       </div>
 
-      {/* Section: Contact */}
-      <Contact model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+      <div id="contact">
+        <Contact model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+      </div>
 
-      {/* Section 1: Physical Stats */}
-      <PhysicalStats model={model} modelId={modelId} onToast={showToast} />
+      <div id="physical">
+        <PhysicalStats model={model} modelId={modelId} onToast={showToast} />
+      </div>
 
-      {/* Section 2: Marketing & Presentation */}
-      <Marketing model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+      <div id="marketing">
+        <Marketing model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+      </div>
 
-      {/* Section 3: Wardrobe */}
-      <Wardrobe model={model} modelId={modelId} onToast={showToast} />
+      <div id="wardrobe">
+        <Wardrobe model={model} modelId={modelId} onToast={showToast} />
+      </div>
 
-      {/* Section 4: Locations */}
-      <Locations modelId={modelId} onToast={showToast} />
+      <div id="locations">
+        <Locations modelId={modelId} onToast={showToast} />
+      </div>
 
-      {/* Section 5: Services */}
-      <Services modelId={modelId} onToast={showToast} />
+      <div id="services">
+        <Services modelId={modelId} onToast={showToast} />
+      </div>
 
-      {/* Section 6: Rates */}
-      <Rates modelId={modelId} onToast={showToast} />
+      <div id="rates">
+        <Rates modelId={modelId} onToast={showToast} />
+      </div>
 
-      {/* Section: Payment Methods */}
-      <PaymentMethods model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+      <div id="payment">
+        <PaymentMethods model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+      </div>
 
-      {/* Section 7: Availability */}
-      <Availability modelId={modelId} onToast={showToast} />
+      <div id="availability">
+        <Availability modelId={modelId} onToast={showToast} />
+      </div>
 
-      {/* Section 8: AI Tools */}
+      {/* Section: AI Tools */}
       <AITools model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
 
-      {/* Section: Media (existing component) */}
+      {/* Section: Media */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-800">
           <h2 className="text-base font-semibold text-white">Media</h2>
@@ -304,6 +379,9 @@ export default function ModelEditPage() {
           <MediaTab model={model} />
         </div>
       </div>
+
+        </div>{/* end sections */}
+      </div>{/* end flex layout */}
     </div>
   );
 }

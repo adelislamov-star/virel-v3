@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-export default function BasicInfoTab({ model, onSave, saving }: any) {
+export default function BasicInfoTab({ model, onSave, saving, onDirty }: any) {
   const [form, setForm] = useState({
     name: model.name || '',
     publicCode: model.publicCode || '',
@@ -53,7 +53,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => { setForm({ ...form, name: e.target.value }); onDirty?.(); }}
               className="w-full px-3 py-2 border rounded-md bg-background"
               required
             />
@@ -65,7 +65,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
             <input
               type="text"
               value={form.publicCode}
-              onChange={(e) => setForm({ ...form, publicCode: e.target.value.toUpperCase() })}
+              onChange={(e) => { setForm({ ...form, publicCode: e.target.value.toUpperCase() }); onDirty?.(); }}
               className="w-full px-3 py-2 border rounded-md bg-background"
               placeholder="SOPHIA-MF"
               required
@@ -77,7 +77,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
             <label className="block text-sm font-medium mb-2">Status</label>
             <select
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              onChange={(e) => { setForm({ ...form, status: e.target.value }); onDirty?.(); }}
               className="w-full px-3 py-2 border rounded-md bg-background"
             >
               <option value="draft">Draft</option>
@@ -96,7 +96,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
               min="0"
               max="5"
               value={form.ratingInternal}
-              onChange={(e) => setForm({ ...form, ratingInternal: e.target.value as any })}
+              onChange={(e) => { setForm({ ...form, ratingInternal: e.target.value as any }); onDirty?.(); }}
               className="w-full px-3 py-2 border rounded-md bg-background"
             />
           </div>
@@ -109,7 +109,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
                 <input
                   type="checkbox"
                   checked={form.workWithCouples}
-                  onChange={(e) => setForm({ ...form, workWithCouples: e.target.checked })}
+                  onChange={(e) => { setForm({ ...form, workWithCouples: e.target.checked }); onDirty?.(); }}
                   className="w-4 h-4"
                 />
                 <span>Work with couples</span>
@@ -119,7 +119,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
                 <input
                   type="checkbox"
                   checked={form.workWithWomen}
-                  onChange={(e) => setForm({ ...form, workWithWomen: e.target.checked })}
+                  onChange={(e) => { setForm({ ...form, workWithWomen: e.target.checked }); onDirty?.(); }}
                   className="w-4 h-4"
                 />
                 <span>Work with women</span>
@@ -129,7 +129,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
                 <input
                   type="checkbox"
                   checked={form.blackClientsWelcome}
-                  onChange={(e) => setForm({ ...form, blackClientsWelcome: e.target.checked })}
+                  onChange={(e) => { setForm({ ...form, blackClientsWelcome: e.target.checked }); onDirty?.(); }}
                   className="w-4 h-4"
                 />
                 <span>Black clients welcome</span>
@@ -139,7 +139,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
                 <input
                   type="checkbox"
                   checked={form.disabledClientsWelcome}
-                  onChange={(e) => setForm({ ...form, disabledClientsWelcome: e.target.checked })}
+                  onChange={(e) => { setForm({ ...form, disabledClientsWelcome: e.target.checked }); onDirty?.(); }}
                   className="w-4 h-4"
                 />
                 <span>Disabled clients welcome</span>
@@ -152,7 +152,7 @@ export default function BasicInfoTab({ model, onSave, saving }: any) {
             <label className="block text-sm font-medium mb-2">Internal Notes</label>
             <textarea
               value={form.notesInternal}
-              onChange={(e) => setForm({ ...form, notesInternal: e.target.value })}
+              onChange={(e) => { setForm({ ...form, notesInternal: e.target.value }); onDirty?.(); }}
               className="w-full px-3 py-2 border rounded-md bg-background"
               rows={4}
             />
