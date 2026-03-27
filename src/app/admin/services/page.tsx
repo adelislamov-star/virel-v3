@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Star, Pencil, Sparkles, Trash2, Plus, X } from 'lucide-react';
+import { Star, Pencil, Sparkles, Trash2, Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -128,6 +128,7 @@ export default function ServicesPage() {
     const catA = a.category?.toLowerCase() ?? '';
     const catB = b.category?.toLowerCase() ?? '';
     if (catA !== catB) return catA.localeCompare(catB);
+    if (catFilter) return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
     return (a.title ?? '').localeCompare(b.title ?? '');
   });
 
@@ -164,6 +165,40 @@ export default function ServicesPage() {
       }
     } catch {
       showToast('Failed to update visibility', 'error');
+    }
+  };
+
+  // Move service up/down within category
+  const moveService = async (service: Service, direction: 'up' | 'down') => {
+    const categoryItems = items
+      .filter(s => s.category === service.category)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    const idx = categoryItems.findIndex(s => s.id === service.id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= categoryItems.length) return;
+    const swapWith = categoryItems[swapIdx];
+    const newOrder = service.sortOrder ?? 0;
+    const swapOrder = swapWith.sortOrder ?? 0;
+    try {
+      await Promise.all([
+        fetch(`/api/v1/services/${service.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: swapOrder }),
+        }),
+        fetch(`/api/v1/services/${swapWith.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: newOrder }),
+        }),
+      ]);
+      setItems(prev => prev.map(s => {
+        if (s.id === service.id) return { ...s, sortOrder: swapOrder };
+        if (s.id === swapWith.id) return { ...s, sortOrder: newOrder };
+        return s;
+      }));
+    } catch {
+      showToast('Failed to reorder', 'error');
     }
   };
 
@@ -442,7 +477,6 @@ export default function ServicesPage() {
                 <th className="px-4 py-3 font-medium">Visibility</th>
                 <th className="px-4 py-3 font-medium w-16">Models</th>
                 <th className="px-4 py-3 font-medium w-12">Popular</th>
-                <th className="px-4 py-3 font-medium w-12">Sort</th>
                 <th className="px-4 py-3 font-medium w-20">Extra</th>
                 <th className="px-4 py-3 font-medium w-16">Active</th>
                 <th className="px-4 py-3 font-medium w-28">Actions</th>
@@ -450,10 +484,10 @@ export default function ServicesPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={11} className="px-4 py-12 text-center text-zinc-500">Loading...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-zinc-500">Loading...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={11} className="px-4 py-12 text-center text-zinc-500">No services found</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-zinc-500">No services found</td></tr>
               )}
               {!loading && filtered.map((item, idx) => (
                 <tr key={item.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors">
@@ -478,7 +512,24 @@ export default function ServicesPage() {
                   <td className="px-4 py-3 text-center">
                     {item.isPopular && <Star size={14} className="text-amber-400 fill-amber-400 inline" />}
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">{item.sortOrder}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={() => moveService(item, 'up')}
+                        className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
+                        title="Move up"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        onClick={() => moveService(item, 'down')}
+                        className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
+                        title="Move down"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     {item.defaultExtraPrice != null ? (
                       <span className="text-xs text-amber-400 font-medium">+£{item.defaultExtraPrice}</span>
