@@ -202,6 +202,8 @@ model Model {
   @@index([status])
   @@index([visibility])
   @@index([primaryLocationId])
+  @@index([status, deletedAt])
+  @@index([slug])
   @@map("models")
 }
 
@@ -258,6 +260,8 @@ model ModelService {
   service       Service @relation(fields: [serviceId], references: [id])
 
   @@id([modelId, serviceId])
+  @@index([modelId])
+  @@index([serviceId])
   @@map("model_services")
 }
 
@@ -305,6 +309,8 @@ model Service {
   bookings          BookingService[]
   models            ModelService[]
 
+  @@index([category, isActive])
+  @@index([isActive, isPublic])
   @@map("services")
 }
 

@@ -8,6 +8,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const all = searchParams.get('all') === 'true';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
+    const statusParam = searchParams.get('status') || null;
 
     // Admin view (all=true) requires authentication
     if (all) {
@@ -15,17 +19,24 @@ export async function GET(request: NextRequest) {
       if (!isActor(auth)) return auth;
     }
 
-    const where = all ? {} : { status: 'active' };
+    const where = all
+      ? { ...(statusParam ? { status: statusParam } : {}), deletedAt: null }
+      : { status: 'active', deletedAt: null };
 
-    const models = await prisma.model.findMany({
-      where,
-      include: {
-        stats: true,
-        primaryLocation: true,
-        _count: { select: { bookings: true } },
-      },
-      orderBy: { name: 'asc' },
-    });
+    const [models, total] = await Promise.all([
+      prisma.model.findMany({
+        where,
+        include: {
+          stats: true,
+          primaryLocation: true,
+          _count: { select: { bookings: true } },
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.model.count({ where }),
+    ]);
 
     // Add booking stats for admin view
     let modelsWithStats = models;
@@ -45,7 +56,13 @@ export async function GET(request: NextRequest) {
       }));
     }
 
-    return NextResponse.json({ success: true, data: { models: modelsWithStats } });
+    return NextResponse.json({
+      success: true,
+      data: {
+        models: modelsWithStats,
+        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      },
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: { message: error.message } },
