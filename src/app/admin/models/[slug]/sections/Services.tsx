@@ -61,7 +61,10 @@ export default function Services({ modelId, onToast }: Props) {
           }
           const cats: ServiceCategory[] = Array.from(catMap.entries())
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([name, services]) => ({ name, services }));
+            .map(([name, services]) => ({
+              name,
+              services: [...services].sort((a, b) => a.title.localeCompare(b.title)),
+            }));
           setCategories(cats);
           if (cats.length > 0 && !activeCategory) setActiveCategory(cats[0].name);
         }

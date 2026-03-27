@@ -128,7 +128,7 @@ export default function ServicesPage() {
     const catA = a.category?.toLowerCase() ?? '';
     const catB = b.category?.toLowerCase() ?? '';
     if (catA !== catB) return catA.localeCompare(catB);
-    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    return (a.title ?? '').localeCompare(b.title ?? '');
   });
 
   // Stats from API
@@ -139,6 +139,33 @@ export default function ServicesPage() {
 
   // Categories for filter dropdown
   const categories = [...new Set(items.map((s) => s.category).filter(Boolean))].sort();
+
+  // Toggle visibility
+  const toggleVisibility = async (service: Service) => {
+    try {
+      const res = await fetch(`/api/v1/services/${service.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic: !service.isPublic }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const newVal = !service.isPublic;
+        setItems((prev) =>
+          prev.map((s) => s.id === service.id ? { ...s, isPublic: newVal } : s)
+        );
+        setStats((prev) => ({
+          ...prev,
+          public: newVal ? prev.public + 1 : prev.public - 1,
+          membersOnly: newVal ? prev.membersOnly - 1 : prev.membersOnly + 1,
+        }));
+      } else {
+        showToast('Failed to update visibility', 'error');
+      }
+    } catch {
+      showToast('Failed to update visibility', 'error');
+    }
+  };
 
   // Toggle active status
   const toggleActive = async (service: Service) => {
@@ -439,9 +466,13 @@ export default function ServicesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs border ${item.isPublic ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>
+                    <button
+                      onClick={() => toggleVisibility(item)}
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs border transition-opacity hover:opacity-70 cursor-pointer ${item.isPublic ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}
+                      title="Click to toggle visibility"
+                    >
                       {item.isPublic ? 'Public' : 'Members Only'}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-zinc-400">{item._count?.models ?? 0}</td>
                   <td className="px-4 py-3 text-center">
