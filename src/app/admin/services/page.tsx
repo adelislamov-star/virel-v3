@@ -40,12 +40,6 @@ const categoryStyles: Record<string, string> = {
   wellness: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   fetish: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   bespoke: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  connection: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  oral: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-  group: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  'touch & wellness': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  domination: 'bg-red-500/10 text-red-400 border-red-500/20',
-  other: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
 };
 
 function toSlug(str: string): string {
