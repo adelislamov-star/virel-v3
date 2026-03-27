@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
 import Anthropic from '@anthropic-ai/sdk'
+import { prisma } from '@/lib/db/client'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -95,7 +96,17 @@ B2B massage – Yes Extra £20
 Striptease – Yes
 Toys – Yes`
 
-    const EXAMPLE_OUTPUT = `{"name":"Sophia","age":"24","height":"167","weight":"54","dressSizeUK":"8","feetSizeUK":"5","breastSize":"34C","breastType":"natural","eyesColour":"Green","hairColour":"Brown","smokingStatus":"no","tattooStatus":"small","piercingTypes":"Ears only","nationality":"Romanian","languages":["English","Romanian"],"orientation":"bisexual","workWithCouples":true,"workWithWomen":true,"blackClients":true,"disabledClients":false,"tubeStation":"Baker Street","addressStreet":"34 Baker Street","addressFlat":"4B","addressPostcode":"W1U 6RS","airportHeathrow":true,"airportGatwick":false,"airportStansted":false,"rate30min":"150","rate45min":"200","rate1hIn":"250","rate1hOut":"300","rate90minIn":"350","rate90minOut":"400","rate2hIn":"450","rate2hOut":"500","rateExtraHour":"200","rateOvernight":"1200","services":[{"code":"GFE"},{"code":"OWO","extraPrice":30},{"code":"69"},{"code":"DFK"},{"code":"B2B","extraPrice":20},{"code":"STRIPTEASE"},{"code":"TOYS"}]}`
+    const EXAMPLE_OUTPUT = `{"name":"Sophia","age":"24","height":"167","weight":"54","dressSizeUK":"8","feetSizeUK":"5","breastSize":"34C","breastType":"natural","eyesColour":"Green","hairColour":"Brown","smokingStatus":"no","tattooStatus":"small","piercingTypes":"Ears only","nationality":"Romanian","languages":["English","Romanian"],"orientation":"bisexual","workWithCouples":true,"workWithWomen":true,"blackClients":true,"disabledClients":false,"tubeStation":"Baker Street","addressStreet":"34 Baker Street","addressFlat":"4B","addressPostcode":"W1U 6RS","airportHeathrow":true,"airportGatwick":false,"airportStansted":false,"rate30min":"150","rate45min":"200","rate1hIn":"250","rate1hOut":"300","rate90minIn":"350","rate90minOut":"400","rate2hIn":"450","rate2hOut":"500","rateExtraHour":"200","rateOvernight":"1200","services":[{"serviceId":"matched-id","enabled":true,"isExtra":false,"extraPrice":null},{"serviceId":"matched-id","enabled":true,"isExtra":true,"extraPrice":30},{"serviceId":"matched-id","enabled":true,"isExtra":false,"extraPrice":null}]}`
+
+    // Load active services from DB
+    const servicesFromDb = await prisma.service.findMany({
+      where: { isActive: true },
+      select: { id: true, title: true, slug: true, category: true, defaultExtraPrice: true },
+      orderBy: { category: 'asc' },
+    });
+    const servicesBlock = servicesFromDb.map(s =>
+      `- id: ${s.id} | title: "${s.title}" | category: ${s.category}${s.defaultExtraPrice ? ` | defaultExtraPrice: £${s.defaultExtraPrice}` : ''}`
+    ).join('\n');
 
     const response = await client.messages.create({
       model: 'claude-opus-4-5',
@@ -117,19 +128,15 @@ Field rules:
 - booleans (workWithCouples, workWithWomen, blackClients, disabledClients, airports): true or false
   IMPORTANT: disabledClients means "does the model accept disabled clients". If answer is "no" → false. If "yes" → true. Do NOT default to true.
 - services: array of objects. Include service if answer is yes/has price, exclude if no/blank.
-  Each object: {"code":"CODE"} or {"code":"CODE","extraPrice":NUMBER} if any price mentioned.
+  Each object: {"serviceId":"<id>","enabled":true,"isExtra":false,"extraPrice":null}
   Extra price detection — ALL these formats mean extraPrice (extract the number):
     "Yes Extra £30", "Yes Extra 30/", "Yes £30/", "£30", "30", "Extra 30", "30/"
-  If only "Yes" with no number → no extraPrice. If "No" → exclude service entirely.
-  Use ONLY codes from this list:
-  69, FK, DFK, GFE, OWO, OWC, COB, CIF, CIM, SWALLOW, SNOWBALLING, DT, FINGERING,
-  A_LEVEL, DP, PSE, PARTY_GIRL, FACE_SITTING, DIRTY_TALK, LADY_SERVICES,
-  WS_GIVING, WS_RECEIVING, RIMMING_GIVING, RIMMING_RECEIVING, SMOKING_FETISH,
-  ROLEPLAY, FILMING_MASK, FILMING_NO_MASK, FOOT_FETISH, OPEN_MINDED,
-  LIGHT_DOM, SPANKING_GIVING, SPANKING_SOFT_RECEIVING, DUO, BI_DUO, COUPLES,
-  MMF, GROUP, MASSAGE, PROSTATE, PROFESSIONAL_MASSAGE, B2B, EROTIC_MASSAGE,
-  LOMILOMI, NURU, SENSUAL, TANTRIC, STRIPTEASE, LAPDANCING, BELLY_DANCE,
-  UNIFORMS, TOYS, STRAP_ON, POPPERS, HANDCUFFS, DOMINATION, FISTING_GIVING, TIE_AND_TEASE`,
+  If only "Yes" with no number → enabled: true, isExtra: false, extraPrice: null
+  If service has defaultExtraPrice and appears to be an extra → isExtra: true, extraPrice: defaultExtraPrice
+  If "No" → exclude service entirely.
+
+AVAILABLE SERVICES IN CATALOGUE (match anketa services to these by title):
+${servicesBlock}`,
       messages: [
         {
           role: 'user',
