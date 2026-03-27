@@ -36,6 +36,9 @@ async function main() {
   await prisma.$executeRawUnsafe(`DELETE FROM model_work_preferences`)
   console.log('✓ model_work_preferences')
 
+  await prisma.$executeRawUnsafe(`DELETE FROM model_media`)
+  console.log('✓ model_media')
+
   try { await prisma.availabilitySlot.deleteMany({}) } catch {}
   try { await prisma.bookingRequest.deleteMany({}) } catch {}
   try { await prisma.lead.deleteMany({}) } catch {}
