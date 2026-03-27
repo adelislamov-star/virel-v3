@@ -14,7 +14,7 @@
     "db:seed": "tsx prisma/seed-v3.ts",
     "seed": "npx tsx scripts/seed-test-data.ts",
     "seed:masters": "npx tsx scripts/seed-masters.ts",
-    "db-wipe": "ts-node -r tsconfig-paths/register --project tsconfig.json scripts/db-wipe-models.ts"
+    "db-wipe": "npx tsx scripts/db-wipe-models.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
