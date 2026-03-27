@@ -41,7 +41,6 @@ async function main() {
 
   try { await prisma.availabilitySlot.deleteMany({}) } catch {}
   try { await prisma.bookingRequest.deleteMany({}) } catch {}
-  try { await prisma.lead.deleteMany({}) } catch {}
   try { await prisma.review.deleteMany({}) } catch {}
 
   const models = await prisma.model.deleteMany({})
