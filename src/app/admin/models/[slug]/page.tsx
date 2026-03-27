@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Phone, MessageCircle, ExternalLink, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { useRevalidate } from '@/hooks/useRevalidate';
@@ -321,6 +322,32 @@ export default function ModelEditPage() {
         {/* Sections */}
         <div className="flex-1 space-y-4 min-w-0">
 
+      {/* Draft Warning Banner */}
+      {model.status !== 'active' && (
+        <div className={`rounded-xl px-5 py-3 flex items-center gap-3 border ${
+          model.status === 'draft'
+            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+            : model.status === 'archived'
+            ? 'bg-red-500/10 border-red-500/30 text-red-400'
+            : 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400'
+        }`}>
+          <span className="text-lg">
+            {model.status === 'draft' ? '⚠️' : model.status === 'archived' ? '🚫' : '🌴'}
+          </span>
+          <div>
+            <div className="font-medium text-sm">
+              {model.status === 'draft' && 'This profile is not visible to clients'}
+              {model.status === 'archived' && 'This profile is archived and hidden from site'}
+              {model.status === 'vacation' && 'Model is on vacation — profile visible but marked away'}
+            </div>
+            <div className="text-xs opacity-70 mt-0.5">
+              Status: <span className="font-semibold uppercase">{model.status}</span>
+              {model.status === 'draft' && ' — change to Active to publish'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Section: Basic Info */}
       <div id="basic" className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-800">
@@ -382,6 +409,62 @@ export default function ModelEditPage() {
 
         </div>{/* end sections */}
       </div>{/* end flex layout */}
+
+      {/* Floating Action Bar */}
+      {model && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-2.5 shadow-2xl shadow-black/50">
+          {/* Call */}
+          {model.phone && (
+            <a
+              href={`tel:${model.phone}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium transition-colors"
+              title="Call model"
+            >
+              <Phone size={13} />
+              Call
+            </a>
+          )}
+          {/* WhatsApp */}
+          {model.whatsapp && model.phone && (
+            <a
+              href={`https://wa.me/${model.phone?.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
+              title="WhatsApp"
+            >
+              <MessageCircle size={13} />
+              WhatsApp
+            </a>
+          )}
+          {/* Telegram */}
+          {model.telegram && model.telegramTag && (
+            <a
+              href={`https://t.me/${model.telegramTag}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors"
+              title="Telegram"
+            >
+              <Send size={13} />
+              Telegram
+            </a>
+          )}
+          {/* Divider */}
+          <div className="w-px h-5 bg-zinc-700" />
+          {/* View on site */}
+          <a
+            href={`/companions/${model.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-900 text-xs font-medium transition-colors"
+            title="View on site"
+          >
+            <ExternalLink size={13} />
+            View site
+          </a>
+        </div>
+      )}
     </div>
   );
 }
