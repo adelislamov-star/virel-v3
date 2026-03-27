@@ -156,11 +156,15 @@ async function uploadPhoto(
   try {
     let inputBuffer = buffer
     if (mimeType === 'image/heic' || mimeType === 'image/heif') {
-      inputBuffer = Buffer.from(await heicConvert({
-        buffer: buffer,
+      const converted = await heicConvert({
+        buffer: buffer.buffer.slice(
+          buffer.byteOffset,
+          buffer.byteOffset + buffer.byteLength
+        ) as ArrayBuffer,
         format: 'JPEG',
-        quality: 1
-      }))
+        quality: 1,
+      })
+      inputBuffer = Buffer.from(converted)
     }
 
     // Watermark
