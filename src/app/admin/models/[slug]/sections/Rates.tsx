@@ -213,6 +213,39 @@ export default function Rates({ modelId, onToast }: Props) {
         </table>
       </div>
       <p className="text-xs text-zinc-500 mt-3">Leave blank to hide this duration from the profile</p>
+      {/* Live Preview */}
+      {(() => {
+        const filledRows = rows.filter(r => r.incall || r.outcall);
+        if (filledRows.length === 0) return null;
+        const allPrices = [
+          ...rows.map(r => r.incall ? parseFloat(r.incall) : null),
+          ...rows.map(r => r.outcall ? parseFloat(r.outcall) : null),
+        ].filter((v): v is number => v != null && !isNaN(v));
+        const fromPrice = allPrices.length > 0 ? Math.min(...allPrices) : null;
+        const overnight = rows.find(r => r.label.toLowerCase().includes('overnight'));
+        return (
+          <div className="mt-4 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+            <div className="text-xs text-zinc-500 mb-2 uppercase tracking-wide">Client sees on site</div>
+            <div className="flex flex-wrap items-center gap-4">
+              {fromPrice && (
+                <div>
+                  <span className="text-zinc-400 text-xs">From </span>
+                  <span className="text-white font-semibold text-lg">£{fromPrice.toLocaleString('en-GB')}</span>
+                  <span className="text-zinc-400 text-xs"> / hour</span>
+                </div>
+              )}
+              {overnight?.incall && (
+                <div className="text-xs text-zinc-400">
+                  Overnight <span className="text-zinc-200 font-medium">£{parseFloat(overnight.incall).toLocaleString('en-GB')}</span>
+                </div>
+              )}
+              <div className="text-xs text-zinc-500">
+                {filledRows.length} duration{filledRows.length !== 1 ? 's' : ''} shown
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </SectionCard>
   );
 }
