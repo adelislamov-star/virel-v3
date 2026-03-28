@@ -14,7 +14,7 @@ interface SectionCardProps {
 export default function SectionCard({ title, isDirty, saving, onSave, children, headerRight }: SectionCardProps) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold text-white">{title}</h2>
           {isDirty && (
@@ -38,7 +38,7 @@ export default function SectionCard({ title, isDirty, saving, onSave, children, 
           )}
         </div>
       </div>
-      <div className="p-6">
+      <div className="p-4">
         {children}
       </div>
     </div>

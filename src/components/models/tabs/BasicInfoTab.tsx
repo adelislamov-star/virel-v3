@@ -46,65 +46,65 @@ export default function BasicInfoTab({ model, onSave, saving, onDirty }: any) {
           <CardTitle>Basic Information</CardTitle>
         </CardHeader>
         
-        <CardContent className="space-y-6">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Name *</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => { setForm({ ...form, name: e.target.value }); onDirty?.(); }}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-              required
-            />
+        <CardContent className="space-y-3">
+          {/* Name + Public Code — 2 cols */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium mb-1">Name *</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => { setForm({ ...form, name: e.target.value }); onDirty?.(); }}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Public Code *</label>
+              <input
+                type="text"
+                value={form.publicCode}
+                onChange={(e) => { setForm({ ...form, publicCode: e.target.value.toUpperCase() }); onDirty?.(); }}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+                placeholder="SOPHIA-MF"
+                required
+              />
+            </div>
           </div>
-          
-          {/* Public Code */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Public Code *</label>
-            <input
-              type="text"
-              value={form.publicCode}
-              onChange={(e) => { setForm({ ...form, publicCode: e.target.value.toUpperCase() }); onDirty?.(); }}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-              placeholder="SOPHIA-MF"
-              required
-            />
+
+          {/* Status + Rating — 2 cols */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium mb-1">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => { setForm({ ...form, status: e.target.value }); onDirty?.(); }}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="vacation">Vacation</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Internal Rating (0-5)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="5"
+                value={form.ratingInternal}
+                onChange={(e) => { setForm({ ...form, ratingInternal: e.target.value as any }); onDirty?.(); }}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+              />
+            </div>
           </div>
-          
-          {/* Status */}
+
+          {/* Work Preferences — 2 col grid */}
           <div>
-            <label className="block text-sm font-medium mb-2">Status</label>
-            <select
-              value={form.status}
-              onChange={(e) => { setForm({ ...form, status: e.target.value }); onDirty?.(); }}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-            >
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="vacation">Vacation</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-          
-          {/* Internal Rating */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Internal Rating (0-5)</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              max="5"
-              value={form.ratingInternal}
-              onChange={(e) => { setForm({ ...form, ratingInternal: e.target.value as any }); onDirty?.(); }}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-            />
-          </div>
-          
-          {/* Work Preferences */}
-          <div>
-            <label className="block text-sm font-medium mb-3">Work Preferences</label>
-            <div className="space-y-2">
+            <label className="block text-xs font-medium mb-1">Work Preferences</label>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -114,7 +114,6 @@ export default function BasicInfoTab({ model, onSave, saving, onDirty }: any) {
                 />
                 <span>Work with couples</span>
               </label>
-              
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -124,7 +123,6 @@ export default function BasicInfoTab({ model, onSave, saving, onDirty }: any) {
                 />
                 <span>Work with women</span>
               </label>
-              
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -134,7 +132,6 @@ export default function BasicInfoTab({ model, onSave, saving, onDirty }: any) {
                 />
                 <span>Black clients welcome</span>
               </label>
-              
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -146,15 +143,15 @@ export default function BasicInfoTab({ model, onSave, saving, onDirty }: any) {
               </label>
             </div>
           </div>
-          
-          {/* Internal Notes */}
+
+          {/* Internal Notes — 2 rows */}
           <div>
-            <label className="block text-sm font-medium mb-2">Internal Notes</label>
+            <label className="block text-xs font-medium mb-1">Internal Notes</label>
             <textarea
               value={form.notesInternal}
               onChange={(e) => { setForm({ ...form, notesInternal: e.target.value }); onDirty?.(); }}
               className="w-full px-3 py-2 border rounded-md bg-background"
-              rows={4}
+              rows={2}
             />
           </div>
           
