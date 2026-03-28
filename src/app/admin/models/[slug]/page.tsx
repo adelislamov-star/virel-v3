@@ -259,7 +259,7 @@ export default function ModelEditPage() {
       <div className="flex gap-4 items-start">
 
         {/* Sticky sidebar nav */}
-        <div className="hidden lg:block w-32 flex-shrink-0 self-start sticky top-6">
+        <div className="hidden lg:block w-32 flex-shrink-0" style={{ position: 'sticky', top: '1rem', alignSelf: 'flex-start' }}>
           <nav className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 space-y-0.5">
             {NAV_SECTIONS.map(({ id, label }) => (
               <a
