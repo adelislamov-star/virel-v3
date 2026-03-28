@@ -12,15 +12,8 @@ import { RichText } from '@/components/public/RichText'
 // districtContent now stored directly on District model in DB
 import '../district.css'
 
-export const revalidate = 3600
-
-export async function generateStaticParams() {
-  const districts = await prisma.district.findMany({
-    where: { isActive: true },
-    select: { slug: true },
-  })
-  return districts.map(d => ({ slug: `${d.slug}-escorts` }))
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

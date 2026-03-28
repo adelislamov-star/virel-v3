@@ -10,15 +10,8 @@ import { siteConfig } from '@/../config/site'
 import { ModelCard } from '@/components/public/ModelCard'
 import '../service.css'
 
-export const revalidate = 3600
-
-export async function generateStaticParams() {
-  const services = await prisma.service.findMany({
-    where: { isActive: true, isPublic: true },
-    select: { slug: true },
-  })
-  return services.map(s => ({ slug: s.slug }))
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
