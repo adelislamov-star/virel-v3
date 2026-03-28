@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react'
 
 interface Rate {
   label: string
-  durationMin: number
-  incallPrice: number | null
-  outcallPrice: number | null
+  incall: number | null
+  outcall: number | null
 }
 
 interface BookingWidgetProps {
@@ -33,8 +32,8 @@ export function BookingWidget({
       last.getFullYear() === today.getFullYear()
     )
   }, [lastActiveAt])
-  const incallRates = rates.filter(r => r.incallPrice != null && r.incallPrice > 0)
-  const outcallRates = rates.filter(r => r.outcallPrice != null && r.outcallPrice > 0)
+  const incallRates = rates.filter(r => r.incall != null && r.incall > 0)
+  const outcallRates = rates.filter(r => r.outcall != null && r.outcall > 0)
   const hasAnyPrice = incallRates.length > 0 || outcallRates.length > 0
 
   const whatsappUrl = process.env.NEXT_PUBLIC_AGENCY_WHATSAPP

@@ -12,7 +12,7 @@ import {
   LineChart, Activity, MapPin, PieChart,
   BarChart3, TrendingUp, RotateCcw, Search, FileText,
   DollarSign, Crown, ConciergeBell,
-  FolderOpen, Tag, SlidersHorizontal, Wrench, ListOrdered, Layers, BookOpen,
+  FolderOpen, Tag, SlidersHorizontal, Wrench, Layers, BookOpen,
   Timer, Database, Bell, Briefcase, Settings, LogOut,
 } from 'lucide-react';
 
@@ -85,7 +85,6 @@ const sections = [
       { href: '/admin/categories',         label: 'Categories',      icon: Tag,               badge: null },
       { href: '/admin/attributes',         label: 'Attributes',      icon: SlidersHorizontal, badge: null },
       { href: '/admin/services',           label: 'Services',        icon: Wrench,            badge: null },
-      { href: '/admin/call-rates',         label: 'Call Rates',      icon: ListOrdered,       badge: null },
       { href: '/admin/locations',          label: 'Locations',       icon: Layers,            badge: null },
       { href: '/admin/blog',               label: 'Blog',            icon: BookOpen,          badge: null },
     ],

@@ -53,7 +53,8 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           stats: { select: { age: true, height: true, nationality: true, hairColour: true } },
           modelRates: {
-            select: { incallPrice: true },
+            where: { callType: 'incall' },
+            select: { price: true, durationType: true },
             take: 1,
           },
           modelLocations: {
@@ -80,12 +81,12 @@ export async function GET(request: NextRequest) {
     let filtered = models;
     if (minPrice) {
       filtered = filtered.filter((m) =>
-        m.modelRates.length > 0 && (m.modelRates[0].incallPrice ?? 0) >= parseFloat(minPrice),
+        m.modelRates.length > 0 && (Number(m.modelRates[0].price) ?? 0) >= parseFloat(minPrice),
       );
     }
     if (maxPrice) {
       filtered = filtered.filter((m) =>
-        m.modelRates.length > 0 && (m.modelRates[0].incallPrice ?? 0) <= parseFloat(maxPrice),
+        m.modelRates.length > 0 && (Number(m.modelRates[0].price) ?? 0) <= parseFloat(maxPrice),
       );
     }
 
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
       nationality: m.stats?.nationality,
       hairColor: m.stats?.hairColour,
       coverPhotoUrl: m.media[0]?.url ?? null,
-      startingPrice: m.modelRates[0]?.incallPrice ?? null,
+      startingPrice: m.modelRates[0]?.price ? Number(m.modelRates[0].price) : null,
       districts: m.modelLocations.map((ml) => ml.district),
     }));
 

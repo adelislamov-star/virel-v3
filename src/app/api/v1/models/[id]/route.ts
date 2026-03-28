@@ -50,11 +50,11 @@ export async function GET(
     let rates: any[] = [];
     try {
       rates = await prisma.$queryRawUnsafe(`
-        SELECT mr.*, crm.label, crm."durationMin", crm."sortOrder"
-        FROM model_rates mr
-        JOIN call_rate_masters crm ON crm.id = mr."callRateMasterId"
-        WHERE mr."modelId" = $1
-        ORDER BY crm."sortOrder"
+        SELECT id, "modelId", duration_type AS "durationType", call_type AS "callType",
+               price, taxi_fee AS "taxiFee", currency
+        FROM model_rates
+        WHERE "modelId" = $1
+        ORDER BY duration_type, call_type
       `, modelId) as any[];
     } catch {}
 
@@ -257,17 +257,21 @@ export async function PATCH(
       );
       // Insert each rate
       for (const r of body.rates) {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO model_rates (id, "modelId", "callRateMasterId", "incallPrice", "outcallPrice")
-           VALUES (gen_random_uuid()::text, $1, $2, $3, $4)
-           ON CONFLICT ("modelId", "callRateMasterId") DO UPDATE SET
-             "incallPrice" = EXCLUDED."incallPrice",
-             "outcallPrice" = EXCLUDED."outcallPrice"`,
-          params.id,
-          r.callRateMasterId,
-          r.incallPrice ?? null,
-          r.outcallPrice ?? null
-        );
+        if (r.durationType && r.callType && r.price != null) {
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO model_rates (id, "modelId", duration_type, call_type, price, taxi_fee, currency, created_at, updated_at)
+             VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, 'GBP', NOW(), NOW())
+             ON CONFLICT ("modelId", duration_type, call_type) DO UPDATE SET
+               price = EXCLUDED.price,
+               taxi_fee = EXCLUDED.taxi_fee,
+               updated_at = NOW()`,
+            params.id,
+            r.durationType,
+            r.callType,
+            r.price,
+            r.taxiFee ?? null
+          );
+        }
       }
     }
 

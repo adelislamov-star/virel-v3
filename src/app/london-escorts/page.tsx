@@ -35,7 +35,7 @@ export default async function LondonEscortsPage() {
           include: { district: { select: { name: true } } },
           take: 1,
         },
-        modelRates: { take: 1 },
+        modelRates: { where: { callType: 'incall' }, take: 1 },
       },
       orderBy: [{ isExclusive: 'desc' }, { isVerified: 'desc' }, { createdAt: 'desc' }],
       take: 20,
@@ -113,7 +113,7 @@ export default async function LondonEscortsPage() {
               isVerified={model.isVerified}
               isExclusive={model.isExclusive}
               districtName={model.modelLocations?.[0]?.district?.name ?? null}
-              minIncallPrice={model.modelRates?.[0]?.incallPrice ? Number(model.modelRates[0].incallPrice) : null}
+              minIncallPrice={model.modelRates?.[0]?.price ? Number(model.modelRates[0].price) : null}
             />
           ))}
         </div>

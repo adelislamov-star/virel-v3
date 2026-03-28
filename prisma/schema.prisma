@@ -1798,28 +1798,24 @@ model CronLog {
   @@map("cron_logs")
 }
 
-model CallRateMaster {
-  id          String      @id @default(cuid())
-  label       String
-  durationMin Int
-  sortOrder   Int         @default(0)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  modelRates  ModelRate[]
-
-  @@map("call_rate_masters")
-}
-
+// DURATION_TYPE values: '30min' | '45min' | '1hour' | '90min' |
+// '2hours' | '3hours' | '4hours' | '5hours' | '6hours' | '8hours' | 'overnight' | 'extra_hour'
+// CALL_TYPE values: 'incall' | 'outcall'
 model ModelRate {
-  id                String         @id @default(cuid())
-  modelId           String
-  callRateMasterId  String
-  incallPrice       Float?
-  outcallPrice      Float?
-  callRateMaster    CallRateMaster @relation(fields: [callRateMasterId], references: [id])
-  model             Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  modelId      String
+  durationType String   @map("duration_type")
+  callType     String   @map("call_type")
+  price        Decimal  @db.Decimal(10, 2)
+  taxiFee      Decimal? @map("taxi_fee") @db.Decimal(10, 2)
+  currency     String   @default("GBP")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@unique([modelId, callRateMasterId])
+  model        Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([modelId, durationType, callType])
+  @@index([modelId])
   @@map("model_rates")
 }
 

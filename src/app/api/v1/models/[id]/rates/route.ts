@@ -3,8 +3,15 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/client';
 import { logAudit } from '@/lib/audit';
 import { requireRole, isActor } from '@/lib/auth';
+import { getDurationSortOrder } from '@/lib/duration-constants';
 
 export const runtime = 'nodejs';
+
+const VALID_DURATION_TYPES = [
+  '30min','45min','1hour','90min','2hours','3hours',
+  '4hours','5hours','6hours','8hours','overnight','extra_hour',
+];
+const VALID_CALL_TYPES = ['incall', 'outcall'];
 
 export async function GET(
   request: NextRequest,
@@ -17,22 +24,19 @@ export async function GET(
 
     const rawRates = await prisma.modelRate.findMany({
       where: { modelId: id },
-      include: { callRateMaster: true },
     });
 
     const data = rawRates
       .map(r => ({
-        modelId: id,
-        callRateMasterId: r.callRateMasterId,
-        incallPrice: r.incallPrice,
-        outcallPrice: r.outcallPrice,
-        callRateMaster: {
-          label: r.callRateMaster.label,
-          durationMin: r.callRateMaster.durationMin,
-          sortOrder: r.callRateMaster.sortOrder,
-        },
+        id: r.id,
+        modelId: r.modelId,
+        durationType: r.durationType,
+        callType: r.callType,
+        price: Number(r.price),
+        taxiFee: r.taxiFee != null ? Number(r.taxiFee) : null,
+        currency: r.currency,
       }))
-      .sort((a, b) => a.callRateMaster.sortOrder - b.callRateMaster.sortOrder);
+      .sort((a, b) => getDurationSortOrder(a.durationType) - getDurationSortOrder(b.durationType));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -51,19 +55,40 @@ export async function POST(
     const { id: modelId } = await params;
     const body = await request.json();
     const { rates } = body as {
-      rates: { callRateMasterId: string; incallPrice: number | null; outcallPrice: number | null }[];
+      rates: { durationType: string; callType: string; price: number; taxiFee?: number | null }[];
     };
+
+    if (!Array.isArray(rates)) {
+      return NextResponse.json({ error: 'rates must be an array' }, { status: 400 });
+    }
+
+    for (const r of rates) {
+      if (!VALID_DURATION_TYPES.includes(r.durationType)) {
+        return NextResponse.json(
+          { error: `Invalid durationType: ${r.durationType}` },
+          { status: 400 },
+        );
+      }
+      if (!VALID_CALL_TYPES.includes(r.callType)) {
+        return NextResponse.json(
+          { error: `Invalid callType: ${r.callType}` },
+          { status: 400 },
+        );
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.modelRate.deleteMany({ where: { modelId } });
 
       const data = rates
-        .filter(r => r.incallPrice != null || r.outcallPrice != null)
+        .filter(r => r.price != null && r.price > 0)
         .map(r => ({
           modelId,
-          callRateMasterId: r.callRateMasterId,
-          incallPrice: r.incallPrice,
-          outcallPrice: r.outcallPrice,
+          durationType: r.durationType,
+          callType: r.callType,
+          price: r.price,
+          taxiFee: r.taxiFee ?? null,
+          currency: 'GBP',
         }));
 
       if (data.length > 0) {

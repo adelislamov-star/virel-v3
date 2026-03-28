@@ -12,6 +12,8 @@ import { ViewTracker } from '@/components/public/ViewTracker'
 import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
 import { siteConfig } from '@/../config/site'
+import { sortRates } from '@/lib/sortRates'
+import { durationLabel } from '@/lib/durationLabel'
 import '@/app/companions/companions.css'
 
 interface Props { params: { slug: string } }
@@ -83,10 +85,7 @@ async function getProfileData(slug: string) {
           },
           orderBy: { sortOrder: 'asc' }
         },
-        modelRates: {
-          include: { callRateMaster: true },
-          orderBy: { callRateMaster: { sortOrder: 'asc' } },
-        },
+        modelRates: true,
         services: {
           where: { isEnabled: true, service: { isPublic: true } },
           include: { service: true },
@@ -110,15 +109,24 @@ async function getProfileData(slug: string) {
       .filter((m) => m.url && !m.url.includes('_thumb') && m.url !== cleanPrimary && !seen.has(m.url) && (seen.add(m.url), true))
       .map((m) => m.url)
 
-    const rates = model.modelRates
-      .filter((mr) => mr.incallPrice != null || mr.outcallPrice != null)
-      .map((mr) => ({
-        label: mr.callRateMaster?.label ?? '—',
-        sortOrder: mr.callRateMaster?.sortOrder ?? 99,
-        incall: mr.incallPrice != null ? Number(mr.incallPrice) : null,
-        outcall: mr.outcallPrice != null ? Number(mr.outcallPrice) : null,
-      }))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
+    // Group rates by durationType into { label, incall, outcall } rows
+    const sortedModelRates = sortRates(model.modelRates.map(r => ({ duration_type: r.durationType, ...r })))
+    const ratesByDuration = new Map<string, { incall: number | null; outcall: number | null; taxiFee: number | null }>()
+    for (const r of sortedModelRates) {
+      const existing = ratesByDuration.get(r.durationType) ?? { incall: null, outcall: null, taxiFee: null }
+      if (r.callType === 'incall') existing.incall = Number(r.price)
+      if (r.callType === 'outcall') {
+        existing.outcall = Number(r.price)
+        if (r.taxiFee != null) existing.taxiFee = Number(r.taxiFee)
+      }
+      ratesByDuration.set(r.durationType, existing)
+    }
+    const rates = Array.from(ratesByDuration.entries()).map(([durationType, prices]) => ({
+      label: durationLabel(durationType),
+      durationType,
+      incall: prices.incall,
+      outcall: prices.outcall,
+    }))
 
     const allPrices = [
       ...rates.map((r) => r.incall).filter((v): v is number => v != null),
@@ -250,7 +258,7 @@ export default async function ModelProfilePage({ params }: Props) {
       where: { status: 'active', deletedAt: null, id: { not: profile.id } },
       include: {
         media: { where: { isPrimary: true, isPublic: true }, take: 1 },
-        modelRates: { include: { callRateMaster: true }, take: 1 },
+        modelRates: { where: { callType: 'incall' }, take: 1 },
         stats: { select: { nationality: true } },
       },
       take: 3,
@@ -437,7 +445,7 @@ export default async function ModelProfilePage({ params }: Props) {
               </thead>
               <tbody>
                 {profile.rates.map((row) => (
-                  <tr key={row.label}>
+                  <tr key={row.durationType ?? row.label}>
                     <td>{row.label}</td>
                     <td>{row.incall != null ? `£${Number(row.incall).toLocaleString('en-GB')}` : '—'}</td>
                     <td>{row.outcall != null ? `£${Number(row.outcall).toLocaleString('en-GB')}` : '—'}</td>
@@ -621,8 +629,8 @@ export default async function ModelProfilePage({ params }: Props) {
             <div className="pr-disc-grid">
               {similarModels.map((sim: any) => {
                 const simPhoto = sim.media[0]?.url ?? null
-                const simRate = sim.modelRates?.[0]?.incallPrice
-                  ? Number(sim.modelRates[0].incallPrice)
+                const simRate = sim.modelRates?.[0]?.price
+                  ? Number(sim.modelRates[0].price)
                   : null
                 return (
                   <ModelCard
