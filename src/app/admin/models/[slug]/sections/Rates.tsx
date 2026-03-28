@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import SectionCard from './SectionCard';
 import type { CallRateMaster, ModelRateEntry } from '@/types/model';
+
+export interface RatesHandle {
+  save: () => Promise<boolean>;
+}
 
 interface Props {
   modelId: string;
@@ -18,7 +22,7 @@ interface RateRow {
   outcall: string;
 }
 
-export default function Rates({ modelId, onToast }: Props) {
+const Rates = forwardRef<RatesHandle, Props>(function Rates({ modelId, onToast }, ref) {
   const [rows, setRows] = useState<RateRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -66,7 +70,7 @@ export default function Rates({ modelId, onToast }: Props) {
     setDirty(true);
   };
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (): Promise<boolean> => {
     setSaving(true);
     try {
       const rates = rows
@@ -84,17 +88,21 @@ export default function Rates({ modelId, onToast }: Props) {
       });
       const json = await res.json();
       if (json.success) {
-        onToast('Rates saved', 'success');
         setDirty(false);
+        return true;
       } else {
         onToast(json.error?.message || 'Save failed', 'error');
+        return false;
       }
     } catch {
       onToast('Something went wrong', 'error');
+      return false;
     } finally {
       setSaving(false);
     }
   }, [modelId, rows, onToast]);
+
+  useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
 
   const handleCopy = async (fromModelId: string) => {
     setCopyOpen(false);
@@ -150,8 +158,6 @@ export default function Rates({ modelId, onToast }: Props) {
     <SectionCard
       title="Rates (GBP)"
       isDirty={dirty}
-      saving={saving}
-      onSave={handleSave}
       headerRight={
         <div className="relative">
           <button onClick={openCopy} className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700">
@@ -248,4 +254,6 @@ export default function Rates({ modelId, onToast }: Props) {
       })()}
     </SectionCard>
   );
-}
+});
+
+export default Rates;

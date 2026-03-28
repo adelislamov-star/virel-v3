@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import SectionCard from './SectionCard';
 
 const BUST_SIZES = ['28AA','28A','28B','28C','28D','30A','30B','30C','30D','30DD','32A','32B','32C','32D','32DD','32E','34A','34B','34C','34D','34DD','34E','34F','36A','36B','36C','36D','36DD','36E','36F','38B','38C','38D','38DD','40C','40D','40DD','42D','42DD'];
@@ -12,6 +12,10 @@ const PIERCING_OPTS = ['Ears','Belly','Nipples','Nose','Tongue','Eyebrow','Lip',
 const ORIENTATION_OPTS = ['Heterosexual','Bisexual','Lesbian','Other'];
 const LANGUAGE_OPTS = ['English','Russian','French','Spanish','Italian','Portuguese','Arabic','Mandarin','German','Polish','Romanian','Ukrainian','Other'];
 const TRAVEL_OPTS = ['London only','UK & Europe','Worldwide'];
+
+export interface PhysicalStatsHandle {
+  save: () => Promise<boolean>;
+}
 
 interface Props {
   model: Record<string, unknown>;
@@ -54,7 +58,7 @@ function MultiSelect({ options, selected, onChange, label }: { options: string[]
   );
 }
 
-export default function PhysicalStats({ model, onToast, modelId }: Props) {
+const PhysicalStats = forwardRef<PhysicalStatsHandle, Props>(function PhysicalStats({ model, onToast, modelId }, ref) {
   const stats = (model.stats || {}) as Record<string, unknown>;
   const [weight, setWeight] = useState<number | null>((stats.weight as number) || null);
   const [bustSize, setBustSize] = useState<string>((stats.bustSize as string) || '');
@@ -84,7 +88,7 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
   useEffect(() => { setDirty(true); }, [weight, bustSize, bustType, eyeColor, hairColor, measurements, smokingStatus, tattooStatus, piercingDetails, orientation, languages, education, travel]);
   useEffect(() => { setDirty(false); }, []); // reset on mount
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (): Promise<boolean> => {
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/models/${modelId}`, {
@@ -97,23 +101,27 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
       });
       const json = await res.json();
       if (json.success) {
-        onToast('Physical Stats saved', 'success');
         setDirty(false);
+        return true;
       } else {
         onToast(json.error?.message || 'Save failed', 'error');
+        return false;
       }
     } catch {
       onToast('Something went wrong', 'error');
+      return false;
     } finally {
       setSaving(false);
     }
   }, [modelId, weight, bustSize, bustType, eyeColor, hairColor, measurements, smokingStatus, tattooStatus, piercingDetails, orientation, languages, education, travel, onToast]);
 
+  useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
+
   const sel = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200";
   const inp = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500";
 
   return (
-    <SectionCard title="Physical Stats" isDirty={dirty} saving={saving} onSave={handleSave}>
+    <SectionCard title="Physical Stats" isDirty={dirty}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <label className="block text-xs text-zinc-400 mb-1">Weight (kg)</label>
@@ -198,4 +206,6 @@ export default function PhysicalStats({ model, onToast, modelId }: Props) {
       </div>
     </SectionCard>
   );
-}
+});
+
+export default PhysicalStats;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import SectionCard from './SectionCard';
 
@@ -29,12 +29,16 @@ function isGroupService(svc: ServiceItem): boolean {
   return GROUP_SERVICE_TITLES.some((t) => svc.title.toLowerCase().includes(t));
 }
 
+export interface ServicesHandle {
+  save: () => Promise<boolean>;
+}
+
 interface Props {
   modelId: string;
   onToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-export default function Services({ modelId, onToast }: Props) {
+const Services = forwardRef<ServicesHandle, Props>(function Services({ modelId, onToast }, ref) {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [activeCategory, setActiveCategory] = useState('');
   const [state, setState] = useState<ModelServiceState>({});
@@ -132,7 +136,7 @@ export default function Services({ modelId, onToast }: Props) {
     setDirty(true);
   };
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (): Promise<boolean> => {
     setSaving(true);
     try {
       const serviceIds: string[] = [];
@@ -158,17 +162,21 @@ export default function Services({ modelId, onToast }: Props) {
       });
       const json = await res.json();
       if (json.success) {
-        onToast('Services saved', 'success');
         setDirty(false);
+        return true;
       } else {
         onToast(json.error?.message || 'Save failed', 'error');
+        return false;
       }
     } catch {
       onToast('Something went wrong', 'error');
+      return false;
     } finally {
       setSaving(false);
     }
   }, [modelId, state, onToast]);
+
+  useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
 
   const currentCategory = categories.find((c) => c.name === activeCategory);
   const isIntimate = activeCategory.toLowerCase().includes('intimate');
@@ -176,7 +184,7 @@ export default function Services({ modelId, onToast }: Props) {
   if (loading) return <SectionCard title="Services"><p className="text-zinc-500 text-sm">Loading...</p></SectionCard>;
 
   return (
-    <SectionCard title="Services" isDirty={dirty} saving={saving} onSave={handleSave}>
+    <SectionCard title="Services" isDirty={dirty}>
       <div className="space-y-4">
         {/* Category tabs */}
         <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-2">
@@ -281,4 +289,6 @@ export default function Services({ modelId, onToast }: Props) {
       </div>
     </SectionCard>
   );
-}
+});
+
+export default Services;

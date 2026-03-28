@@ -1,6 +1,10 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import SectionCard from './SectionCard';
+
+export interface BasicInfoAndContactHandle {
+  save: () => Promise<boolean>;
+}
 
 interface Props {
   model: any;
@@ -12,7 +16,7 @@ interface Props {
   onDirty?: () => void;
 }
 
-export default function BasicInfoAndContact({ model, modelId, onSave, saving, onToast, onModelUpdate, onDirty }: Props) {
+const BasicInfoAndContact = forwardRef<BasicInfoAndContactHandle, Props>(function BasicInfoAndContact({ model, modelId, onSave, saving, onToast, onModelUpdate, onDirty }, ref) {
   // Basic Info state
   const [name, setName] = useState(model.name || '');
   const [publicCode, setPublicCode] = useState(model.publicCode || '');
@@ -36,33 +40,39 @@ export default function BasicInfoAndContact({ model, modelId, onSave, saving, on
   const [signal, setSignal] = useState(model.signal || false);
 
   const [dirty, setDirty] = useState(false);
-  const [contactSaving, setContactSaving] = useState(false);
 
   const mark = () => { setDirty(true); onDirty?.(); };
 
-  const handleSaveBasic = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSave({
-      basicInfo: { name, publicCode, status, ratingInternal: parseFloat(ratingInternal) || 0, notesInternal },
-      workPreferences: { workWithCouples, workWithWomen, blackClientsWelcome, disabledClientsWelcome },
-    });
-    setDirty(false);
-  };
-
-  const handleSaveContact = useCallback(async () => {
-    setContactSaving(true);
+  const saveAll = useCallback(async (): Promise<boolean> => {
     try {
+      // Save basic info
+      await onSave({
+        basicInfo: { name, publicCode, status, ratingInternal: parseFloat(ratingInternal) || 0, notesInternal },
+        workPreferences: { workWithCouples, workWithWomen, blackClientsWelcome, disabledClientsWelcome },
+      });
+
+      // Save contact
       const res = await fetch(`/api/v1/models/${modelId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contact: { phone: phone || null, phone2: phone2 || null, email: email || null, telegramPhone: telegramPhone || null, telegramTag: telegramTag || null, whatsapp, telegram, viber, signal } }),
       });
       const json = await res.json();
-      if (json.success) { onToast('Contact saved', 'success'); setDirty(false); onModelUpdate(); }
-      else { onToast(json.error?.message || 'Save failed', 'error'); }
-    } catch { onToast('Something went wrong', 'error'); }
-    finally { setContactSaving(false); }
-  }, [modelId, phone, phone2, email, telegramPhone, telegramTag, whatsapp, telegram, viber, signal, onToast, onModelUpdate]);
+      if (json.success) {
+        setDirty(false);
+        onModelUpdate();
+        return true;
+      } else {
+        onToast(json.error?.message || 'Contact save failed', 'error');
+        return false;
+      }
+    } catch {
+      onToast('Something went wrong', 'error');
+      return false;
+    }
+  }, [modelId, name, publicCode, status, ratingInternal, notesInternal, workWithCouples, workWithWomen, blackClientsWelcome, disabledClientsWelcome, phone, phone2, email, telegramPhone, telegramTag, whatsapp, telegram, viber, signal, onSave, onToast, onModelUpdate]);
+
+  useImperativeHandle(ref, () => ({ save: saveAll }), [saveAll]);
 
   const inp = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500';
   const lbl = 'block text-xs text-zinc-400 mb-1';
@@ -71,7 +81,7 @@ export default function BasicInfoAndContact({ model, modelId, onSave, saving, on
     <SectionCard title="Basic Info & Contact" isDirty={dirty}>
       <div className="grid grid-cols-2 gap-6">
         {/* LEFT -- Basic Info */}
-        <form onSubmit={handleSaveBasic} className="space-y-3">
+        <div className="space-y-3">
           <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Basic Info</div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -118,10 +128,7 @@ export default function BasicInfoAndContact({ model, modelId, onSave, saving, on
             <label className={lbl}>Internal Notes</label>
             <textarea className={inp + ' resize-none'} value={notesInternal} onChange={e => { setNotesInternal(e.target.value); mark(); }} rows={2} />
           </div>
-          <button type="submit" disabled={saving} className="w-full px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
-            {saving ? 'Saving...' : 'Save Basic Info'}
-          </button>
-        </form>
+        </div>
 
         {/* RIGHT -- Contact */}
         <div className="space-y-3">
@@ -161,11 +168,10 @@ export default function BasicInfoAndContact({ model, modelId, onSave, saving, on
               ))}
             </div>
           </div>
-          <button onClick={handleSaveContact} disabled={contactSaving} className="w-full px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
-            {contactSaving ? 'Saving...' : 'Save Contact'}
-          </button>
         </div>
       </div>
     </SectionCard>
   );
-}
+});
+
+export default BasicInfoAndContact;

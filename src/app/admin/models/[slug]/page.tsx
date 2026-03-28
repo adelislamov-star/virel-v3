@@ -1,7 +1,7 @@
 // MODEL PROFILE EDIT PAGE — Vertical sections layout
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Phone, MessageCircle, ExternalLink, Send } from 'lucide-react';
@@ -10,18 +10,25 @@ import { Button } from '@/components/ui/button';
 import { useRevalidate } from '@/hooks/useRevalidate';
 import BasicInfoTab from '@/components/models/tabs/BasicInfoTab';
 import BasicInfoAndContact from './sections/BasicInfoAndContact';
+import type { BasicInfoAndContactHandle } from './sections/BasicInfoAndContact';
 import MediaTab from '@/components/models/tabs/MediaTab';
 
 import PhysicalStats from './sections/PhysicalStats';
+import type { PhysicalStatsHandle } from './sections/PhysicalStats';
 import Marketing from './sections/Marketing';
+import type { MarketingHandle } from './sections/Marketing';
 import Wardrobe from './sections/Wardrobe';
 import Locations from './sections/Locations';
 import WardrobeAndLocations from './sections/WardrobeAndLocations';
+import type { WardrobeAndLocationsHandle } from './sections/WardrobeAndLocations';
 import Services from './sections/Services';
+import type { ServicesHandle } from './sections/Services';
 import Rates from './sections/Rates';
+import type { RatesHandle } from './sections/Rates';
 import Availability from './sections/Availability';
 import Contact from './sections/Contact';
 import PaymentMethods from './sections/PaymentMethods';
+import type { PaymentMethodsHandle } from './sections/PaymentMethods';
 
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error' | 'loading'; onClose: () => void }) {
   useEffect(() => {
@@ -52,6 +59,8 @@ const NAV_SECTIONS = [
   { id: 'availability', label: 'Availability' },
 ] as const;
 
+type GlobalSaveState = 'idle' | 'saving' | 'saved' | 'error';
+
 export default function ModelEditPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -67,6 +76,18 @@ export default function ModelEditPage() {
   const markDirty = (section: string) => setDirtySections(prev => new Set(prev).add(section));
   const markClean = (section: string) => setDirtySections(prev => { const next = new Set(prev); next.delete(section); return next; });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
+
+  // Global save state
+  const [globalSaveState, setGlobalSaveState] = useState<GlobalSaveState>('idle');
+
+  // Section refs
+  const basicRef = useRef<BasicInfoAndContactHandle>(null);
+  const physicalRef = useRef<PhysicalStatsHandle>(null);
+  const marketingRef = useRef<MarketingHandle>(null);
+  const wardrobeRef = useRef<WardrobeAndLocationsHandle>(null);
+  const servicesRef = useRef<ServicesHandle>(null);
+  const ratesRef = useRef<RatesHandle>(null);
+  const paymentRef = useRef<PaymentMethodsHandle>(null);
 
   const { revalidate } = useRevalidate();
 
@@ -138,7 +159,6 @@ export default function ModelEditPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Saved successfully', 'success');
         // Auto-revalidate model page and homepage
         if (model?.slug) {
           revalidate(`/companions/${model.slug}`);
@@ -154,6 +174,36 @@ export default function ModelEditPage() {
       setSaving(false);
     }
   }
+
+  // Global save handler — calls all section save functions
+  const handleGlobalSave = useCallback(async () => {
+    setGlobalSaveState('saving');
+    try {
+      const results = await Promise.all([
+        basicRef.current?.save(),
+        physicalRef.current?.save(),
+        marketingRef.current?.save(),
+        wardrobeRef.current?.save(),
+        servicesRef.current?.save(),
+        ratesRef.current?.save(),
+        paymentRef.current?.save(),
+      ]);
+      const allOk = results.every(r => r !== false);
+      if (allOk) {
+        setGlobalSaveState('saved');
+        if (model?.slug) {
+          revalidate(`/companions/${model.slug}`);
+          revalidate('/');
+        }
+        loadModel();
+        setTimeout(() => setGlobalSaveState('idle'), 2000);
+      } else {
+        setGlobalSaveState('error');
+      }
+    } catch {
+      setGlobalSaveState('error');
+    }
+  }, [model?.slug, revalidate, loadModel]);
 
   if (loading) {
     return (
@@ -197,6 +247,18 @@ export default function ModelEditPage() {
         <div className="flex gap-3">
           <Button
             variant="outline"
+            onClick={handleGlobalSave}
+            disabled={globalSaveState === 'saving'}
+            className={globalSaveState === 'error' ? 'border-red-500/50 text-red-400 hover:text-red-300' : ''}
+          >
+            {globalSaveState === 'saving' && <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin mr-1.5" />}
+            {globalSaveState === 'idle' && 'Save'}
+            {globalSaveState === 'saving' && 'Saving...'}
+            {globalSaveState === 'saved' && 'Saved \u2713'}
+            {globalSaveState === 'error' && 'Error, try again'}
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => {
               const url = `${window.location.origin}/companions/${model.slug}`;
               navigator.clipboard.writeText(url);
@@ -231,7 +293,7 @@ export default function ModelEditPage() {
       {publishAudit && (
         <div className={`rounded-xl px-4 py-2.5 flex items-center gap-3 border ${publishAudit.ready ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
           <span className={`text-xs font-semibold whitespace-nowrap ${publishAudit.ready ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {publishAudit.ready ? '✅ Ready' : `⚠️ ${publishAudit.score}%`}
+            {publishAudit.ready ? '\u2705 Ready' : `\u26a0\ufe0f ${publishAudit.score}%`}
           </span>
           <div className="flex flex-wrap gap-1.5 flex-1">
             {publishAudit.checks.map((check: any) => (
@@ -244,7 +306,7 @@ export default function ModelEditPage() {
                 }`}
                 title={check.passed ? (check.dbCount > 1 ? `${check.dbCount} items` : 'Passed') : check.hint}
               >
-                {check.passed ? '✓' : '✗'} {check.label}
+                {check.passed ? '\u2713' : '\u2717'} {check.label}
               </span>
             ))}
           </div>
@@ -281,6 +343,7 @@ export default function ModelEditPage() {
 
       <div id="basic">
           <BasicInfoAndContact
+            ref={basicRef}
             model={model}
             modelId={modelId}
             onSave={saveModel}
@@ -292,27 +355,27 @@ export default function ModelEditPage() {
         </div>
 
       <div id="physical">
-        <PhysicalStats model={model} modelId={modelId} onToast={showToast} />
+        <PhysicalStats ref={physicalRef} model={model} modelId={modelId} onToast={showToast} />
       </div>
 
       <div id="marketing">
-        <Marketing model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+        <Marketing ref={marketingRef} model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
       </div>
 
       <div id="wardrobe">
-        <WardrobeAndLocations model={model} modelId={modelId} onToast={showToast} />
+        <WardrobeAndLocations ref={wardrobeRef} model={model} modelId={modelId} onToast={showToast} />
       </div>
 
       <div id="services">
-        <Services modelId={modelId} onToast={showToast} />
+        <Services ref={servicesRef} modelId={modelId} onToast={showToast} />
       </div>
 
       <div id="rates">
-        <Rates modelId={modelId} onToast={showToast} />
+        <Rates ref={ratesRef} modelId={modelId} onToast={showToast} />
       </div>
 
       <div id="payment">
-        <PaymentMethods model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
+        <PaymentMethods ref={paymentRef} model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
       </div>
 
       <div id="availability">
