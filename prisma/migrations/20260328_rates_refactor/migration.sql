@@ -70,6 +70,58 @@ JOIN "call_rate_masters" crm ON mr."callRateMasterId" = crm.id
 WHERE mr."outcallPrice" IS NOT NULL
   AND mr."duration_type" IS NULL;
 
+-- Step 2b: Fallback — if call_rate_masters was EMPTY, migrate by price heuristic
+-- (rows with callRateMasterId but no JOIN match remain with duration_type IS NULL)
+-- Incall fallback
+INSERT INTO "model_rates" ("id", "modelId", "duration_type", "call_type", "price", "currency", "created_at", "updated_at")
+SELECT
+  gen_random_uuid()::text,
+  mr."modelId",
+  CASE
+    WHEN mr."incallPrice" <= 260 THEN '30min'
+    WHEN mr."incallPrice" <= 290 THEN '45min'
+    WHEN mr."incallPrice" <= 320 THEN '1hour'
+    WHEN mr."incallPrice" <= 460 THEN '90min'
+    WHEN mr."incallPrice" <= 570 THEN '2hours'
+    WHEN mr."incallPrice" >= 1600 THEN 'overnight'
+    ELSE '1hour'
+  END,
+  'incall',
+  mr."incallPrice",
+  'GBP',
+  NOW(),
+  NOW()
+FROM "model_rates" mr
+WHERE mr."incallPrice" IS NOT NULL
+  AND mr."duration_type" IS NULL
+  AND mr."callRateMasterId" IS NOT NULL
+ON CONFLICT ("modelId", "duration_type", "call_type") DO NOTHING;
+
+-- Outcall fallback
+INSERT INTO "model_rates" ("id", "modelId", "duration_type", "call_type", "price", "currency", "created_at", "updated_at")
+SELECT
+  gen_random_uuid()::text,
+  mr."modelId",
+  CASE
+    WHEN mr."outcallPrice" <= 260 THEN '30min'
+    WHEN mr."outcallPrice" <= 290 THEN '45min'
+    WHEN mr."outcallPrice" <= 360 THEN '1hour'
+    WHEN mr."outcallPrice" <= 510 THEN '90min'
+    WHEN mr."outcallPrice" <= 620 THEN '2hours'
+    WHEN mr."outcallPrice" >= 1600 THEN 'overnight'
+    ELSE '1hour'
+  END,
+  'outcall',
+  mr."outcallPrice",
+  'GBP',
+  NOW(),
+  NOW()
+FROM "model_rates" mr
+WHERE mr."outcallPrice" IS NOT NULL
+  AND mr."duration_type" IS NULL
+  AND mr."callRateMasterId" IS NOT NULL
+ON CONFLICT ("modelId", "duration_type", "call_type") DO NOTHING;
+
 -- Step 3: Delete old-format rows (duration_type IS NULL means legacy format)
 DELETE FROM "model_rates" WHERE "duration_type" IS NULL;
 
