@@ -128,11 +128,10 @@ async function getProfileData(slug: string) {
       outcall: prices.outcall,
     }))
 
-    const allPrices = [
-      ...rates.map((r) => r.incall).filter((v): v is number => v != null),
-      ...rates.map((r) => r.outcall).filter((v): v is number => v != null),
-    ]
-    const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : null
+    // Use 1-hour rate as the display price (shown as "From £X / hour")
+    const hourlyRate = rates.find((r) => r.durationType === '1hour')
+    const hourlyPrices = [hourlyRate?.incall, hourlyRate?.outcall].filter((v): v is number => v != null && v > 0)
+    const lowestPrice = hourlyPrices.length > 0 ? Math.min(...hourlyPrices) : null
 
     const services = model.services.map((ms) => ({
       serviceId: ms.serviceId,
