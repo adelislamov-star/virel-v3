@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
 import SectionCard from './SectionCard';
 
@@ -17,6 +17,10 @@ const AVAILABILITY_STATUSES = [
   { value: 'On Holiday', color: 'border-zinc-500 text-zinc-400 bg-zinc-500/10' },
 ];
 
+export interface MarketingHandle {
+  save: () => Promise<boolean>;
+}
+
 interface Props {
   model: Record<string, unknown>;
   onToast: (msg: string, type: 'success' | 'error' | 'loading') => void;
@@ -24,7 +28,7 @@ interface Props {
   onModelUpdate?: () => void;
 }
 
-export default function Marketing({ model, onToast, modelId, onModelUpdate }: Props) {
+const Marketing = forwardRef<MarketingHandle, Props>(function Marketing({ model, onToast, modelId, onModelUpdate }, ref) {
   const [tagline, setTagline] = useState<string>((model.tagline as string) || '');
   const [availability, setAvailability] = useState<string>((model.availability as string) || '');
   const [publicTags, setPublicTags] = useState<string[]>(() => {
@@ -91,7 +95,7 @@ export default function Marketing({ model, onToast, modelId, onModelUpdate }: Pr
   useEffect(() => { setDirty(true); }, [tagline, availability, publicTags, duoPartnerIds, responseTime, isExclusive, isVerified, seoTitle, seoDescription]);
   useEffect(() => { setDirty(false); }, []);
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (): Promise<boolean> => {
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/models/${modelId}`, {
@@ -113,23 +117,27 @@ export default function Marketing({ model, onToast, modelId, onModelUpdate }: Pr
       });
       const json = await res.json();
       if (json.success) {
-        onToast('Marketing saved', 'success');
         setDirty(false);
         onModelUpdate?.();
+        return true;
       } else {
         onToast(json.error?.message || 'Save failed', 'error');
+        return false;
       }
     } catch {
       onToast('Something went wrong', 'error');
+      return false;
     } finally {
       setSaving(false);
     }
   }, [modelId, tagline, availability, publicTags, duoPartnerIds, responseTime, isExclusive, isVerified, seoTitle, seoDescription, onToast, onModelUpdate]);
 
+  useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
+
   const wasVerifiedByAI = (model.isVerified as boolean) && !!(model.verificationNote as string);
 
   return (
-    <SectionCard title="Marketing & Presentation" isDirty={dirty} saving={saving} onSave={handleSave}>
+    <SectionCard title="Marketing & Presentation" isDirty={dirty}>
       <div className="space-y-5">
         {/* Tagline */}
         <div>
@@ -311,4 +319,6 @@ export default function Marketing({ model, onToast, modelId, onModelUpdate }: Pr
       </div>
     </SectionCard>
   );
-}
+});
+
+export default Marketing;

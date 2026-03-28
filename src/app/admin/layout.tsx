@@ -164,7 +164,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [router]);
 
   return (
-    <div className="flex min-h-screen" style={{ background: 'var(--admin-bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--admin-bg)' }}>
       <aside className="w-60 flex-shrink-0 flex flex-col border-r border-zinc-800/50" style={{ background: 'var(--admin-bg)' }}>
         <div className="px-5 pt-6 pb-4">
           <p className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">{siteConfig.name}</p>

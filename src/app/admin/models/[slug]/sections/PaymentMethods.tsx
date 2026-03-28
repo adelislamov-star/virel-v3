@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import SectionCard from './SectionCard';
 import { PAYMENT_METHODS } from '@/constants/model-form';
+
+export interface PaymentMethodsHandle {
+  save: () => Promise<boolean>;
+}
 
 interface Props {
   model: Record<string, unknown>;
@@ -24,7 +28,7 @@ const FIELD_MAP: Record<string, string> = {
   usdt: 'paymentUSDT',
 };
 
-export default function PaymentMethods({ model, modelId, onToast, onModelUpdate }: Props) {
+const PaymentMethods = forwardRef<PaymentMethodsHandle, Props>(function PaymentMethods({ model, modelId, onToast, onModelUpdate }, ref) {
   const initial: Record<string, boolean> = {};
   for (const pm of PAYMENT_METHODS) {
     const field = FIELD_MAP[pm.value];
@@ -40,7 +44,7 @@ export default function PaymentMethods({ model, modelId, onToast, onModelUpdate 
     setDirty(true);
   };
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (): Promise<boolean> => {
     setSaving(true);
     try {
       const payment: Record<string, boolean> = {};
@@ -55,23 +59,27 @@ export default function PaymentMethods({ model, modelId, onToast, onModelUpdate 
       });
       const json = await res.json();
       if (json.success) {
-        onToast('Payment methods saved', 'success');
         setDirty(false);
         onModelUpdate();
+        return true;
       } else {
         onToast(json.error?.message || 'Save failed', 'error');
+        return false;
       }
     } catch {
       onToast('Something went wrong', 'error');
+      return false;
     } finally {
       setSaving(false);
     }
   }, [modelId, methods, onToast, onModelUpdate]);
 
+  useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
+
   const enabledCount = Object.values(methods).filter(Boolean).length;
 
   return (
-    <SectionCard title="Payment Methods" isDirty={dirty} saving={saving} onSave={handleSave}>
+    <SectionCard title="Payment Methods" isDirty={dirty}>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
         {PAYMENT_METHODS.map((pm) => (
           <label
@@ -95,4 +103,6 @@ export default function PaymentMethods({ model, modelId, onToast, onModelUpdate 
       <p className="text-xs text-zinc-500 mt-3">{enabledCount} method{enabledCount !== 1 ? 's' : ''} enabled</p>
     </SectionCard>
   );
-}
+});
+
+export default PaymentMethods;

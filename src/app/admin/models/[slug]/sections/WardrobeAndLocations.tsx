@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import SectionCard from './SectionCard';
 import type { DistrictOption, TransportHubOption, ModelLocationEntry } from '@/types/model';
 
@@ -9,13 +9,17 @@ const WARDROBE_OPTIONS = [
   'Stockings','Police','French Maid','Teacher','Stewardess','Housekeeper',
 ];
 
+export interface WardrobeAndLocationsHandle {
+  save: () => Promise<boolean>;
+}
+
 interface Props {
   model: Record<string, unknown>;
   modelId: string;
   onToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-export default function WardrobeAndLocations({ model, modelId, onToast }: Props) {
+const WardrobeAndLocations = forwardRef<WardrobeAndLocationsHandle, Props>(function WardrobeAndLocations({ model, modelId, onToast }, ref) {
   // Wardrobe state
   const [wardrobe, setWardrobe] = useState<string[]>(() => {
     const w = model.wardrobe;
@@ -85,7 +89,7 @@ export default function WardrobeAndLocations({ model, modelId, onToast }: Props)
     setSearchOpen(false); setSearchTerm('');
   };
 
-  const saveWardrobe = useCallback(async () => {
+  const saveWardrobe = useCallback(async (): Promise<boolean> => {
     setWardrobeSaving(true);
     try {
       const res = await fetch(`/api/v1/models/${modelId}`, {
@@ -94,14 +98,14 @@ export default function WardrobeAndLocations({ model, modelId, onToast }: Props)
         body: JSON.stringify({ profile: { wardrobe } }),
       });
       const json = await res.json();
-      if (json.success) { onToast('Wardrobe saved', 'success'); setWardrobeDirty(false); }
-      else onToast(json.error?.message || 'Save failed', 'error');
-    } catch { onToast('Something went wrong', 'error'); }
+      if (json.success) { setWardrobeDirty(false); return true; }
+      else { onToast(json.error?.message || 'Save failed', 'error'); return false; }
+    } catch { onToast('Something went wrong', 'error'); return false; }
     finally { setWardrobeSaving(false); }
   }, [modelId, wardrobe, onToast]);
 
-  const saveLocations = useCallback(async () => {
-    if (selectedIds.length === 0) { onToast('Select at least one district', 'error'); return; }
+  const saveLocations = useCallback(async (): Promise<boolean> => {
+    if (selectedIds.length === 0) return true; // nothing to save
     setLocationsSaving(true);
     try {
       const res = await fetch(`/api/v1/models/${modelId}/locations`, {
@@ -110,11 +114,18 @@ export default function WardrobeAndLocations({ model, modelId, onToast }: Props)
         body: JSON.stringify({ districtIds: selectedIds, primaryDistrictId: primaryId || selectedIds[0], transportHubId: transportHubId || undefined, walkingMinutes: walkingMinutes || undefined }),
       });
       const json = await res.json();
-      if (json.success) { onToast('Locations saved', 'success'); setLocationsDirty(false); }
-      else onToast(json.error?.message || 'Save failed', 'error');
-    } catch { onToast('Something went wrong', 'error'); }
+      if (json.success) { setLocationsDirty(false); return true; }
+      else { onToast(json.error?.message || 'Save failed', 'error'); return false; }
+    } catch { onToast('Something went wrong', 'error'); return false; }
     finally { setLocationsSaving(false); }
   }, [modelId, selectedIds, primaryId, transportHubId, walkingMinutes, onToast]);
+
+  const saveAll = useCallback(async (): Promise<boolean> => {
+    const [w, l] = await Promise.all([saveWardrobe(), saveLocations()]);
+    return w && l;
+  }, [saveWardrobe, saveLocations]);
+
+  useImperativeHandle(ref, () => ({ save: saveAll }), [saveAll]);
 
   const inp = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500';
   const filteredDistricts = districts.filter(d => !searchTerm || d.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -133,10 +144,6 @@ export default function WardrobeAndLocations({ model, modelId, onToast }: Props)
               </button>
             ))}
           </div>
-          <button onClick={saveWardrobe} disabled={wardrobeSaving || !wardrobeDirty}
-            className="mt-2 w-full px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium rounded-lg disabled:opacity-40 transition-colors">
-            {wardrobeSaving ? 'Saving...' : 'Save Wardrobe'}
-          </button>
         </div>
 
         {/* RIGHT — Locations */}
@@ -187,14 +194,12 @@ export default function WardrobeAndLocations({ model, modelId, onToast }: Props)
                   <input type="number" value={walkingMinutes} onChange={e => setWalkingMinutes(parseInt(e.target.value) || 0)} min={0} className={inp} />
                 </div>
               </div>
-              <button onClick={saveLocations} disabled={locationsSaving || !locationsDirty}
-                className="w-full px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium rounded-lg disabled:opacity-40 transition-colors">
-                {locationsSaving ? 'Saving...' : 'Save Location'}
-              </button>
             </>
           )}
         </div>
       </div>
     </SectionCard>
   );
-}
+});
+
+export default WardrobeAndLocations;
