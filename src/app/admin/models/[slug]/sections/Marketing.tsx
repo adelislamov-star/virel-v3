@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
 import SectionCard from './SectionCard';
 
 const PUBLIC_TAGS = [
@@ -19,7 +19,7 @@ const AVAILABILITY_STATUSES = [
 
 interface Props {
   model: Record<string, unknown>;
-  onToast: (msg: string, type: 'success' | 'error') => void;
+  onToast: (msg: string, type: 'success' | 'error' | 'loading') => void;
   modelId: string;
   onModelUpdate?: () => void;
 }
@@ -42,6 +42,36 @@ export default function Marketing({ model, onToast, modelId, onModelUpdate }: Pr
   const [seoDescription, setSeoDescription] = useState<string>((model.seoDescription as string) || '');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [bioGenerating, setBioGenerating] = useState(false);
+  const [seoGenerating, setSeoGenerating] = useState(false);
+
+  const handleGenerateBio = async () => {
+    setBioGenerating(true);
+    try {
+      const res = await fetch(`/api/v1/models/${modelId}/generate-bio`, { method: 'POST' });
+      if (res.status === 503) { onToast('AI not configured', 'error'); return; }
+      const json = await res.json();
+      if (json.success) {
+        await fetch(`/api/v1/models/${modelId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ basicInfo: { notesInternal: json.data.bio }, profile: { tagline: json.data.tagline } }) });
+        onToast('Bio generated and applied', 'success'); onModelUpdate?.();
+      } else onToast(json.error?.message || 'Failed', 'error');
+    } catch { onToast('Something went wrong', 'error'); }
+    finally { setBioGenerating(false); }
+  };
+
+  const handleGenerateSeo = async () => {
+    setSeoGenerating(true);
+    try {
+      const name = model.name as string;
+      const taglineVal = tagline || '';
+      const seoTitleVal = `${name} - Elite Companion London | Vaurel`.slice(0, 60);
+      const seoDescVal = taglineVal ? `Meet ${name}. ${taglineVal}. Available for exclusive encounters in London.`.slice(0, 155) : `Meet ${name}. Available for exclusive encounters in London.`.slice(0, 155);
+      await fetch(`/api/v1/models/${modelId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: { seoTitle: seoTitleVal, seoDescription: seoDescVal } }) });
+      setSeoTitle(seoTitleVal); setSeoDescription(seoDescVal);
+      onToast('SEO generated', 'success'); onModelUpdate?.();
+    } catch { onToast('Something went wrong', 'error'); }
+    finally { setSeoGenerating(false); }
+  };
 
   // Duo partners list
   const [allModels, setAllModels] = useState<{ id: string; name: string; coverPhotoUrl?: string }[]>([]);
@@ -233,6 +263,20 @@ export default function Marketing({ model, onToast, modelId, onModelUpdate }: Pr
               )}
             </label>
           </div>
+        </div>
+
+        {/* AI Buttons */}
+        <div className="flex gap-2">
+          <button onClick={handleGenerateBio} disabled={bioGenerating}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-lg text-xs font-medium transition-colors">
+            {bioGenerating ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Sparkles size={12} />}
+            Generate Bio
+          </button>
+          <button onClick={handleGenerateSeo} disabled={seoGenerating}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-lg text-xs font-medium transition-colors">
+            {seoGenerating ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Sparkles size={12} />}
+            Generate SEO
+          </button>
         </div>
 
         {/* SEO */}

@@ -222,7 +222,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      <main className="flex-1 overflow-x-hidden overflow-y-auto" style={{ background: 'var(--admin-bg)', height: '100dvh' }}>
+      <main className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto" style={{ background: 'var(--admin-bg)', height: '100dvh' }} id="admin-main">
         {children}
       </main>
     </div>
