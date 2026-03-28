@@ -206,7 +206,7 @@ export default function Services({ modelId, onToast }: Props) {
         )}
 
         {/* Service list */}
-        <div className="space-y-1">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0">
           {currentCategory?.services.map((svc) => {
             const s = state[svc.id];
             const isEnabled = s?.enabled || false;

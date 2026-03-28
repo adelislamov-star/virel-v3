@@ -53,9 +53,11 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
         {/* Main photo */}
         <div className="cg-main" onClick={() => setLightboxOpen(true)} style={{ cursor: 'zoom-in' }}>
           <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'cover', objectPosition: 'center top' }} sizes="(max-width: 900px) 100vw, 60vw" priority={activeIndex === 0} />
-          {/* Watermark */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
-            <span style={{ fontSize: 44, fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, letterSpacing: '0.5em', color: 'rgba(197, 165, 114, 0.4)', textTransform: 'uppercase' }}>VAUREL</span>
+          {/* Watermark — brand signature */}
+          <div style={{ position: 'absolute', top: '72%', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
+            <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(197, 165, 114, 0.5)', flexShrink: 0 }} />
+            <span style={{ fontSize: 9, fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, letterSpacing: '0.6em', color: 'rgba(197, 165, 114, 0.65)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>VAUREL</span>
+            <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(197, 165, 114, 0.5)', flexShrink: 0 }} />
           </div>
           {/* Arrow buttons — desktop only */}
           {allPhotos.length > 1 && (
@@ -92,8 +94,10 @@ export function CompanionGallery({ coverPhotoUrl, galleryPhotoUrls, name }: Prop
           <button className="cg-lb-arrow cg-lb-prev" onClick={e => { e.stopPropagation(); prev() }}>&#8249;</button>
           <div className="cg-lb-img" onClick={e => e.stopPropagation()}>
             <Image fill src={allPhotos[activeIndex]} alt={`${name} — photo ${activeIndex + 1}`} style={{ objectFit: 'contain' }} sizes="100vw" />
-            <div style={{ position: 'absolute', bottom: 18, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
-              <span style={{ fontSize: 11, fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, letterSpacing: '0.55em', color: 'rgba(197, 165, 114, 0.55)', textTransform: 'uppercase' }}>VAUREL</span>
+            <div style={{ position: 'absolute', bottom: 22, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, pointerEvents: 'none', userSelect: 'none', zIndex: 10 }}>
+              <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(197, 165, 114, 0.4)', flexShrink: 0 }} />
+              <span style={{ fontSize: 9, fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, letterSpacing: '0.6em', color: 'rgba(197, 165, 114, 0.5)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>VAUREL</span>
+              <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(197, 165, 114, 0.4)', flexShrink: 0 }} />
             </div>
           </div>
           <button className="cg-lb-arrow cg-lb-next" onClick={e => { e.stopPropagation(); next() }}>&#8250;</button>

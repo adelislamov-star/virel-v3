@@ -16,12 +16,12 @@ import PhysicalStats from './sections/PhysicalStats';
 import Marketing from './sections/Marketing';
 import Wardrobe from './sections/Wardrobe';
 import Locations from './sections/Locations';
+import WardrobeAndLocations from './sections/WardrobeAndLocations';
 import Services from './sections/Services';
 import Rates from './sections/Rates';
 import Availability from './sections/Availability';
 import Contact from './sections/Contact';
 import PaymentMethods from './sections/PaymentMethods';
-import AITools from './sections/AITools';
 
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error' | 'loading'; onClose: () => void }) {
   useEffect(() => {
@@ -45,8 +45,7 @@ const NAV_SECTIONS = [
   { id: 'basic',    label: 'Basic & Contact' },
   { id: 'physical', label: 'Physical' },
   { id: 'marketing',label: 'Marketing' },
-  { id: 'wardrobe', label: 'Wardrobe' },
-  { id: 'locations',label: 'Locations' },
+  { id: 'wardrobe', label: 'Wardrobe & Loc' },
   { id: 'services', label: 'Services' },
   { id: 'rates',    label: 'Rates' },
   { id: 'payment',  label: 'Payment' },
@@ -259,7 +258,7 @@ export default function ModelEditPage() {
       <div className="flex gap-4 items-start">
 
         {/* Sticky sidebar nav */}
-        <div className="hidden lg:block w-32 flex-shrink-0 self-start sticky top-6">
+        <div className="hidden lg:block w-32 flex-shrink-0" style={{ position: 'sticky', top: '1rem', alignSelf: 'flex-start' }}>
           <nav className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 space-y-0.5">
             {NAV_SECTIONS.map(({ id, label }) => (
               <a
@@ -301,11 +300,7 @@ export default function ModelEditPage() {
       </div>
 
       <div id="wardrobe">
-        <Wardrobe model={model} modelId={modelId} onToast={showToast} />
-      </div>
-
-      <div id="locations">
-        <Locations modelId={modelId} onToast={showToast} />
+        <WardrobeAndLocations model={model} modelId={modelId} onToast={showToast} />
       </div>
 
       <div id="services">
@@ -324,8 +319,6 @@ export default function ModelEditPage() {
         <Availability modelId={modelId} onToast={showToast} />
       </div>
 
-      {/* Section: AI Tools */}
-      <AITools model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
 
       {/* Section: Media */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
