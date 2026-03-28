@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 
 import { useRevalidate } from '@/hooks/useRevalidate';
 import BasicInfoTab from '@/components/models/tabs/BasicInfoTab';
+import BasicInfoAndContact from './sections/BasicInfoAndContact';
 import MediaTab from '@/components/models/tabs/MediaTab';
 
 import PhysicalStats from './sections/PhysicalStats';
@@ -40,8 +41,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 }
 
 const NAV_SECTIONS = [
-  { id: 'basic',    label: 'Basic Info' },
-  { id: 'contact',  label: 'Contact' },
+  { id: 'basic',    label: 'Basic & Contact' },
   { id: 'physical', label: 'Physical' },
   { id: 'marketing',label: 'Marketing' },
   { id: 'wardrobe', label: 'Wardrobe' },
@@ -321,19 +321,17 @@ export default function ModelEditPage() {
         {/* Sections */}
         <div className="flex-1 space-y-4 min-w-0">
 
-      {/* Section: Basic Info */}
-      <div id="basic" className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-800">
-          <h2 className="text-base font-semibold text-white">Basic Info</h2>
+      <div id="basic">
+          <BasicInfoAndContact
+            model={model}
+            modelId={modelId}
+            onSave={saveModel}
+            saving={saving}
+            onToast={showToast}
+            onModelUpdate={loadModel}
+            onDirty={() => markDirty('basic')}
+          />
         </div>
-        <div className="p-6">
-          <BasicInfoTab model={model} onSave={saveModel} saving={saving} onDirty={() => markDirty('basic')} />
-        </div>
-      </div>
-
-      <div id="contact">
-        <Contact model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
-      </div>
 
       <div id="physical">
         <PhysicalStats model={model} modelId={modelId} onToast={showToast} />
