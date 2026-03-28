@@ -20,14 +20,14 @@ export async function POST(
     const booking = await prisma.booking.findUnique({
       where: { id: params.id }
     });
-    
+
     if (!booking) {
       return NextResponse.json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Booking not found' }
       }, { status: 404 });
     }
-    
+
     const depositRequiredNum = booking.depositRequired ? booking.depositRequired.toNumber() : 0;
     if (!depositRequiredNum || depositRequiredNum <= 0) {
       return NextResponse.json({
@@ -72,7 +72,7 @@ export async function POST(
         currency: booking.currency
       }
     });
-    
+
   } catch (error: any) {
     return NextResponse.json({
       success: false,
