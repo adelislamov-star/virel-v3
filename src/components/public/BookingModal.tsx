@@ -47,6 +47,12 @@ const DURATION_MIN_MAP: Record<number, string> = {
   120: '2hours', 180: '3hours', 540: 'overnight',
 }
 
+const DURATION_MIN_MAP_REVERSE: Record<string, number> = {
+  '30min': 30, '45min': 45, '1hour': 60, '90min': 90,
+  '2hours': 120, '3hours': 180, '4hours': 240, '5hours': 300,
+  '6hours': 360, '8hours': 480, 'overnight': 540, 'extra_hour': 60,
+}
+
 function SectionHeader({ number, title, optional }: { number: string; title: string; optional?: boolean }) {
   return (
     <div className="bm-section-header">
@@ -128,21 +134,27 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       .then(r => r.json())
       .then(res => {
         if (!res.success || !res.data?.modelRates) return
-        const parsed = res.data.modelRates
-          .map((mr: any) => {
-            const master = mr.callRateMaster
-            if (!master || !master.isActive) return null
-            return {
-              id: mr.id,
-              label: master.label,
-              durationMin: master.durationMin,
-              sortOrder: master.sortOrder,
-              incallPrice: mr.incallPrice,
-              outcallPrice: mr.outcallPrice,
-            }
-          })
-          .filter(Boolean)
-          .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+        // Group flat rates by durationType into incall/outcall rows
+        const rateMap = new Map<string, Rate>()
+        for (const mr of res.data.modelRates) {
+          const key = mr.durationType
+          const durationMin = DURATION_MIN_MAP_REVERSE[key] ?? 60
+          const opt = DURATION_OPTIONS.find(d => d.key === key)
+          const existing = rateMap.get(key) || {
+            id: mr.id,
+            label: opt?.label ?? key,
+            durationMin,
+            sortOrder: opt ? DURATION_OPTIONS.indexOf(opt) + 1 : 99,
+            incallPrice: null,
+            outcallPrice: null,
+          }
+          if (mr.callType === 'incall') existing.incallPrice = Number(mr.price)
+          if (mr.callType === 'outcall') existing.outcallPrice = Number(mr.price)
+          rateMap.set(key, existing)
+        }
+        const parsed = Array.from(rateMap.values())
+          .filter(r => r.durationMin > 0)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
         setRates(parsed)
       })
       .catch(() => {})

@@ -39,9 +39,11 @@ export async function POST(
       await tx.modelRate.createMany({
         data: sourceRates.map((r) => ({
           modelId,
-          callRateMasterId: r.callRateMasterId,
-          incallPrice: r.incallPrice,
-          outcallPrice: r.outcallPrice,
+          durationType: r.durationType,
+          callType: r.callType,
+          price: r.price,
+          taxiFee: r.taxiFee,
+          currency: r.currency,
         })),
       });
     });
@@ -54,7 +56,6 @@ export async function POST(
       req: request,
     });
 
-    // Revalidate frontend caches
     try {
       const m = await prisma.model.findUnique({ where: { id: modelId }, select: { slug: true } });
       if (m?.slug) revalidatePath(`/companions/${m.slug}`);

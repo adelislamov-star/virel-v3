@@ -152,49 +152,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Rates — map parsed rate fields to model_rates via callRateMaster
-    const callRateMasters = await prisma.$queryRawUnsafe<{ id: string; durationMin: number; label: string }[]>(
-      `SELECT id, "durationMin", label FROM call_rate_masters WHERE "isActive" = true`
-    )
-    const durationToMaster: Record<string, string> = {}
-    for (const crm of callRateMasters) {
-      if (crm.durationMin === 30) durationToMaster['30min'] = crm.id
-      if (crm.durationMin === 45) durationToMaster['45min'] = crm.id
-      if (crm.durationMin === 60 && !crm.label.toLowerCase().includes('extra')) durationToMaster['1hour'] = crm.id
-      if (crm.durationMin === 90) durationToMaster['90min'] = crm.id
-      if (crm.durationMin === 120) durationToMaster['2hours'] = crm.id
-      if (crm.label.toLowerCase().includes('extra')) durationToMaster['extra_hour'] = crm.id
-      if (crm.durationMin === 540) durationToMaster['overnight'] = crm.id
+    // Rates — insert directly into model_rates with durationType + callType
+    // Support two formats:
+    //  1. body.rates = { [durationType]: { incall, outcall } } (from new model page)
+    //  2. Legacy field names: rate30min, rate1hIn, rate1hOut, etc.
+    const upsertRate = async (modelId: string, durationType: string, callType: string, price: number) => {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO model_rates (id, "modelId", duration_type, call_type, price, currency, created_at, updated_at)
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'GBP', NOW(), NOW())
+         ON CONFLICT ("modelId", duration_type, call_type) DO UPDATE SET
+           price = EXCLUDED.price, updated_at = NOW()`,
+        modelId, durationType, callType, price
+      )
     }
 
-    const rateFields: { durationType: string; incallField: string; outcallField?: string }[] = [
-      { durationType: '30min',       incallField: 'rate30min' },
-      { durationType: '45min',       incallField: 'rate45min' },
-      { durationType: '1hour',       incallField: 'rate1hIn',       outcallField: 'rate1hOut' },
-      { durationType: '90min',       incallField: 'rate90minIn',    outcallField: 'rate90minOut' },
-      { durationType: '2hours',      incallField: 'rate2hIn',       outcallField: 'rate2hOut' },
-      { durationType: 'extra_hour',  incallField: 'rateExtraHour' },
-      { durationType: 'overnight',   incallField: 'rateOvernight' },
-    ]
-
-    for (const rf of rateFields) {
-      const incall = body[rf.incallField] ? Number(body[rf.incallField]) : null
-      const outcall = rf.outcallField && body[rf.outcallField] ? Number(body[rf.outcallField]) : null
-      if (!incall && !outcall) continue
-      const masterId = durationToMaster[rf.durationType]
-      if (!masterId) { console.error('[admin/models] No callRateMaster for', rf.durationType); continue }
-      try {
-        await prisma.$executeRawUnsafe(
-          `DELETE FROM model_rates WHERE "modelId" = $1 AND "callRateMasterId" = $2`,
-          model.id, masterId
-        )
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO model_rates (id, "modelId", "callRateMasterId", "incallPrice", "outcallPrice")
-           VALUES (gen_random_uuid()::text, $1, $2, $3, $4)`,
-          model.id, masterId, incall, outcall
-        )
-      } catch (e) {
-        console.error('[admin/models] Rate upsert failed for', rf.durationType, e)
+    if (body.rates && typeof body.rates === 'object') {
+      for (const [durationType, val] of Object.entries(body.rates)) {
+        const v = val as { incall?: string | number; outcall?: string | number }
+        try {
+          const incall = v.incall ? Number(v.incall) : null
+          const outcall = v.outcall ? Number(v.outcall) : null
+          if (incall && incall > 0) await upsertRate(model.id, durationType, 'incall', incall)
+          if (outcall && outcall > 0) await upsertRate(model.id, durationType, 'outcall', outcall)
+        } catch (e) {
+          console.error('[admin/models] Rate upsert failed for', durationType, e)
+        }
+      }
+    } else {
+      // Legacy field name support
+      const rateFields: { durationType: string; incallField: string; outcallField?: string }[] = [
+        { durationType: '30min',       incallField: 'rate30min' },
+        { durationType: '45min',       incallField: 'rate45min' },
+        { durationType: '1hour',       incallField: 'rate1hIn',       outcallField: 'rate1hOut' },
+        { durationType: '90min',       incallField: 'rate90minIn',    outcallField: 'rate90minOut' },
+        { durationType: '2hours',      incallField: 'rate2hIn',       outcallField: 'rate2hOut' },
+        { durationType: 'extra_hour',  incallField: 'rateExtraHour' },
+        { durationType: 'overnight',   incallField: 'rateOvernight' },
+      ]
+      for (const rf of rateFields) {
+        const incall = body[rf.incallField] ? Number(body[rf.incallField]) : null
+        const outcall = rf.outcallField && body[rf.outcallField] ? Number(body[rf.outcallField]) : null
+        if (!incall && !outcall) continue
+        try {
+          if (incall && incall > 0) await upsertRate(model.id, rf.durationType, 'incall', incall)
+          if (outcall && outcall > 0) await upsertRate(model.id, rf.durationType, 'outcall', outcall)
+        } catch (e) {
+          console.error('[admin/models] Rate upsert failed for', rf.durationType, e)
+        }
       }
     }
 

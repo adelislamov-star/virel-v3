@@ -22,8 +22,7 @@ export async function auditModelReadiness(modelId: string): Promise<PublishAudit
       stats: true,
       media: { where: { isPublic: true } },
       modelRates: {
-        include: { callRateMaster: true },
-        where: { OR: [{ incallPrice: { not: null } }, { outcallPrice: { not: null } }] },
+        where: { price: { gt: 0 } },
       },
       services: { where: { isEnabled: true, service: { isPublic: true } }, include: { service: true } },
       modelLocations: { include: { district: true } },

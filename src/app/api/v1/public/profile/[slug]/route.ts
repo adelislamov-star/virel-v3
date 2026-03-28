@@ -24,8 +24,7 @@ export async function GET(
           orderBy: { sortOrder: 'asc' },
         },
         modelRates: {
-          include: { callRateMaster: true },
-          orderBy: { callRateMaster: { sortOrder: 'asc' } },
+          orderBy: { durationType: 'asc' },
         },
         services: {
           where: { isEnabled: true, service: { isPublic: true } },
@@ -46,21 +45,26 @@ export async function GET(
     const galleryUrls = model.media
       .filter((m) => m.isPublic && m.url !== primaryPhoto)
       .map((m) => m.url)
-    // Rates table — directly from DB relation
-    const rates = model.modelRates
-      .filter((mr) => mr.incallPrice != null || mr.outcallPrice != null)
-      .map((mr) => ({
-        label: mr.callRateMaster?.label ?? '—',
-        sortOrder: mr.callRateMaster?.sortOrder ?? 99,
-        incall: mr.incallPrice != null ? Number(mr.incallPrice) : null,
-        outcall: mr.outcallPrice != null ? Number(mr.outcallPrice) : null,
-      }))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
+    // Rates table — group by durationType into incall/outcall rows
+    const { durationLabel: getDurLabel } = await import('@/lib/durationLabel')
+    const { sortRates } = await import('@/lib/sortRates')
+    const sorted = sortRates(model.modelRates.map(r => ({ duration_type: r.durationType, ...r })))
+    const rateMap = new Map<string, { incall: number | null; outcall: number | null; taxiFee: number | null }>()
+    for (const r of sorted) {
+      const entry = rateMap.get(r.durationType) ?? { incall: null, outcall: null, taxiFee: null }
+      if (r.callType === 'incall') entry.incall = Number(r.price)
+      if (r.callType === 'outcall') { entry.outcall = Number(r.price); entry.taxiFee = r.taxiFee ? Number(r.taxiFee) : null }
+      rateMap.set(r.durationType, entry)
+    }
+    const rates = Array.from(rateMap.entries()).map(([durationType, p]) => ({
+      label: getDurLabel(durationType),
+      durationType,
+      incall: p.incall,
+      outcall: p.outcall,
+      taxiFee: p.taxiFee,
+    }))
     // Lowest price for display
-    const allPrices = [
-      ...rates.map((r) => r.incall).filter((v): v is number => v != null),
-      ...rates.map((r) => r.outcall).filter((v): v is number => v != null),
-    ]
+    const allPrices = model.modelRates.map(r => Number(r.price)).filter(v => v > 0)
     const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : null
     // Services
     const services = model.services.map((ms) => ({

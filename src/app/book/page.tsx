@@ -133,37 +133,37 @@ function BookingContent() {
     loadModelDetail(model.slug)
   }
 
-  // Build rates from modelDetail.modelRates (includes embedded callRateMaster)
+  // Build rates from modelDetail.modelRates (flat: durationType, callType, price)
   const buildMergedRates = () => {
     if (!modelDetail?.modelRates?.length) return []
 
-    // First pass: build all rates and identify 2h + extra-hour for synthesising 3h
+    // Filter to selected callType and build rate objects
     let twoHourRate: any = null
     let extraHourRate: any = null
 
     const baseRates = modelDetail.modelRates
+      .filter((mr: any) => mr.callType === callType)
       .map((mr: any) => {
-        const master = mr.callRateMaster
-        if (!master || !master.isActive) return null
-        const price = callType === 'incall' ? mr.incallPrice : mr.outcallPrice
-        const durationKey = DURATION_MIN_MAP[master.durationMin] || master.label?.toLowerCase().replace(/\s+/g, '')
+        const durationKey = mr.durationType
+        const price = Number(mr.price)
+        const label = DURATION_LABELS[durationKey]?.label ?? durationKey
+        const sort = DURATION_LABELS[durationKey]?.sort ?? 99
 
         // Track 2-hour and extra-hour rates for 3h synthesis
         if (durationKey === '2hours') twoHourRate = { price }
-        if (durationKey === 'extrahour' || durationKey === 'extra_hour' || master.label?.toLowerCase().includes('extra hour')) {
+        if (durationKey === 'extra_hour') {
           extraHourRate = { price }
           return null // exclude Extra Hour from the list
         }
 
         return {
           id: mr.id,
-          callRateMasterId: mr.callRateMasterId,
-          label: master.label,
-          durationMin: master.durationMin,
-          sortOrder: master.sortOrder,
-          price: price,
+          label,
+          durationMin: DURATION_LABELS[durationKey]?.durationMin ?? 60,
+          sortOrder: sort,
+          price,
           durationType: durationKey,
-          available: price != null && price > 0,
+          available: price > 0,
         }
       })
       .filter(Boolean)
@@ -174,15 +174,12 @@ function BookingContent() {
       const threeHourPrice = twoHourRate.price + extraHourRate.price
       const native3h = baseRates.find((r: any) => r.durationType === '3hours')
       if (native3h && !native3h.available) {
-        // Native 3h exists but has no price — fill it with computed price
         native3h.price = threeHourPrice
         native3h.available = true
       } else if (!native3h) {
-        // No native 3h at all — insert a synthetic one after 2h
-        const insertIdx = baseRates.findIndex((r: any) => r.sortOrder > 5)
+        const insertIdx = baseRates.findIndex((r: any) => r.sortOrder > 6)
         const synth = {
           id: '__3hours_synth',
-          callRateMasterId: null,
           label: '3 Hours',
           durationMin: 180,
           sortOrder: 5.5,

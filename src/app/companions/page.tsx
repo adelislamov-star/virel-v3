@@ -86,6 +86,7 @@ export default async function CompanionsPage({
           take: 1,
         },
         modelRates: {
+          where: { callType: 'incall' },
           take: 1,
         },
       },
@@ -161,24 +162,19 @@ export default async function CompanionsPage({
       const rates = await prisma.modelRate.findMany({
         where: {
           modelId: { in: modelIds },
-          callRateMaster: { durationMin: 60 },
-          OR: [
-            { incallPrice: { gt: 0 } },
-            { outcallPrice: { gt: 0 } },
-          ],
+          durationType: '1hour',
+          price: { gt: 0 },
         },
         select: {
           modelId: true,
-          incallPrice: true,
-          outcallPrice: true,
+          price: true,
         },
       })
       for (const r of rates) {
-        const prices = [r.incallPrice, r.outcallPrice].filter((p): p is number => p != null && p > 0)
-        if (prices.length === 0) continue
-        const min = Math.min(...prices)
-        if (!minPrices[r.modelId] || min < minPrices[r.modelId]) {
-          minPrices[r.modelId] = min
+        const price = Number(r.price)
+        if (price <= 0) continue
+        if (!minPrices[r.modelId] || price < minPrices[r.modelId]) {
+          minPrices[r.modelId] = price
         }
       }
     }
@@ -211,8 +207,8 @@ export default async function CompanionsPage({
   const clientModels = filteredModels.map((model: any) => {
     const photo = model.media[0]?.url ?? null
     const district = model.modelLocations?.[0]?.district?.name ?? DISTRICT_FALLBACK[model.slug] ?? null
-    const incallPrice = model.modelRates?.[0]?.incallPrice
-      ? Number(model.modelRates[0].incallPrice)
+    const incallPrice = model.modelRates?.[0]?.price
+      ? Number(model.modelRates[0].price)
       : minPrices[model.id] ?? null
 
     return {

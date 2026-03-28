@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Filter by budget (with 30% margin)
     const filtered = budget
       ? candidates.filter((m) =>
-          m.modelRates.some((r) => (r.incallPrice ?? 0) > 0 && (r.incallPrice ?? 0) <= budget * 1.3),
+          m.modelRates.some((r) => Number(r.price) > 0 && Number(r.price) <= budget * 1.3),
         )
       : candidates;
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       tagline: m.tagline,
       services: m.services.map((ms) => ms.service.title).join(', '),
       districts: m.modelLocations.map((ml) => ml.district.name).join(', '),
-      lowestPrice: m.modelRates.filter((r) => (r.incallPrice ?? 0) > 0).length > 0 ? Math.min(...m.modelRates.filter((r) => (r.incallPrice ?? 0) > 0).map((r) => r.incallPrice ?? 0)) : 0,
+      lowestPrice: m.modelRates.filter((r) => Number(r.price) > 0).length > 0 ? Math.min(...m.modelRates.filter((r) => Number(r.price) > 0).map((r) => Number(r.price))) : 0,
     }));
 
     const prompt = `Given these companion profiles and client requirements: ${JSON.stringify({ experience, appearance, nationality, budget, duration, occasion })},

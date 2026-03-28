@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const filtered = budget
       ? candidates.filter((m) =>
-          m.modelRates.some((r) => (r.incallPrice ?? 0) > 0 && (r.incallPrice ?? 0) <= budget * 1.3),
+          m.modelRates.some((r) => Number(r.price) > 0 && Number(r.price) <= budget * 1.3),
         )
       : candidates;
 

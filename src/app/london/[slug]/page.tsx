@@ -55,6 +55,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
           take: 1,
         },
         modelRates: {
+          where: { callType: 'incall' },
           take: 1,
         },
       },
@@ -71,7 +72,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
   if (!district) notFound()
 
   const minPrice = models.reduce((min, m) => {
-    const p = m.modelRates?.[0]?.incallPrice
+    const p = m.modelRates?.[0]?.price ? Number(m.modelRates[0].price) : null
     return p && (min === 0 || p < min) ? p : min
   }, 0)
 
@@ -194,7 +195,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ slug:
                 isVerified={m.isVerified}
                 isExclusive={m.isExclusive}
                 districtName={m.modelLocations?.[0]?.district?.name}
-                minIncallPrice={m.modelRates?.[0]?.incallPrice}
+                minIncallPrice={m.modelRates?.[0]?.price ? Number(m.modelRates[0].price) : null}
               />
             ))}
           </div>

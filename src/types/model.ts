@@ -37,13 +37,21 @@ export interface AvailabilitySlot {
   area?: string | null;
 }
 
+export type DurationType =
+  | '30min' | '45min' | '1hour' | '90min'
+  | '2hours' | '3hours' | '4hours' | '5hours'
+  | '6hours' | '8hours' | 'overnight' | 'extra_hour';
+
+export type CallType = 'incall' | 'outcall';
+
 export interface ModelRateEntry {
   id: string;
   modelId: string;
-  callRateMasterId: string;
-  callRateMaster: { label: string; durationMin: number; sortOrder: number };
-  incallPrice: number | null;
-  outcallPrice: number | null;
+  durationType: DurationType;
+  callType: CallType;
+  price: number;
+  taxiFee: number | null;
+  currency: string;
 }
 
 export interface ModelServiceEntry {
@@ -71,13 +79,7 @@ export interface ModelLocationEntry {
   district: { id: string; name: string; slug: string; tier: number };
 }
 
-export interface CallRateMaster {
-  id: string;
-  label: string;
-  durationMin: number;
-  sortOrder: number;
-  isActive: boolean;
-}
+// CallRateMaster removed — model_rates is now the single source of truth
 
 export interface DistrictOption {
   id: string;
