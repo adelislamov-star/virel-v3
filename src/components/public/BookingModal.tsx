@@ -20,10 +20,11 @@ interface Companion {
 interface Rate {
   id: string
   label: string
+  durationType: string
   durationMin: number
   sortOrder: number
-  incallPrice: number | null
-  outcallPrice: number | null
+  incall: number | null
+  outcall: number | null
 }
 
 const TIME_SLOTS: string[] = []
@@ -143,13 +144,14 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           const existing = rateMap.get(key) || {
             id: mr.id,
             label: opt?.label ?? key,
+            durationType: key,
             durationMin,
             sortOrder: opt ? DURATION_OPTIONS.indexOf(opt) + 1 : 99,
-            incallPrice: null,
-            outcallPrice: null,
+            incall: null,
+            outcall: null,
           }
-          if (mr.callType === 'incall') existing.incallPrice = Number(mr.price)
-          if (mr.callType === 'outcall') existing.outcallPrice = Number(mr.price)
+          if (mr.callType === 'incall') existing.incall = Number(mr.price)
+          if (mr.callType === 'outcall') existing.outcall = Number(mr.price)
           rateMap.set(key, existing)
         }
         const parsed = Array.from(rateMap.values())
@@ -183,7 +185,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       .map(r => {
         const key = DURATION_MIN_MAP[r.durationMin]
         const opt = DURATION_OPTIONS.find(d => d.key === key)
-        const price = callType === 'incall' ? r.incallPrice : r.outcallPrice
+        const price = callType === 'incall' ? r.incall : r.outcall
         return {
           key: key || r.label,
           label: opt?.label || r.label,
