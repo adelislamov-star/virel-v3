@@ -63,9 +63,9 @@ export async function GET(
       outcall: p.outcall,
       taxiFee: p.taxiFee,
     }))
-    // Lowest price for display
-    const allPrices = model.modelRates.map(r => Number(r.price)).filter(v => v > 0)
-    const lowestPrice = allPrices.length > 0 ? Math.min(...allPrices) : null
+    // Use 1-hour rate as the display price (shown as "From £X / hour")
+    const hourlyRates = model.modelRates.filter(r => r.durationType === '1hour').map(r => Number(r.price)).filter(v => v > 0)
+    const lowestPrice = hourlyRates.length > 0 ? Math.min(...hourlyRates) : null
     // Services
     const services = model.services.map((ms) => ({
       serviceId: ms.serviceId,
