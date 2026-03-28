@@ -363,8 +363,8 @@ html {
 .float-wrap.show{opacity:1;transform:translateY(0);pointer-events:auto}
 .float-btn{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none;padding:10px 16px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-family:var(--font-dm-sans),'Helvetica Neue',sans-serif;font-weight:500;transition:transform .2s;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,0.45)}
 .float-btn:hover{transform:translateX(-3px)}
-.float-wa{background:#25D366}
-.float-tg{background:#229ED9}
+.float-wa{background:#C5A572}
+.float-tg{background:#111111;border:1px solid rgba(197,165,114,0.6)}
 
 /* ── HOME RESPONSIVE ── */
 @media(max-width:1100px){

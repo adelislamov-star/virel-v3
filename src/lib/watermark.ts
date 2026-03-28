@@ -9,52 +9,47 @@ export async function applyWatermark(
   imageBuffer: Buffer,
   options: WatermarkOptions = {}
 ): Promise<Buffer> {
-  const {
-    text = 'VAUREL',
-    opacity = 0.35,
-  } = options
+  const { text = 'VAUREL', opacity = 0.07 } = options
 
   const metadata = await sharp(imageBuffer).metadata()
   const width = metadata.width ?? 800
   const height = metadata.height ?? 1200
 
-  // Font size proportional to image width (7%), min 28px
-  const dynamicFontSize = Math.max(Math.round(width * 0.07), 28)
-  const letterSpacing = Math.round(dynamicFontSize * 0.3)
+  const tileW = 300
+  const tileH = 160
+  const fontSize = 11
+  const ls = 5
+  const cx = tileW / 2
+  const cy = tileH / 2
 
-  const svgText = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <style>
-        .watermark {
-          font-family: Georgia, serif;
-          font-size: ${dynamicFontSize}px;
-          font-weight: bold;
-          fill: white;
-          fill-opacity: ${opacity};
-          letter-spacing: ${letterSpacing}px;
-        }
-      </style>
-      <text
-        class="watermark"
-        x="50%"
-        y="${height - Math.round(height * 0.06)}"
-        text-anchor="middle"
-        dominant-baseline="middle"
-      >${text}</text>
-    </svg>
-  `
+  const tileSvg = `<svg width="${tileW}" height="${tileH}" xmlns="http://www.w3.org/2000/svg">
+    <text
+      x="${cx}" y="${cy}"
+      text-anchor="middle" dominant-baseline="middle"
+      transform="rotate(-30, ${cx}, ${cy})"
+      font-family="Georgia, serif"
+      font-size="${fontSize}"
+      font-weight="300"
+      letter-spacing="${ls}"
+      fill="white"
+      fill-opacity="${opacity}"
+    >${text}</text>
+  </svg>`
 
-  const svgBuffer = Buffer.from(svgText)
+  const tileBuffer = Buffer.from(tileSvg)
+  const cols = Math.ceil(width / tileW) + 1
+  const rows = Math.ceil(height / tileH) + 1
+  const composites: sharp.OverlayOptions[] = []
 
-  const result = await sharp(imageBuffer)
-    .composite([
-      {
-        input: svgBuffer,
-        top: 0,
-        left: 0,
-      },
-    ])
-    .toBuffer()
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      composites.push({
+        input: tileBuffer,
+        top: Math.round(row * tileH - tileH / 2),
+        left: Math.round(col * tileW - tileW / 2),
+      })
+    }
+  }
 
-  return result
+  return sharp(imageBuffer).composite(composites).toBuffer()
 }
