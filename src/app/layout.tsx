@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
@@ -57,6 +58,10 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = headers()
+  const pathname = headersList.get('x-pathname') ?? ''
+  const isAdmin = pathname.startsWith('/admin')
+
   return (
     <html lang={siteConfig.lang} className={`${cormorant.variable} ${dmSans.variable}`}>
       <head>
@@ -64,13 +69,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://pub-7f32296778704801a71de1ffa1b9ca8d.r2.dev" />
       </head>
       <body>
-        <BookingModalProvider>
-          <Navbar />
-          {children}
-          <FooterNew />
-          <FloatingContacts />
-          <CookieBanner />
-        </BookingModalProvider>
+        {isAdmin ? (
+          children
+        ) : (
+          <BookingModalProvider>
+            <Navbar />
+            {children}
+            <FooterNew />
+            <FloatingContacts />
+            <CookieBanner />
+          </BookingModalProvider>
+        )}
         <Analytics />
         <SpeedInsights />
       </body>

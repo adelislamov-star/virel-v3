@@ -10,6 +10,10 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get('vaurel-token')?.value;
 
+  // Forward pathname to server components via request header
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+
   // Admin pages: redirect to login if no token
   if (isAdminPage) {
     if (!token && !isLoginPage) {
@@ -18,7 +22,7 @@ export function middleware(request: NextRequest) {
     if (token && isLoginPage) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // API v1 + API admin routes: reject if no token (auth routes are excluded)
@@ -30,9 +34,11 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  return NextResponse.next();
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*', '/api/v1/:path*', '/api/admin/:path*'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon\\.ico).*)',
+  ],
 };
