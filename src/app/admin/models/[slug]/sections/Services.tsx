@@ -213,7 +213,7 @@ export default function Services({ modelId, onToast }: Props) {
             const isExtra = s?.isExtra || false;
             const isGroup = isGroupService(svc);
             return (
-              <div key={svc.id} className="rounded-lg hover:bg-zinc-800/50 transition-colors">
+              <div key={svc.id} className={`rounded-lg transition-colors ${isEnabled ? 'bg-amber-500/5 border border-amber-500/20' : 'hover:bg-zinc-800/50 border border-transparent'}`}>
                 <div className="flex items-center gap-3 px-3 py-2">
                   <input
                     type="checkbox"
@@ -221,10 +221,11 @@ export default function Services({ modelId, onToast }: Props) {
                     onChange={() => toggleService(svc.id)}
                     className="accent-amber-500"
                   />
-                  <span className={`text-sm ${isEnabled ? 'text-zinc-200' : 'text-zinc-500'}`}>
+                  <span className={`text-sm font-medium ${isEnabled ? 'text-zinc-100' : 'text-zinc-500'}`}>
                     {svc.title}
-                    {svc.publicName && <span className="text-zinc-400"> — {svc.publicName}</span>}
+                    {svc.publicName && <span className={`font-normal ${isEnabled ? 'text-zinc-400' : 'text-zinc-600'}`}> — {svc.publicName}</span>}
                   </span>
+                  {isEnabled && <span className="ml-auto text-[10px] text-amber-500/70 font-medium uppercase tracking-wide">On</span>}
                 </div>
                 {isEnabled && isGroup && (
                   <div className="flex items-center gap-4 px-10 pb-2">

@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Phone, MessageCircle, ExternalLink, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { useRevalidate } from '@/hooks/useRevalidate';
@@ -227,80 +228,38 @@ export default function ModelEditPage() {
         </div>
       </div>
 
-      {/* Publish Readiness */}
+      {/* Publish Readiness — compact chip row */}
       {publishAudit && (
-        <div style={{
-          background: publishAudit.ready ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
-          border: `1px solid ${publishAudit.ready ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
-          borderRadius: 12,
-          padding: '16px 20px',
-          marginBottom: 24,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontWeight: 600, color: publishAudit.ready ? '#10b981' : '#f59e0b', fontSize: 14 }}>
-              {publishAudit.ready ? '✅ Ready to publish' : `⚠️ Profile incomplete — ${publishAudit.score}% ready`}
-            </span>
-            <span style={{ fontSize: 12, color: '#71717a' }}>
-              {publishAudit.checks.filter((c: any) => c.passed).length}/{publishAudit.checks.length} checks passed
-            </span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+        <div className={`rounded-xl px-4 py-2.5 flex items-center gap-3 border ${publishAudit.ready ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+          <span className={`text-xs font-semibold whitespace-nowrap ${publishAudit.ready ? 'text-emerald-400' : 'text-amber-400'}`}>
+            {publishAudit.ready ? '✅ Ready' : `⚠️ ${publishAudit.score}%`}
+          </span>
+          <div className="flex flex-wrap gap-1.5 flex-1">
             {publishAudit.checks.map((check: any) => (
-              <div key={check.key} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 8,
-                padding: '8px 10px',
-                background: 'rgba(255,255,255,0.03)',
-                borderRadius: 8,
-                border: `1px solid ${check.passed ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
-              }}>
-                <span style={{ fontSize: 13, marginTop: 1 }}>{check.passed ? '✅' : '❌'}</span>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: check.passed ? '#d4d4d8' : '#f87171' }}>
-                    {check.label}
-                  </div>
-                  {check.passed && check.dbCount > 1 && (
-                    <div style={{ fontSize: 11, color: '#71717a' }}>{check.dbCount} items</div>
-                  )}
-                  {!check.passed && (
-                    <div style={{ fontSize: 11, color: '#a1a1aa' }}>{check.hint}</div>
-                  )}
-                </div>
-              </div>
+              <span
+                key={check.key}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                  check.passed
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                }`}
+                title={check.passed ? (check.dbCount > 1 ? `${check.dbCount} items` : 'Passed') : check.hint}
+              >
+                {check.passed ? '✓' : '✗'} {check.label}
+              </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Completion Bar */}
-      {publishAudit && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 flex items-center gap-4">
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-zinc-400">Profile completion</span>
-              <span className={`text-xs font-semibold ${publishAudit.score >= 80 ? 'text-emerald-400' : publishAudit.score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
-                {publishAudit.score}%
-              </span>
-            </div>
-            <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${publishAudit.score >= 80 ? 'bg-emerald-500' : publishAudit.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
-                style={{ width: `${publishAudit.score}%` }}
-              />
-            </div>
-          </div>
-          {publishAudit.missing?.length > 0 && (
-            <div className="text-xs text-zinc-500 hidden md:block">
-              Missing: <span className="text-zinc-300">{publishAudit.missing.slice(0,3).join(', ')}{publishAudit.missing.length > 3 ? ` +${publishAudit.missing.length - 3}` : ''}</span>
-            </div>
-          )}
+          <span className="text-[11px] text-zinc-500 whitespace-nowrap">
+            {publishAudit.checks.filter((c: any) => c.passed).length}/{publishAudit.checks.length}
+          </span>
         </div>
       )}
 
       {/* Main layout: sticky nav + content */}
-      <div className="flex gap-6 items-start">
+      <div className="flex gap-4 items-start">
 
         {/* Sticky sidebar nav */}
-        <div className="hidden lg:block w-44 flex-shrink-0 sticky top-6">
+        <div className="hidden lg:block w-32 flex-shrink-0 self-start sticky top-6">
           <nav className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 space-y-0.5">
             {NAV_SECTIONS.map(({ id, label }) => (
               <a
@@ -370,16 +329,72 @@ export default function ModelEditPage() {
 
       {/* Section: Media */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-800">
+        <div className="px-4 py-2.5 border-b border-zinc-800">
           <h2 className="text-base font-semibold text-white">Media</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4">
           <MediaTab model={model} />
         </div>
       </div>
 
         </div>{/* end sections */}
       </div>{/* end flex layout */}
+
+      {/* Floating Action Bar */}
+      {model && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-2.5 shadow-2xl shadow-black/50">
+          {/* Call */}
+          {model.phone && (
+            <a
+              href={`tel:${model.phone}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium transition-colors"
+              title="Call model"
+            >
+              <Phone size={13} />
+              Call
+            </a>
+          )}
+          {/* WhatsApp */}
+          {model.whatsapp && model.phone && (
+            <a
+              href={`https://wa.me/${model.phone?.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
+              title="WhatsApp"
+            >
+              <MessageCircle size={13} />
+              WhatsApp
+            </a>
+          )}
+          {/* Telegram */}
+          {model.telegram && model.telegramTag && (
+            <a
+              href={`https://t.me/${model.telegramTag}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors"
+              title="Telegram"
+            >
+              <Send size={13} />
+              Telegram
+            </a>
+          )}
+          {/* Divider */}
+          <div className="w-px h-5 bg-zinc-700" />
+          {/* View on site */}
+          <a
+            href={`/companions/${model.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-900 text-xs font-medium transition-colors"
+            title="View on site"
+          >
+            <ExternalLink size={13} />
+            View site
+          </a>
+        </div>
+      )}
     </div>
   );
 }

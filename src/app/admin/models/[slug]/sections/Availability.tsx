@@ -55,6 +55,9 @@ export default function Availability({ modelId, onToast }: Props) {
   const [loading, setLoading] = useState(true);
   const [addingDay, setAddingDay] = useState<string | null>(null);
   const [newSlot, setNewSlot] = useState({ type: 'available', from: '10:00', to: '22:00', notes: '' });
+  const [rangeMode, setRangeMode] = useState(false);
+  const [rangeSlot, setRangeSlot] = useState({ dateFrom: '', dateTo: '', type: 'available', from: '10:00', to: '22:00', notes: '' });
+  const [rangeSaving, setRangeSaving] = useState(false);
 
   const loadSlots = useCallback(async () => {
     try {
@@ -121,6 +124,39 @@ export default function Availability({ modelId, onToast }: Props) {
     }
   };
 
+  const addRangeSlots = async () => {
+    if (!rangeSlot.dateFrom || !rangeSlot.dateTo) { onToast('Select date range', 'error'); return; }
+    if (rangeSlot.dateFrom > rangeSlot.dateTo) { onToast('End date must be after start date', 'error'); return; }
+    if (rangeSlot.from >= rangeSlot.to) { onToast('End time must be after start time', 'error'); return; }
+    setRangeSaving(true);
+    try {
+      const start = new Date(rangeSlot.dateFrom);
+      const end = new Date(rangeSlot.dateTo);
+      const promises = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        promises.push(fetch(`/api/v1/models/${modelId}/availability/block`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            startAt: `${dateStr}T${rangeSlot.from}:00Z`,
+            endAt: `${dateStr}T${rangeSlot.to}:00Z`,
+            notes: rangeSlot.notes || undefined,
+          }),
+        }));
+      }
+      await Promise.all(promises);
+      onToast(`Added slots for ${promises.length} day(s)`, 'success');
+      setRangeMode(false);
+      setRangeSlot({ dateFrom: '', dateTo: '', type: 'available', from: '10:00', to: '22:00', notes: '' });
+      loadSlots();
+    } catch {
+      onToast('Something went wrong', 'error');
+    } finally {
+      setRangeSaving(false);
+    }
+  };
+
   // Build days
   const days: { date: Date; dateStr: string; dayName: string; dayNum: number }[] = [];
   for (let i = 0; i < 7; i++) {
@@ -139,6 +175,68 @@ export default function Availability({ modelId, onToast }: Props) {
   return (
     <SectionCard title="Availability">
       <div className="space-y-4">
+        {/* Mode toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRangeMode(false)}
+            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${!rangeMode ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}
+          >
+            Week view
+          </button>
+          <button
+            onClick={() => setRangeMode(true)}
+            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${rangeMode ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}
+          >
+            + Add date range
+          </button>
+        </div>
+
+        {/* Range form */}
+        {rangeMode && (
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 space-y-3">
+            <div className="text-xs text-zinc-400 font-medium">Add availability for a date range</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">From date</label>
+                <input type="date" value={rangeSlot.dateFrom} onChange={e => setRangeSlot({...rangeSlot, dateFrom: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">To date</label>
+                <input type="date" value={rangeSlot.dateTo} onChange={e => setRangeSlot({...rangeSlot, dateTo: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">From time</label>
+                <input type="time" value={rangeSlot.from} onChange={e => setRangeSlot({...rangeSlot, from: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">To time</label>
+                <input type="time" value={rangeSlot.to} onChange={e => setRangeSlot({...rangeSlot, to: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Note (optional)</label>
+                <input type="text" value={rangeSlot.notes} onChange={e => setRangeSlot({...rangeSlot, notes: e.target.value})}
+                  placeholder="e.g. Available all day"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={addRangeSlots} disabled={rangeSaving}
+                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-900 text-sm font-medium rounded-lg transition-colors">
+                {rangeSaving ? 'Adding...' : 'Add for all days in range'}
+              </button>
+              <button onClick={() => setRangeMode(false)} className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-lg transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Week navigation */}
         <div className="flex items-center justify-center gap-4">
           <button onClick={prevWeek} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200">
