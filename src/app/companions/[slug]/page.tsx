@@ -1,4 +1,5 @@
-export const revalidate = 60
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
@@ -236,14 +237,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: { canonical: `${BASE_URL}/companions/${params.slug}` },
   }
-}
-
-export async function generateStaticParams() {
-  const models = await prisma.model.findMany({
-    where: { status: 'active', deletedAt: null },
-    select: { slug: true },
-  })
-  return models.map((m) => ({ slug: m.slug }))
 }
 
 export default async function ModelProfilePage({ params }: Props) {

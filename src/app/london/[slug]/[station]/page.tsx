@@ -8,18 +8,8 @@ import './station.css'
 
 import { ModelCard } from '@/components/public/ModelCard'
 
-export const revalidate = 3600
-
-export async function generateStaticParams() {
-  const hubs = await prisma.transportHub.findMany({
-    where: { isActive: true },
-    include: { district: { select: { slug: true } } },
-  })
-  return hubs.map(h => ({
-    slug: `${h.district.slug}-escorts`,
-    station: `${h.slug}-station`,
-  }))
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; station: string }> }): Promise<Metadata> {
   const { slug, station } = await params
