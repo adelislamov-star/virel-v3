@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 
 import { useRevalidate } from '@/hooks/useRevalidate';
 import BasicInfoTab from '@/components/models/tabs/BasicInfoTab';
+import BasicInfoAndContact from './sections/BasicInfoAndContact';
 import MediaTab from '@/components/models/tabs/MediaTab';
 
 import PhysicalStats from './sections/PhysicalStats';
@@ -41,8 +42,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 }
 
 const NAV_SECTIONS = [
-  { id: 'basic',    label: 'Basic Info' },
-  { id: 'contact',  label: 'Contact' },
+  { id: 'basic',    label: 'Basic & Contact' },
   { id: 'physical', label: 'Physical' },
   { id: 'marketing',label: 'Marketing' },
   { id: 'wardrobe', label: 'Wardrobe' },
@@ -280,45 +280,17 @@ export default function ModelEditPage() {
         {/* Sections */}
         <div className="flex-1 space-y-4 min-w-0">
 
-      {/* Draft Warning Banner */}
-      {model.status !== 'active' && (
-        <div className={`rounded-xl px-5 py-3 flex items-center gap-3 border ${
-          model.status === 'draft'
-            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-            : model.status === 'archived'
-            ? 'bg-red-500/10 border-red-500/30 text-red-400'
-            : 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400'
-        }`}>
-          <span className="text-lg">
-            {model.status === 'draft' ? '⚠️' : model.status === 'archived' ? '🚫' : '🌴'}
-          </span>
-          <div>
-            <div className="font-medium text-sm">
-              {model.status === 'draft' && 'This profile is not visible to clients'}
-              {model.status === 'archived' && 'This profile is archived and hidden from site'}
-              {model.status === 'vacation' && 'Model is on vacation — profile visible but marked away'}
-            </div>
-            <div className="text-xs opacity-70 mt-0.5">
-              Status: <span className="font-semibold uppercase">{model.status}</span>
-              {model.status === 'draft' && ' — change to Active to publish'}
-            </div>
-          </div>
+      <div id="basic">
+          <BasicInfoAndContact
+            model={model}
+            modelId={modelId}
+            onSave={saveModel}
+            saving={saving}
+            onToast={showToast}
+            onModelUpdate={loadModel}
+            onDirty={() => markDirty('basic')}
+          />
         </div>
-      )}
-
-      {/* Section: Basic Info */}
-      <div id="basic" className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-zinc-800">
-          <h2 className="text-base font-semibold text-white">Basic Info</h2>
-        </div>
-        <div className="p-4">
-          <BasicInfoTab model={model} onSave={saveModel} saving={saving} onDirty={() => markDirty('basic')} />
-        </div>
-      </div>
-
-      <div id="contact">
-        <Contact model={model} modelId={modelId} onToast={showToast} onModelUpdate={loadModel} />
-      </div>
 
       <div id="physical">
         <PhysicalStats model={model} modelId={modelId} onToast={showToast} />
