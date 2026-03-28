@@ -1,0 +1,206 @@
+# Аудит Back-Office Virel v3.0 vs Museescorts CMS
+
+**Стек:** Next.js 14 (App Router) + PostgreSQL (Neon.tech serverless) + Cloudflare R2 (медиа) + Claude AI API + Vercel. Современный, правильный выбор для быстрого старта.
+
+---
+
+## ЭТАП 1. СТРУКТУРА СИСТЕМЫ
+
+**Полная карта разделов:**
+
+```
+CORE          → Action Center, Leads, Inquiries, Clients,
+                Booking Requests, Bookings, Models
+MASTERS       → Services (79), Call Rates (8), Locations (25 + Transport Hubs)
+CONTENT       → Concierge, Blog
+OPERATIONS    → Availability, Reviews, Incidents, Fraud Monitor,
+                Lost Revenue, Applications, Alternative Offers
+BUSINESS      → Pricing, Membership, Payments, Reports, SEO Health, Retention
+ANALYTICS     → Dashboard, Owner Analytics, Unit Economics,
+                Model Performance, Demand, Staff Performance
+SYSTEM        → SLA Monitor, Data Quality, Audit Log, Notifications, Jobs, Settings
+```
+
+**27 разделов** против **11 разделов** у Museescorts. Это полноценная операционная платформа, а не просто CMS.
+
+---
+
+## ЭТАП 2. АНАЛИЗ UX
+
+**Сильные стороны:**
+
+Dashboard информативен: разделён на Reception / Revenue / Operations / Models. Показывает Pending Requests с именами и временем, Weekly Revenue с delta vs прошлой неделей, Risk Distribution (13/0/0), AVG Completeness (40% — красный флаг), System Status с реальными статусами (Queue Worker: Not Running).
+
+Availability — лучший модуль в системе. Визуальный недельный/дневной календарь, фильтр по моделям, автодетекция конфликтов с кнопкой "Fix". Это то, чего нет у Museescorts вообще.
+
+Создание модели — 5-шаговый wizard: Identity & Profile → Physical Stats → Rates & Services → Location & Contact → Photos & Publish. Правильная последовательность, не даёт создать «пустой» профиль.
+
+Owner Analytics — полноценная бизнес-аналитика: Total Revenue, Net Margin, ARPU, MRR, Conversion Rate, Lost Revenue, Alt Offer Acceptance, Chargeback Rate, VIP Revenue Share.
+
+Bookings View — карточки с цветными статусами (pending/confirmed/completed), Deposit Required, Total, кнопки смены статуса прямо на странице.
+
+**Проблемы UX:**
+
+Sidebar не имеет группировки по частоте использования. CORE-раздел правильно наверху, но Operations занимает слишком много места. Нет возможности свернуть группы.
+
+**6 страниц возвращают 404** через публичный роутер: `/admin/services`, `/admin/fraud-monitor`, `/admin/seo-health` — это означает, что меню ссылается на `/admin/X`, но роуты зарегистрированы под `/admin/masters/X`. Ошибка в конфигурации навигации.
+
+Clients page и Audit Log — ошибка "Not authenticated" при авторизованной сессии. API-роуты не передают session token корректно.
+
+Model Performance — "Not authenticated" + "No models found" при 10 published models на dashboard. Несогласованность данных между разделами.
+
+AVG Completeness 40% в красном на dashboard — нет прямой ссылки «Fix this». Пользователь видит проблему, но не знает как перейти к её решению.
+
+---
+
+## ЭТАП 3. ОПЕРАЦИОННЫЕ ПРОЦЕССЫ
+
+**Автоматизировано:** детекция конфликтов доступности, расчёт депозита, статусы бронирований, Risk Distribution моделей, weekly revenue delta, система инцидентов (структура есть), Lost Revenue трекинг (структура есть), AI bio generation (кнопка "Generate with AI" в форме модели).
+
+**Выполняется вручную:** смена статуса бронирования (3 кнопки: DEPOSIT REQUIRED / CONFIRMED / CANCELLED — но нет автопереходов), заполнение SEO-полей (нет шаблонов), публикация модели (последний шаг wizard).
+
+**Где теряются деньги:**
+
+Queue Worker: **Not Running** — это означает все background jobs не выполняются: уведомления клиентам, Telegram-боты (Not Configured), напоминания о бронированиях. При неотправленных подтверждениях конверсия падает напрямую.
+
+Telegram Bot и Telegram Chat — Not Configured. Для ниши, где клиенты используют Telegram как основной канал, это критическая потеря лидов.
+
+Email (Resend) — Not Configured. Нет email-уведомлений ни клиентам, ни операторам.
+
+---
+
+## ЭТАП 4. ТЕХНИЧЕСКАЯ АРХИТЕКТУРА
+
+**Стек:** Next.js 14 App Router + PostgreSQL Neon (serverless) + Cloudflare R2 + Claude AI + Vercel. Современный и правильный выбор.
+
+**Проблемы:**
+
+Neon serverless PostgreSQL имеет cold start до 500ms при первом запросе после простоя. При активной работе это незаметно, но для редко используемых страниц (Reports, Analytics) создаёт задержки.
+
+Аутентификация нестабильна: 3 разных страницы возвращают "Not authenticated" при авторизованной сессии. Это или session middleware не применяется к API-роутам, или cookie SameSite политика конфликтует с Vercel serverless.
+
+URL-структура непоследовательна: `/admin/bookings`, `/admin/models` — прямые, а `/admin/masters/services`, `/admin/masters/locations` — с префиксом. Навигационное меню ссылается на неверные URL для 6 разделов.
+
+Версия v3.0.0, окружение **Development** в production (показано в Settings). Это означает, что некоторые dev-оптимизации могут быть включены в prod, а NODE_ENV=development отключает ряд production-оптимизаций Next.js.
+
+Slug для Locations: "mayfair", "knightsbridge" — без суффикса -escorts. В отличие от Museescorts (baker-street-escorts), SEO-потенциал локаций в URL не используется.
+
+---
+
+## ЭТАП 5. СРАВНЕНИЕ С MUSEESCORTS CMS
+
+| Функция | Virel | Museescorts | Внедрить |
+|---|---|---|---|
+| Dashboard информативность | ✅ Rich (Revenue, Risk, Status) | ❌ Только Quick Links + промо-баннер | Virel → Museescorts |
+| Wizard создания профиля | ✅ 5 шагов с прогрессом | ❌ Табы без прогресса | Virel-подход |
+| Availability / Календарь | ✅ Полный с конфликтами | ❌ Отсутствует | Virel → Museescorts |
+| Leads / CRM | ✅ Source + Priority + Status | ❌ Отсутствует | Virel → Museescorts |
+| Lost Revenue | ✅ Отдельный модуль | ❌ Отсутствует | Virel → Museescorts |
+| Fraud Monitor | ✅ Раздел есть (404 сейчас) | ❌ Отсутствует | Virel → Museescorts |
+| Incidents | ✅ Раздел есть | ❌ Отсутствует | Virel → Museescorts |
+| Owner Analytics | ✅ MRR, ARPU, Chargeback | ❌ Отсутствует | Virel → Museescorts |
+| Audit Log | ✅ 90-day retention | ❌ Отсутствует | Virel → Museescorts |
+| SEO на каждой сущности | ❌ Нет SEO-полей на моделях | ✅ SEO-вкладка везде | Museescorts → Virel |
+| Slug с SEO-суффиксом | ❌ "mayfair" | ✅ "baker-street-escorts" | Museescorts-подход |
+| H1 ≠ Title | ❌ Не реализовано | ✅ Отдельное H1 поле | Museescorts → Virel |
+| Rich-text SEO content | ❌ Нет на страницах локаций | ✅ Introduction + Description | Museescorts → Virel |
+| Стабильность auth | ❌ 3 ошибки Not authenticated | ✅ Стабильная | Museescorts → Virel |
+| Навигация без багов | ❌ 6 битых ссылок, dirty state | ✅ Работает (dirty state один) | Оба плохи |
+| AI генерация контента | ✅ Generate with AI на bio | ❌ Отсутствует | Virel → Museescorts |
+| Услуги: Members Only | ✅ Public / Members Only | ❌ Только Active/Inactive | Virel → Museescorts |
+| Locations: Tier система | ✅ T1/T2/T3 + Transport Hubs | ❌ Flat список | Virel → Museescorts |
+| System Status на dashboard | ✅ DB/API/Queue/Telegram | ❌ Отсутствует | Virel → Museescorts |
+
+---
+
+## ЭТАП 6. HIGH-TECH BEST PRACTICES
+
+**Stripe-паттерны для применения:**
+
+Booking detail page уже близка к Stripe (статус + сумма + deposit + change status buttons). Нужно добавить: Timeline событий (создан / депозит получен / подтверждён / выполнен), как в Stripe Payments.
+
+**Shopify-паттерны:**
+
+Массовые действия (bulk actions) на списках — нет ни в Virel, ни в Museescorts. Activate/Deactivate/Change location для 10+ моделей одним действием.
+
+**Uber-паттерны:**
+
+Availability модуль — лучшее в системе. Развить до диспетчерского вида: какие модели доступны сейчас, map view по локациям Лондона.
+
+**Airbnb-паттерны:**
+
+Completeness score для профиля модели (сейчас есть, но 40% — никаких подсказок что именно заполнить). Нужен breakdown: фото 0/5, services 2/10, bio ✅, location ✅ → Score: 40%.
+
+**Notion-паттерны:**
+
+Inline editing в списках — редактирование статуса/тарифа без перехода на отдельную страницу. Call Rates уже используют inline toggle, но не inline edit price.
+
+---
+
+## ЭТАП 7. НОВАЯ СТРУКТУРА BACK-OFFICE
+
+```
+TODAY          → Pending bookings, Availability today,
+                 Unread leads, System alerts [первый экран]
+
+RECEPTION      → Leads → Inquiries → Booking Requests
+                 → Bookings → Clients
+
+MODELS         → All Models [list + kanban]
+                 → Add Model [wizard]
+                 → Applications [self-register]
+                 → Availability [calendar]
+                 → Performance [per-model analytics]
+
+CONTENT        → Locations [SEO content]
+                 → Services [SEO content]
+                 → Categories
+                 → Blog
+                 → Concierge / FAQ
+
+FINANCE        → Revenue Dashboard
+                 → Bookings Revenue
+                 → Lost Revenue
+                 → Memberships / Pricing
+
+RISK & OPS     → Incidents
+                 → Fraud Monitor
+                 → Alternative Offers
+                 → Reviews queue
+                 → Availability Conflicts
+
+ANALYTICS      → Owner View [MRR, ARPU, Chargeback]
+                 → Model Performance [ranking]
+                 → Demand [geo heatmap]
+                 → Retention
+
+SYSTEM         → Settings, Integrations, Audit Log,
+                 Jobs, Notifications, Data Quality
+```
+
+---
+
+## ЭТАП 8. ПЛАН УЛУЧШЕНИЙ
+
+| Приоритет | Улучшение | Что даст |
+|---|---|---|
+| 🔴 P0 | Починить Queue Worker (Not Running) | Запустит Telegram/Email уведомления → +15-20% конверсия подтверждений |
+| 🔴 P0 | Настроить Telegram Bot + Chat | Основной канал ниши. Каждый пропущенный лид = потеря £200-600 |
+| 🔴 P0 | Починить "Not authenticated" в Clients, Audit Log, Model Performance | Данные недоступны операторам → решения принимаются вслепую |
+| 🔴 P0 | Исправить 6 битых nav ссылок (/admin/services, /fraud-monitor, /seo-health) | Операторы думают, что функционал не существует |
+| 🔴 P0 | Сменить Environment: Development → Production | Next.js prod-оптимизации, реальный error handling |
+| 🟠 P1 | Добавить SEO-поля на модели (Title, Meta Description, Slug с -escorts) | 237 профилей без SEO = невидимость в Google |
+| 🟠 P1 | Добавить H1 ≠ Title на Locations + SEO Introduction/Description контент | Страницы локаций — главный SEO-трафик для ниши |
+| 🟠 P1 | Slug локаций: mayfair → mayfair-escorts | URL — это SEO-актив, переписать один раз с редиректами |
+| 🟠 P1 | Completeness Score breakdown на Dashboard | "40% — 6 моделей без фото, 8 без services" вместо просто числа |
+| 🟠 P1 | Настроить Email (Resend) | Booking confirmations, deposit receipts, follow-up → доверие клиентов |
+| 🟡 P2 | Добавить AI-генерацию bio в batch: применить к 10 моделям одним кликом | Сейчас кнопка Generate with AI только на одном профиле |
+| 🟡 P2 | Bulk actions на Models list (activate, change location, assign services) | Управление 10+ моделями = часы работы |
+| 🟡 P2 | Booking Timeline (создан → депозит → подтверждён → выполнен) | Визуализация истории каждого бронирования |
+| 🟡 P2 | Dashboard → виджет "Today's Schedule" (кто работает сегодня, какие бронирования) | Диспетчер видит всё за 3 секунды без перехода |
+| 🟡 P2 | Alternative Offers — автопредложение при rejected/unavailable модели | Lost Revenue → конвертируется в альтернативное бронирование |
+| 🟡 P2 | Clients CRM: LTV, Last Booking, VIP tag, Notes | Постоянный клиент должен обслуживаться иначе чем новый |
+| 🟢 P3 | Fraud Monitor — реализовать детекцию: один клиент, много отмен; chargebacks | Защита от систематических потерь |
+| 🟢 P3 | Retention module: повторные бронирования, "не было X дней" алерты | Топ-20% клиентов дают 80% выручки в нише |
+| 🟢 P3 | SEO Health module — реализовать реальную проверку robots.txt, meta, sitemap | Сейчас 404, а robots.txt блокирует весь сайт |
+| 🟢 P3 | Transport Hubs в Locations — добавить SEO-контент (Heathrow, Kings Cross) | Высокочастотные запросы с конверсией (travelling clients) |

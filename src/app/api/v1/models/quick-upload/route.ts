@@ -17,19 +17,13 @@ import { requireRole, isActor } from '@/lib/auth'
 import Anthropic from '@anthropic-ai/sdk'
 import { normalizePhone, normalizeHeight, normalizeWeight, normalizeAge, normalizePrice, normalizeSmoking, normalizeBustType, normalizeTattoo } from '@/lib/normalize-anketa'
 import { auditModelReadiness } from '@/lib/publish-validation'
+import { toSlug } from '@/lib/slug'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
 // ─── Helpers ───
 
-function slugify(name: string) {
-  return name.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
 
 function slugifyServiceName(name: string): string {
   return name
@@ -685,10 +679,15 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Create model
     console.log('[quick-upload] Step 1: Creating model...')
-    let slug = slugify(name)
+    let slug = toSlug(name)
     if (!slug) slug = 'model'
-    const existing = await tx.model.findUnique({ where: { slug } })
-    if (existing) slug = `${slug}-${Date.now()}`
+    let candidate = slug
+    let counter = 2
+    while (await tx.model.findUnique({ where: { slug: candidate } })) {
+      candidate = `${slug}-${counter}`
+      counter++
+    }
+    slug = candidate
 
     const publicCode = `${name.toUpperCase().replace(/[^A-Z0-9]/g, '-').substring(0, 12)}-${randomUUID().substring(0, 8).toUpperCase()}`
 
@@ -1335,7 +1334,7 @@ export async function POST(request: NextRequest) {
         ratesCreated: insertedRates,
         photosUploaded: uploadedPhotos,
       },
-      redirectTo: `/admin/models/${model.id}`,
+      redirectTo: `/admin/models/${model.slug}`,
     })
   } catch (error: any) {
     console.error('[quick-upload] Fatal error:', error)

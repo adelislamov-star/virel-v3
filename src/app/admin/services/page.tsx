@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Star, Pencil, Sparkles, Trash2, Plus, X } from 'lucide-react';
+import { Star, Pencil, Sparkles, Trash2, Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -16,6 +16,7 @@ interface Service {
   isActive: boolean;
   status: string;
   sortOrder: number;
+  defaultExtraPrice: number | null;
   seoTitle: string | null;
   seoDescription: string | null;
   seoKeywords: string | null;
@@ -39,12 +40,6 @@ const categoryStyles: Record<string, string> = {
   wellness: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   fetish: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   bespoke: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  connection: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  oral: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-  group: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  'touch & wellness': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  domination: 'bg-red-500/10 text-red-400 border-red-500/20',
-  other: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
 };
 
 function toSlug(str: string): string {
@@ -133,7 +128,8 @@ export default function ServicesPage() {
     const catA = a.category?.toLowerCase() ?? '';
     const catB = b.category?.toLowerCase() ?? '';
     if (catA !== catB) return catA.localeCompare(catB);
-    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    if (catFilter) return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    return (a.title ?? '').localeCompare(b.title ?? '', 'en', { sensitivity: 'base' });
   });
 
   // Stats from API
@@ -145,6 +141,67 @@ export default function ServicesPage() {
   // Categories for filter dropdown
   const categories = [...new Set(items.map((s) => s.category).filter(Boolean))].sort();
 
+  // Toggle visibility
+  const toggleVisibility = async (service: Service) => {
+    try {
+      const res = await fetch(`/api/v1/services/${service.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic: !service.isPublic }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const newVal = !service.isPublic;
+        setItems((prev) =>
+          prev.map((s) => s.id === service.id ? { ...s, isPublic: newVal } : s)
+        );
+        setStats((prev) => ({
+          ...prev,
+          public: newVal ? prev.public + 1 : prev.public - 1,
+          membersOnly: newVal ? prev.membersOnly - 1 : prev.membersOnly + 1,
+        }));
+      } else {
+        showToast('Failed to update visibility', 'error');
+      }
+    } catch {
+      showToast('Failed to update visibility', 'error');
+    }
+  };
+
+  // Move service up/down within category
+  const moveService = async (service: Service, direction: 'up' | 'down') => {
+    const categoryItems = items
+      .filter(s => s.category === service.category)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    const idx = categoryItems.findIndex(s => s.id === service.id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= categoryItems.length) return;
+    const swapWith = categoryItems[swapIdx];
+    const newOrder = service.sortOrder ?? 0;
+    const swapOrder = swapWith.sortOrder ?? 0;
+    try {
+      await Promise.all([
+        fetch(`/api/v1/services/${service.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: swapOrder }),
+        }),
+        fetch(`/api/v1/services/${swapWith.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: newOrder }),
+        }),
+      ]);
+      setItems(prev => prev.map(s => {
+        if (s.id === service.id) return { ...s, sortOrder: swapOrder };
+        if (s.id === swapWith.id) return { ...s, sortOrder: newOrder };
+        return s;
+      }));
+    } catch {
+      showToast('Failed to reorder', 'error');
+    }
+  };
+
   // Toggle active status
   const toggleActive = async (service: Service) => {
     try {
@@ -155,7 +212,12 @@ export default function ServicesPage() {
       });
       const json = await res.json();
       if (json.success) {
-        setItems((prev) => prev.map((s) => s.id === service.id ? { ...s, isActive: !s.isActive } : s));
+        const newVal = !service.isActive;
+        setItems((prev) => prev.map((s) => s.id === service.id ? { ...s, isActive: newVal } : s));
+        setStats((prev) => ({
+          ...prev,
+          active: newVal ? prev.active + 1 : prev.active - 1,
+        }));
       }
     } catch {
       showToast('Failed to update status', 'error');
@@ -180,6 +242,9 @@ export default function ServicesPage() {
         isPopular: modal.isPopular ?? false,
         isActive: modal.isActive ?? true,
         sortOrder: modal.sortOrder ?? 0,
+        defaultExtraPrice: modal.defaultExtraPrice !== null && modal.defaultExtraPrice !== undefined
+          ? parseFloat(String(modal.defaultExtraPrice))
+          : null,
         seoTitle: modal.seoTitle || null,
         seoDescription: modal.seoDescription || null,
         seoKeywords: modal.seoKeywords || null,
@@ -220,6 +285,13 @@ export default function ServicesPage() {
       } else if (json.success) {
         showToast('Deleted successfully', 'success');
         setItems((prev) => prev.filter((s) => s.id !== service.id));
+        setStats((prev) => ({
+          ...prev,
+          total: prev.total - 1,
+          public: service.isPublic ? prev.public - 1 : prev.public,
+          membersOnly: !service.isPublic ? prev.membersOnly - 1 : prev.membersOnly,
+          active: service.isActive ? prev.active - 1 : prev.active,
+        }));
       } else {
         showToast(json.error?.message || 'Delete failed', 'error');
       }
@@ -295,6 +367,7 @@ export default function ServicesPage() {
       isPopular: false,
       isActive: true,
       sortOrder: 0,
+      defaultExtraPrice: null,
       seoTitle: null,
       seoDescription: null,
       seoKeywords: null,
@@ -404,7 +477,7 @@ export default function ServicesPage() {
                 <th className="px-4 py-3 font-medium">Visibility</th>
                 <th className="px-4 py-3 font-medium w-16">Models</th>
                 <th className="px-4 py-3 font-medium w-12">Popular</th>
-                <th className="px-4 py-3 font-medium w-12">Sort</th>
+                <th className="px-4 py-3 font-medium w-20">Extra</th>
                 <th className="px-4 py-3 font-medium w-16">Active</th>
                 <th className="px-4 py-3 font-medium w-28">Actions</th>
               </tr>
@@ -427,15 +500,47 @@ export default function ServicesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs border ${item.isPublic ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>
+                    <button
+                      onClick={() => toggleVisibility(item)}
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs border transition-opacity hover:opacity-70 cursor-pointer ${item.isPublic ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}
+                      title="Click to toggle visibility"
+                    >
                       {item.isPublic ? 'Public' : 'Members Only'}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-zinc-400">{item._count?.models ?? 0}</td>
                   <td className="px-4 py-3 text-center">
                     {item.isPopular && <Star size={14} className="text-amber-400 fill-amber-400 inline" />}
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">{item.sortOrder}</td>
+                  <td className="px-4 py-3">
+                    {catFilter ? (
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          onClick={() => moveService(item, 'up')}
+                          className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
+                          title="Move up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          onClick={() => moveService(item, 'down')}
+                          className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors"
+                          title="Move down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {item.defaultExtraPrice != null ? (
+                      <span className="text-xs text-amber-400 font-medium">+£{item.defaultExtraPrice}</span>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => toggleActive(item)}
@@ -595,6 +700,34 @@ export default function ServicesPage() {
                       onChange={(e) => updateModal('sortOrder', parseInt(e.target.value) || 0)}
                       className="w-32 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
                     />
+                  </div>
+                  {/* Extra Cost */}
+                  <div className="border border-zinc-700/60 rounded-xl p-4 bg-zinc-800/30 space-y-3">
+                    <label className="flex items-center gap-3 text-sm text-zinc-300 cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={() => updateModal('defaultExtraPrice', modal.defaultExtraPrice != null ? null : 0)}
+                        className={`relative w-9 h-5 rounded-full transition-colors ${modal.defaultExtraPrice != null ? 'bg-emerald-500' : 'bg-zinc-600'}`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${modal.defaultExtraPrice != null ? 'left-[18px]' : 'left-0.5'}`} />
+                      </button>
+                      <span className="font-medium">Extra Cost</span>
+                      <span className="text-zinc-500 text-xs">(additional charge for this service)</span>
+                    </label>
+                    {modal.defaultExtraPrice != null && (
+                      <div className="flex items-center gap-2 pl-11">
+                        <span className="text-zinc-400 text-sm">£</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="10"
+                          value={modal.defaultExtraPrice ?? 0}
+                          onChange={(e) => updateModal('defaultExtraPrice', parseFloat(e.target.value) || 0)}
+                          className="w-36 bg-zinc-800 border border-amber-500/40 rounded-lg px-3 py-2 text-sm text-amber-400 font-medium focus:outline-none focus:border-amber-500"
+                        />
+                        <span className="text-zinc-500 text-xs">default extra per booking</span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

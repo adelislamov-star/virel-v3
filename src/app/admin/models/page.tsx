@@ -43,12 +43,19 @@ export default function ModelsPage() {
   const [sortBy, setSortBy] = useState<SortField>('name');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 20;
 
-  useEffect(() => { loadModels(); }, []);
+  useEffect(() => { loadModels(); }, [statusFilter, page]);
 
   async function loadModels() {
     try {
-      const res = await fetch('/api/v1/models?all=true', { credentials: 'include' });
+      const status = mapFilterToStatus(statusFilter);
+      const params = new URLSearchParams({ all: 'true', page: String(page), limit: String(LIMIT) });
+      if (status) params.set('status', status);
+      const res = await fetch(`/api/v1/models?${params}`, { credentials: 'include' });
       if (!res.ok) {
         console.error('Models API returned', res.status);
         setLoadError(res.status === 401 ? 'Not authenticated. Please log in.' : `API error ${res.status}`);
@@ -62,6 +69,8 @@ export default function ModelsPage() {
         return;
       }
       setModels(data.data?.models || []);
+      setTotal(data.data?.pagination?.total || 0);
+      setTotalPages(data.data?.pagination?.totalPages || 1);
       setLoading(false);
     } catch (error: any) {
       console.error('Failed to load models:', error);
@@ -71,16 +80,7 @@ export default function ModelsPage() {
   }
 
   const filteredModels = useMemo(() => {
-    let result = [...models];
-
-    // Filter
-    const status = mapFilterToStatus(statusFilter);
-    if (status) {
-      result = result.filter(m => m.status === status);
-    }
-
-    // Sort
-    result.sort((a, b) => {
+    return [...models].sort((a, b) => {
       switch (sortBy) {
         case 'name': return (a.name || '').localeCompare(b.name || '');
         case 'rateAsc': return (a.ratingInternal ?? 0) - (b.ratingInternal ?? 0);
@@ -90,9 +90,7 @@ export default function ModelsPage() {
         default: return 0;
       }
     });
-
-    return result;
-  }, [models, statusFilter, sortBy]);
+  }, [models, sortBy]);
 
   function toggleSelect(id: string) {
     setSelected(prev => {
@@ -165,7 +163,7 @@ export default function ModelsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Models</h1>
-          <p className="text-sm text-zinc-500 mt-1">{filteredModels.length} of {models.length} models</p>
+          <p className="text-sm text-zinc-500 mt-1">{total} models</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -188,7 +186,7 @@ export default function ModelsPage() {
           {STATUS_FILTERS.map(filter => (
             <button
               key={filter}
-              onClick={() => setStatusFilter(filter)}
+              onClick={() => { setStatusFilter(filter); setPage(1); }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 statusFilter === filter
                   ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
@@ -322,7 +320,7 @@ export default function ModelsPage() {
               </div>
 
               <button
-                onClick={() => window.location.href = `/admin/models/${model.id}`}
+                onClick={() => window.location.href = `/admin/models/${model.slug}`}
                 className="w-full px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 text-sm font-medium transition-colors duration-150"
               >
                 Edit Profile
@@ -338,6 +336,28 @@ export default function ModelsPage() {
         )}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm disabled:opacity-40 hover:bg-zinc-700 transition-colors"
+          >
+            ← Prev
+          </button>
+          <span className="text-sm text-zinc-400">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm disabled:opacity-40 hover:bg-zinc-700 transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

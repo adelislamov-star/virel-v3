@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useRevalidate } from '@/hooks/useRevalidate';
 
 interface MediaItem {
   id: string;
@@ -30,6 +31,7 @@ export default function MediaTab({ model }: Props) {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { revalidate } = useRevalidate();
 
   const modelId = model.id;
 
@@ -55,6 +57,16 @@ export default function MediaTab({ model }: Props) {
   // UPLOAD
   // -------------------------------------------
 
+  function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new window.Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.naturalWidth, height: img.naturalHeight }); };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
   async function uploadFiles(files: FileList | File[]) {
     const fileArray = Array.from(files);
     if (!fileArray.length) return;
@@ -64,6 +76,16 @@ export default function MediaTab({ model }: Props) {
     const errors: string[] = [];
 
     for (const file of fileArray) {
+      // Block landscape images
+      if (file.type.startsWith('image/')) {
+        const { width, height } = await getImageDimensions(file);
+        if (width > height) {
+          errors.push(`${file.name}: Landscape orientation not allowed`);
+          setUploadProgress(prev => [...prev, `❌ ${file.name}: Landscape photo — gallery requires portrait (vertical) images`]);
+          continue;
+        }
+      }
+
       setUploadProgress(prev => [...prev, `Uploading ${file.name}...`]);
 
       const formData = new FormData();
@@ -82,6 +104,9 @@ export default function MediaTab({ model }: Props) {
           setUploadProgress(prev =>
             prev.map(p => p.includes(file.name) ? `✅ ${file.name}` : p)
           );
+          if (model?.slug) {
+            await revalidate(`/companions/${model.slug}`);
+          }
         } else {
           errors.push(`${file.name}: ${data.error?.message}`);
           setUploadProgress(prev =>
@@ -146,13 +171,16 @@ export default function MediaTab({ model }: Props) {
   async function saveOrder() {
     setSaving(true);
     try {
-      await fetch(`/api/v1/models/${modelId}/media`, {
+      const res = await fetch(`/api/v1/models/${modelId}/media`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order: media.map((m, idx) => ({ id: m.id, sortOrder: idx })),
         }),
       });
+      if (res.ok && model?.slug) {
+        await revalidate(`/companions/${model.slug}`);
+      }
     } finally {
       setSaving(false);
     }
@@ -164,26 +192,35 @@ export default function MediaTab({ model }: Props) {
 
   async function setPrimary(mediaId: string) {
     setMedia(prev => prev.map(m => ({ ...m, isPrimary: m.id === mediaId })));
-    await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
+    const res = await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPrimary: true }),
     });
+    if (res.ok && model?.slug) {
+      await revalidate(`/companions/${model.slug}`);
+    }
   }
 
   async function togglePublic(mediaId: string, current: boolean) {
     setMedia(prev => prev.map(m => m.id === mediaId ? { ...m, isPublic: !current } : m));
-    await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
+    const res = await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublic: !current }),
     });
+    if (res.ok && model?.slug) {
+      await revalidate(`/companions/${model.slug}`);
+    }
   }
 
   async function deleteItem(mediaId: string) {
     if (!confirm('Delete this file?')) return;
     setMedia(prev => prev.filter(m => m.id !== mediaId));
-    await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/v1/models/${modelId}/media/${mediaId}`, { method: 'DELETE' });
+    if (res.ok && model?.slug) {
+      await revalidate(`/companions/${model.slug}`);
+    }
   }
 
   // -------------------------------------------

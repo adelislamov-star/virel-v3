@@ -1,11 +1,15 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { useBookingModal } from '@/components/public/BookingModalProvider'
 
 interface HeroSectionProps {
   heroPhotoUrl: string | null
 }
 
 export function HeroSection({ heroPhotoUrl }: HeroSectionProps) {
+  const { openModal } = useBookingModal()
   return (
     <section className="hero">
       <div className="hero-img">
@@ -35,7 +39,7 @@ export function HeroSection({ heroPhotoUrl }: HeroSectionProps) {
         </p>
         <div className="hero-btns">
           <Link href="/companions" className="btn-gold">Meet Our Companions</Link>
-          <a href="https://wa.me/447000000000" className="btn-outline">Make an Enquiry</a>
+          <button className="btn-outline" onClick={openModal}>Make an Enquiry</button>
         </div>
         <p className="hero-seo-sub">
           London's premier escort agency — discreet companion introductions across Mayfair, Knightsbridge &amp; Chelsea.

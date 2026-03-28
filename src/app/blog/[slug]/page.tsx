@@ -14,14 +14,6 @@ function computeReadTime(content: string): string {
   return `${Math.max(1, Math.ceil(words / 200))} min read`
 }
 
-export async function generateStaticParams() {
-  const posts = await prisma.blogPost.findMany({
-    where: { isPublished: true },
-    select: { slug: true },
-  })
-  return posts.map(p => ({ slug: p.slug }))
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const post = await prisma.blogPost.findUnique({

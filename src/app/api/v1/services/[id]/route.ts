@@ -43,8 +43,18 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
-    const service = await prisma.service.update({ where: { id }, data: body });
+    const raw = await request.json();
+    const allowedFields = [
+      'title', 'name', 'publicName', 'slug', 'category', 'description',
+      'isPublic', 'isPopular', 'isActive', 'status', 'sortOrder',
+      'defaultExtraPrice', 'seoTitle', 'seoDescription', 'seoKeywords',
+      'introText', 'fullDescription',
+    ];
+    const data: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in raw) data[key] = raw[key];
+    }
+    const service = await prisma.service.update({ where: { id }, data });
 
     logAudit({
       actorUserId: auth.userId,

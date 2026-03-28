@@ -1,0 +1,252 @@
+VIREL QUICK UPLOAD — ПОЛНЫЙ ИНЖЕНЕРНЫЙ АУДИТ
+
+A. EXECUTIVE SUMMARY
+Состояние системы: Работоспособна на счастливом пути. Ломается на реальных анкетах, реальных ошибках и одновременной работе.
+Можно ли использовать на реальных анкетах прямо сейчас: Да, но с рисками. Основная угроза — не потеря функциональности, а потеря данных и незаметные частичные сохранения, которые оператор не видит.
+
+5 главных проблем:
+
+Неатомарность всего backend pipeline. Профиль создаётся в БД до загрузки фото. Если загрузка падает — профиль существует без медиа, без сервисов, без ставок, но оператор не знает об этом и видит "Done".
+Draft в localStorage не содержит фото. При восстановлении черновика оператор видит заполненные поля, но без фотографий — может нажать Create и создать профиль с 0 фото, думая что всё на месте.
+Дубль-чек не транзакционный (race condition). Два оператора одновременно могут пройти проверку дублей и создать два одинаковых профиля.
+parse-anketa возвращает поля в одном формате, quick-upload route ожидает другой. Функция convertClientFields на бэкенде пересчитывает клиентские поля в серверные, но маппинги частично не совпадают — данные молча не записываются.
+dataCompletenessScore не пересчитывается после Quick Upload. Поле score в publish-validation.ts считается динамически при вызове auditModelReadiness, но Model в базе не имеет кэшированного score — и Readiness check на странице профиля зависит от корректного вызова этого endpoint.
+
+Главный риск для бизнеса: Профили с частично заполненными данными (нет ставок, нет локации, нет сервисов) создаются в статусе draft, оператор получает зелёный "Done", думает что всё хорошо, и переходит к следующей анкете. Профиль остаётся операционно мёртвым.
+
+B. ПОЛНЫЙ СПИСОК ПРОБЛЕМ
+
+[P0] BUG-01 — Неатомарность: профиль создаётся до загрузки фото
+Проблема: Step 1 (создание модели через prisma.model.create) — Step 2 (сервисы) — Step 3 (ставки) — Step 4 (адрес) — Step 5 (преференции) — Step 5.5 (локация) — Step 6 (загрузка фото) — Step 7 (learning) — Step 8 (audit log). Всё это отдельные независимые операции без транзакции.
+Где возникает: src/app/api/v1/models/quick-upload/route.ts, Lines 648–1130.
+Как воспроизвести: Загрузить 8 фото + анкету, нажать Create. R2 упадёт на 4-м фото (timeout, quota, network error). Три фото загружены, пять — нет. Оператор видит в UI ошибку (если повезёт) или 502 timeout. В базе — живой профиль, 3 фото, остальные данные частично записаны.
+Почему это опасно: Профиль в draft существует. Оператор получает 502 и нажимает Retry — создаётся второй профиль через дубль-чек (там проверка по имени и телефону, они уже могут быть в базе — дубль-чек сработает, но оператор нажмёт Create Anyway). Либо молча создаётся дубль, если оператор обновил страницу.
+Техническая причина: Отсутствие prisma.$transaction. Каждый step — отдельный await.
+Что исправить: Завернуть создание профиля + ModelStats + ModelService + ModelRate в одну prisma.$transaction. Загрузку фото нельзя включить в Prisma-транзакцию (external I/O), но нужно сделать компенсирующую логику: если все фото провалились — удалить профиль.
+Сейчас частично реализовано: Строка ~1084-1090: if (imageBuffers.length > 0 && uploadedPhotos === 0) { prisma.model.delete(...) return 502 }. Это rollback только при полном падении всех фото. Частичная загрузка (3 из 8) не откатывается.
+
+[P0] BUG-02 — Draft restoration без фото
+Проблема: localStorage сохраняет { name, parsedForm } при каждом изменении. Фото (photos, sortedPhotos) в localStorage НЕ сохраняются. При восстановлении черновика оператор видит preview с данными анкеты и именем, но sortedPhotos.length === 0. Кнопка активна (имя есть). Оператор нажимает Create — создаётся профиль без фото.
+Где возникает: page.tsx, строки saveEffect, clearDraft, handleCreate — buildUploadFormData использует sortedPhotos, которые пустые.
+Как воспроизвести: Закрыть вкладку после parse-anketa (до нажатия Create). Открыть снова. Нажать Create.
+Почему опасно: Профиль создаётся с 0 фото, но оператор думает что фото были — они были видны до закрытия вкладки.
+Техническая причина: File API — файлы нельзя сериализовать в localStorage. Но нет ни предупреждения, ни блокировки создания при sortedPhotos.length === 0.
+Что исправить: При восстановлении черновика, если parsedForm есть, но photos.length === 0 — показывать предупреждение "⚠️ Photos were not restored — please re-upload files" и блокировать Create (или добавить в canCreate: && (sortedPhotos.length > 0 || !draftRestored)).
+
+[P0] BUG-03 — Race condition дубль-чека
+Проблема: Дубль-чек (строки 618–643 в route.ts): запрос nameMatch + phoneMatch → если нет — создаём профиль. Если два оператора одновременно отправляют одну и ту же модель, оба пройдут проверку (она читает, не блокирует), и оба создадут профиль.
+Где возникает: Строки 618–665 route.ts.
+Как воспроизвести: Два оператора одновременно открывают Quick Upload для одной модели (получили один WhatsApp), оба нажимают Create в течение 200ms.
+Почему опасно: Два дублирующих профиля в базе. Один может быть опубликован, второй будет тихо существовать в черновиках.
+Техническая причина: Нет SELECT FOR UPDATE или уникального индекса по slug + phone на уровне БД. Проверка дубля — optimistic read без lock.
+Что исправить: Добавить unique constraint в schema на phone (или slug), поймать Prisma P2002 как дубликат. Либо использовать prisma.$transaction с findFirst внутри транзакции.
+
+[P1] BUG-04 — parse-anketa ↔ route.ts: несовпадение структуры данных
+Проблема: parse-anketa возвращает поля в своём формате. quick-upload route.ts получает эти поля через parsedFields FormData и прогоняет через convertClientFields(). Маппинг частично ломается:
+
+parse-anketa возвращает smokingStatus: "yes"/"no" (строка из AI prompt), convertClientFields проверяет raw.smokingStatus === 'yes' и маппит в true/false, потом normalizeSmoking(true/false) — это работает. Но если parse-anketa вернёт "Regular" или "Non-Smoker" (что может случиться при нестандартном AI-ответе), normalizeSmoking вернёт null.
+parse-anketa возвращает breastType: "natural"/"silicone". convertClientFields берёт raw.breastType напрямую. normalizeBustType ждёт lowercase — это работает, но если AI вернёт "Natural" (с заглавной), функция не найдёт в списке ['natural', 'nat', 'real'] и вернёт capitalize-fallback "Natural" — что нормально.
+Реальная проблема: rates. parse-anketa возвращает rates: { "30min": { incall: 150, outcall: null }, ... }. convertClientFields в route.ts проверяет if (raw.rates && typeof raw.rates === 'object') — это работает. Но parse-anketa (в /api/admin/parse-anketa/route.ts) возвращает другую структуру ставок: rate30min, rate45min, rate1hIn, rate1hOut как плоские поля. Бэкенд route.ts в mapRatesToRows() ожидает nested object {30min: {incall, outcall}} — это структура клиентского парсинга. Когда приходит clientParsed из parse-anketa endpoint (через parsedFields FormData), convertClientFields вызывается — и если raw.rates не массив и не нужный объект, функция раньнего выхода (return raw as AIParsedProfile) оставляет плоские поля нетронутыми. mapRatesToRows не знает что делать с rate30min: "150" и пропускает их.
+
+Где возникает: route.ts строки 388–499 (convertClientFields), строки 402–440 (mapRatesToRows).
+Как воспроизвести: Загрузить анкету через /api/admin/parse-anketa (правый путь). Нажать Create. Проверить ModelRate в БД — ставки могут быть пустыми.
+Почему опасно: Профиль создаётся, оператор видит зелёный Done, но ставок нет. Readiness check покажет "Rates: ❌". Оператор должен вручную заново вводить все ставки.
+Техническая причина: Два разных формата ставок: плоский (из /api/admin/parse-anketa) и nested (из regex-парсера внутри route.ts). convertClientFields перехватывает только если raw.rates уже является массивом (путь AI из route.ts). Когда приходит parsedFields с плоскими ключами от клиента, они не попадают в mapRatesToRows.
+Что исправить: В convertClientFields добавить разворачивание плоских ставок (rate30min, rate1hIn и т.д.) в nested-формат. Или унифицировать формат ответа parse-anketa endpoint под тот же nested-формат что ожидает route.ts.
+
+[P1] BUG-05 — Лимит 10 фото на бэкенде, но UI не сообщает об этом
+Проблема: В route.ts строка 532-534: if (imageFiles.length > 10) return 400 "Too many images". Во frontend page.tsx лимита нет — можно закинуть 25 фото. sort-photos обрабатывает только первые 12 (срезает на клиенте), но sortedPhotos может содержать 12 AI-отсортированных + оставшиеся с role: 'other'. При Create на бэкенд уходят все. Если >10 — бэкенд вернёт 400, UI покажет ❌ Too many images в error state.
+Где возникает: Frontend не валидирует до отправки. Backend лимит — строка 532.
+Как воспроизвести: Загрузить 15 фото. Нажать Create.
+Почему опасно: Оператор прошёл весь preview, дождался sort, нажал Create — и получил ошибку. Вся работа потеряна (stage = 'error', придётся начинать заново).
+Что исправить: В frontend добавить предупреждение при photos.length > 10: "⚠️ Only first 10 photos will be uploaded" с возможностью выбрать какие.
+
+[P1] BUG-06 — Thumbnails записываются в R2, но НЕ в ModelMedia
+Проблема: В r2.ts функция generateThumbnail создаёт _thumb.webp в R2. В route.ts (строка 1057): await generateThumbnail(buffer, key) — вызывается, но результат нигде не сохраняется в ModelMedia. Thumbnail существует в R2, но не привязан к профилю в БД.
+Где возникает: route.ts строки 1055–1070, r2.ts generateThumbnail.
+Как воспроизвести: Создать профиль с фото. Проверить ModelMedia — thumbKey не записан. Проверить R2 — thumbnail файлы есть.
+Почему опасно: Orphan-файлы в R2 (storage cost). Если публичный профиль использует thumbnail URL — он не найдёт путь через ModelMedia.
+Что исправить: Сохранить thumbnail URL в ModelMedia.type = 'thumbnail' или добавить поле thumbUrl к записи photo. Либо убрать вызов generateThumbnail если он не используется.
+
+[P1] BUG-07 — sort-photos: lowQuality flag не передаётся в Frontend
+Проблема: /api/admin/sort-photos возвращает { order: [{index, role, quality_score?}] }. Frontend в doAiSort маппит в SortedPhoto, где lowQuality поля нет — оно не читается из ответа. Preview предупреждение "Фото с низким качеством" (lowQualityCount) считает sortedPhotos.filter(p => p.lowQuality) — но p.lowQuality всегда undefined, count = 0. Предупреждение никогда не показывается.
+Где возникает: page.tsx строки doAiSort (маппинг SortedPhoto) и warnings (lowQualityCount).
+Как воспроизвести: Загрузить 3 размытых скриншота. Предупреждение о low quality не появится.
+Почему опасно: Оператор не узнаёт о плохих фото до публикации.
+Что исправить: В doAiSort: lowQuality: item.quality_score != null && item.quality_score < 0.5 (или что AI возвращает). Убедиться что sort-photos endpoint возвращает quality_score в order.
+Дополнительная проблема в sort-photos endpoint: Текущий sort-photos prompt не просит возвращать quality_score — он просит [{index, role}]. Так что флаг не придёт в принципе. Нужно добавить quality_score в prompt и в возвращаемый JSON.
+
+[P1] BUG-08 — Uploading stage: прогресс лог ломает UX
+Проблема: В handleCreate лог: log('📝 Creating profile...'), затем log('📤 Uploading N photos...') — это происходит синхронно, ДО отправки запроса. Реальное время ожидания ответа от сервера (30-50 секунд) — прогресс-бар стоит на 40% (2/5 шагов). Пользователь не видит реального прогресса.
+Где возникает: page.tsx, handleCreate.
+Почему опасно: Оператор думает что зависло, закрывает вкладку — профиль создаётся в фоне без его ведома.
+Что исправить: Убрать ложный прогресс "uploading photos" до получения ответа. Добавить индикатор "Waiting for server..." с анимацией. Или использовать streaming response с Server-Sent Events.
+
+[P1] BUG-09 — Обновление страницы во время uploading
+Проблема: Если оператор обновляет страницу в stage === 'uploading' — запрос на сервер продолжает выполняться (Vercel function живёт). Профиль создаётся. Оператор видит начальный экран и не знает что профиль уже создан. Draft в localStorage восстановится с данными анкеты (без фото). Оператор нажимает Create снова — дубль-чек должен сработать, но если slug уже в БД — он будет model-2 (автосуффикс в строке 654: if (existing) slug = \${slug}-2``). Дубль-чек по имени сработает, покажет предупреждение — хорошо. Но если оператор нажмёт "Create Anyway" — дубль готов.
+Где возникает: Слой frontend state management.
+Что исправить: После отправки запроса, сохранять в localStorage { ...draft, submitting: true }. При восстановлении — проверять флаг submitting и показывать: "⚠️ A previous upload may still be in progress. Check Models list before creating again."
+
+[P2] BUG-10 — parse-anketa: PDF может вернуть пустую строку
+Проблема: extractText для PDF: require('pdf-parse') в try/catch, при ошибке возвращает ''. Если PDF зашифрован или повреждён — text = ''. Далее AI-вызов с пустым текстом: AI вернёт либо пустой JSON, либо JSON с null полями. Frontend покажет "AI read it" без предупреждения что анкета пустая.
+Что исправить: Если documentText.trim() === '' после попытки парсинга — вернуть { success: false, error: 'Could not extract text from document' } или предупреждение, а не тихо продолжать.
+
+[P2] BUG-11 — Location matching: nearestStation по substring без границ
+Проблема: В route.ts (Step 5.5): stationName.toLowerCase() → prisma.transportHub.findFirst({ where: { OR: [{ name: { equals: stationNameLower } }, { slug: stationNameLower }] } }). Используется equals — точное совпадение. Если анкета содержит "Baker St" (а в БД "Baker Street") — не матчится. Если "King's Cross St. Pancras" (анкета) vs "Kings Cross" (БД) — не матчится.
+Почему опасно: primaryLocationId не записывается. Readiness check показывает "Location: ❌". Оператор должен вручную ставить локацию для большинства анкет.
+Что исправить: Fuzzy matching: { name: { contains: stationName, mode: 'insensitive' } }. Или нормализация: убирать "St.", "St", апострофы перед сравнением.
+
+[P2] BUG-12 — dataCompletenessScore не пересчитывается
+Проблема: Описание системы говорит "пересчёт dataCompletenessScore" — но в коде publish-validation.ts функция auditModelReadiness только вычисляет score и возвращает, не обновляет ничего в БД. В schema.prisma у Model нет поля dataCompletenessScore. Score живёт только в runtime при вызове API. Quick Upload route не вызывает эту функцию после создания профиля. Значит после создания нет ни триггера, ни записи score.
+Где возникает: Это не баг одного файла — это несоответствие документации и кода.
+Что исправить: Либо добавить вызов auditModelReadiness(model.id) в конце Quick Upload и логировать результат в QuickUploadLog. Либо убрать упоминание "пересчёт score" из описания.
+
+[P2] BUG-13 — Анкета без документа: name Blob как fallback
+Проблема: В buildUploadFormData на фронтенде (строки else { const nameBlob = new Blob(...) }): если нет anketaFileRef — создаётся синтетический profile.txt с Name: X. Этот файл уходит в docFiles на бэкенде. documentText = "Name: X". AI-парсинг запускается с этим одностроковым текстом. AI вернёт JSON только с name и пустыми полями. При этом если у оператора был parsedFields в FormData (из черновика) — они будут, и всё нормально. Если нет — AI потратит 2000 токенов чтобы распознать одно имя.
+Что исправить: Если documentText.length < 50 — пропускать AI-вызов, использовать только clientParsed или пустой объект.
+
+[P2] BUG-14 — Watermark применяется дважды для thumbnails
+Проблема: В r2.ts:
+
+uploadMedia → применяет watermark → загружает основное фото.
+generateThumbnail → снова берёт buffer (оригинальный) и снова применяет watermark.
+
+В route.ts (строка 1056): const result = await uploadMedia(buffer, key, mediaType) — принимает buffer (оригинальный). Thumbnail тоже получает buffer (оригинальный). Это правильно — watermark не двойной для thumbnail. Но для основного фото: uploadMedia внутри создаёт watermarkedBuffer, затем делает sharp(watermarkedBuffer).resize().webp() — то есть watermark + resize + convert. Порядок правильный. Проблемы нет в этом конкретном месте, но thumbnail watermark опять применяется к оригиналу — потенциально разная яркость watermark на разных размерах из-за dynamic font size.
+Оценка: P2 / косметика. Реального бага нет, но thumbnail watermark может выглядеть непропорционально.
+
+[P2] BUG-15 — Duplicate: "Open Existing" — <a href> вместо <Link>
+Проблема: В stage === 'duplicate' кнопка "Open Existing" реализована как <a href={/admin/models/${id}}>. Это полная навигация (hard reload), не Next.js Link. При нажатии вся страница перезагружается. Мелочь, но не соответствует остальному UI.
+
+[P2] BUG-16 — Зависимость canCreate не включает aiParsing
+Проблема: canCreate = manualName.trim().length > 0 && !aiSorting. Кнопка активна пока идёт aiParsing (парсинг анкеты). Оператор может нажать Create до завершения AI-парсинга — создастся профиль с parsedForm = {}. aiParsing не блокирует Create.
+Где возникает: page.tsx, строка const canCreate.
+Что исправить: const canCreate = manualName.trim().length > 0 && !aiSorting && !aiParsing.
+
+C. РАЗБОР ПО ЭТАПАМ
+
+Upload (Экран 1)
+
+Работает: drag & drop, click, классификация файлов по типу, переход в preview.
+Ломается: нет лимита UI для фото (>10 → бэкенд вернёт 400). Нет предупреждения при слишком больших файлах.
+Чего не хватает: валидация размера файла на клиенте (>20MB — проблема для Vercel).
+Риски: Vercel имеет лимит body ~4.5MB для serverless. Для большого числа фото это потенциальный 413 без внятного сообщения.
+
+
+AI Processing (Экран 2 — параллельные вызовы)
+
+Работает: параллельный запуск parse-anketa и sort-photos, отображение спиннера, обработка ошибок с fallback.
+Ломается: sort-photos не возвращает lowQuality flag (BUG-07). PDF может дать пустой текст без предупреждения (BUG-10).
+Чего не хватает: таймаут на AI-вызовы на клиенте. Если Anthropic завис — spinner крутится вечно.
+Риски: Vercel maxDuration = 120 (строка 21 route.ts). parse-anketa вызывается из клиента без timeout. Если клиент ждёт >2 минут — браузер может оборвать соединение.
+
+
+Preview (Экран 3)
+
+Работает: warnings для no-contact, no-location, no-rates. Accepted fields accordion.
+Ломается: lowQuality предупреждение всегда = 0 (BUG-07). canCreate не учитывает aiParsing (BUG-16).
+Чего не хватает: показ preview самих полей (что именно распознано — age, height и т.д.) без раскрытия accordion. Оператор может не знать что раскрыть.
+Риски: Оператор видит "✅ Accepted by AI (12 fields)" — но среди них нет ставок (из-за BUG-04). Зелёный статус вводит в заблуждение.
+
+
+Duplicate Check
+
+Работает: проверка по имени и телефону, 409 + экран с кнопками.
+Ломается: race condition (BUG-03). Проверка только по name: { contains } — мягкая проверка может давать ложные срабатывания (другая "Sofia" — не дубликат).
+Риски: parsedPhone берётся из aiParsed?.phone || aiParsed?.phone2 — если оба null, проверка по телефону не проводится. Два одинаковых профиля с одним телефоном могут быть созданы если телефон не распознан.
+
+
+Create Profile (Step 1 в route)
+
+Работает: создание модели, slug, publicCode, stats nested create.
+Ломается: нет транзакции (BUG-01). slug — autosuffix -2 не уникален на уровне БД (только попытка increment), race condition возможен на уровне slug.
+Чего не хватает: Prisma unique constraint на slug — только @@index([slug]). Нужен @unique.
+
+
+Media Upload (Step 6)
+
+Работает: watermark, webp-конвертация, R2 upload, ModelMedia create.
+Ломается: thumbnail записывается в R2 но не в БД (BUG-06). При частичной неудаче (3/8 фото) — нет rollback, только при полном провале (BUG-01).
+Риски: Vercel timeout 120s. При 10 фото × ~5s watermark + upload = 50s, плюс AI-вызовы = может не уложиться.
+
+
+Location Matching (Step 5.5)
+
+Работает: базовая логика поиска TransportHub → District → Location.
+Ломается: exact match по имени станции (BUG-11). Если station не найден → District fallback → если District не найден → ничего не записывается, модель создаётся без primaryLocationId.
+Чего не хватает: логирование в notesInternal при неудаче уже есть (строки 964-971) — хорошо.
+
+
+Readiness Check
+
+Работает: функция auditModelReadiness проверяет 6 критериев корректно.
+Ломается: score не кэшируется в БД (BUG-12). @ts-nocheck в publish-validation.ts — TypeScript выключен, потенциальные ошибки типов незаметны.
+Риски: measurementsCount и ethnicityCount ссылаются на (model as any).measurements и (model as any).ethnicity — эти поля в schema отсутствуют. Они всегда undefined, count = 0. Это не критично, но засоряет логику.
+
+
+Done / Redirect
+
+Работает: localStorage очищается, показывается Done, ссылка на профиль.
+Ломается: "Add Another" сбрасывает state но draftRestored остаётся false — это нормально. Но photos и sortedPhotos очищаются через inline setState вместо переиспользования clearDraft — дублирование логики.
+
+
+D. РАЗБОР ПО СЛОЯМ
+
+Frontend
+Сильные стороны: хорошая структура state machine (stage-based), draft persistence — идея правильная, параллельные AI-вызовы.
+Проблемы: State machine неполная — нет aiProcessing как отдельного stage (он смешан с preview). canCreate неполный. Нет client-side validation по размеру/количеству файлов. Нет timeout на AI-вызовы. Нет защиты от двойного нажатия Create (кнопка не отключается мгновенно).
+
+Backend
+Сильные стороны: 8 явных шагов с console.log, learning system (AIParseExample), audit log, rollback при полном падении фото.
+Проблемы: Нет транзакций. Нет idempotency key. 1210 строк в одном файле — сложно поддерживать. require('pdf-parse') внутри функции вместо import — потенциальные проблемы с cold start. Все ошибки в Steps 2-7 логируются но не останавливают process — profile может существовать без сервисов, без ставок, без локации.
+
+AI / Parsing
+Сильные стороны: Few-shot learning из реальных примеров в БД. Двойной prompt (parse-anketa endpoint + route.ts internal). Regex fallback.
+Проблемы: Два разных AI-парсинга с разными output-форматами. parse-anketa endpoint — плоские поля. Route.ts internal — nested rates. Нет согласования. Bio генерируется как отдельный AI-вызов внутри parse-anketa — это 3 AI-вызова суммарно (parse, bio, sort). При деградации Anthropic — 3 точки отказа.
+
+Database
+Сильные стороны: Подробная schema, QuickUploadLog с aiParsedFields/operatorEdits/finalFields.
+Проблемы: Нет @unique на slug (только index). Нет @unique на phone (двойные слоты). ModelMedia не хранит thumbnail URL. @ts-nocheck в publish-validation. Slug суффикс -2 хардкодирован — при 3 дублях будет slug collision.
+
+Location Mapping
+Проблемы: Exact match не работает для реальных анкет. Нет нормализации станционных названий (апострофы, сокращения, "St." vs "Street"). Нет fallback по postcode → district.
+
+Media Pipeline
+Сильные стороны: watermark, WebP конвертация, resize до 2000px, thumbnail generation.
+Проблемы: Thumbnail URL не сохраняется в БД (BUG-06). Watermark SVG использует dominant-baseline="middle" но y уже смещён к низу — watermark может обрезаться. При width < 400px (очень маленькое фото) dynamicFontSize = 28, letterSpacing 8px — нормально.
+
+Readiness Logic
+Проблемы: @ts-nocheck, несуществующие поля measurements и ethnicity, score не персистится.
+
+Deduplication
+Проблемы: Race condition (BUG-03). Только по имени и телефону — нет проверки по email или telegram.
+
+Audit Trail
+Сильные стороны: QuickUploadLog создаётся с aiParsedFields, operatorEdits, finalFields. createdBy: auth.email.
+Проблемы: QuickUploadLog создаётся в Step 8 — последний шаг, внутри try/catch. Если Step 1-7 упали частично — лог всё равно создаётся (это хорошо). Но finalFields записывает model.phone, model.bio и т.д. — это уже то что в БД, даже если реально там null из-за частичного сохранения. Лог даёт ложное ощущение что всё записалось.
+
+E. СЦЕНАРИИ С САМЫМ ВЫСОКИМ РИСКОМ
+
+Сценарий 1: Создание мёртвых профилей
+Анкета без телефона + без локации + AI не нашёл ставок. Оператор видит 3 предупреждения в Preview, нажимает Create (кнопка не заблокирована — это по дизайну). Профиль создан: bio есть, stats есть, 6 фото, но rates = [], services = 0, primaryLocationId = null. Done! Оператор переходит к следующей. Профиль в draft, но Readiness = 33%. Операционно мёртв — не опубликуется без ручного вмешательства. Оператор забыл. Таких профилей может накопиться много.
+Масштаб: Это не баг, это по дизайну. Но нет механизма оповещения/напоминания что профиль застрял в draft.
+
+Сценарий 2: Потеря данных при обрыве
+Оператор загружает анкету, 8 фото. Parse прошёл, sort прошёл, нажимает Create. Загружается 4 фото — у Cloudflare R2 connection timeout. Ошибка на 5-м. Бэкенд логирует ошибку, продолжает Steps 7-8. Возвращает успех с uploadedPhotos: 4. Frontend показывает "✅ Uploaded 4 photos, 🎉 Done!". В БД: профиль, 4 фото, ставки, сервисы. 4 фото потеряны навсегда (оригиналы только у оператора).
+
+Сценарий 3: Данные анкеты не попали в базу
+Оператор загружает anketa.pdf. parse-anketa извлекает 15 полей. Оператор видит "✅ Accepted by AI (15 fields)". Нажимает Create. parsedFields уходит в route.ts. convertClientFields вызывается. Ставки — в плоском формате (rate1hIn: 250). mapRatesToRows не понимает эти ключтак давай тогда все по очередли исправим, ты мне пишешь ТЗ для claude code и мы все делаем пока данная загрузка не будет работать как мы хотим по плану и пока система будет стабильна и не ломаться и без ошибок
+ты готовГотов. Работаем системно.
+Вот как предлагаю строить процесс:
+Схема работы:
+
+Я выдаю ТЗ для Claude Code по одной проблеме (или группе связанных)
+Ты вставляешь в Claude Code, он делает
+Ты пушишь, Vercel деплоит
+Я проверяю что исправление реально работает (через GitHub + живой сайт)
+Переходим к следующему
+
+Порядок исправлений (от P0 к P2, сгруппированы по смыслу):
+#ЧтоПриоритет1canCreate блокирует кнопку пока идёт aiParsingP0 (быстро)2Draft restoration — предупреждение и блокировка если нет фотоP03Унификация формата ставок parse-anketa → route.tsP04Транзакция на создание профиля + частичный rollback фотоP05Race condition дубль-чека — unique constraint на slugP06UI лимит фото ≤10 с предупреждениемP17Thumbnail URL сохраняется в ModelMediaP18lowQuality flag — sort-photos prompt + frontend маппингP19Location matching — fuzzy/contains вместо equalsP110Защита от обновления страницы во время uploadingP1
+
+Начинаем с #1 — самое маленькое, быстро задеплоится, сразу проверим что процесс работает.
+Скажи "поехали" — выдам первое ТЗ.

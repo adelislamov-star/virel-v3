@@ -4,9 +4,9 @@ export const siteConfig = {
   tagline: "London's Premier Companion Agency",
   description:
     "Premium companion agency in London. Verified, discreet, sophisticated.",
-  telegram: "https://t.me/virel_bookings",
+  telegram: "https://t.me/+447562279678",
   email: "bookings@vaurel.co.uk",
-  phone: "",
+  phone: "+44 75 6227 9678",
   locale: "en_GB",
   lang: "en-GB",
   foundedYear: "2024",

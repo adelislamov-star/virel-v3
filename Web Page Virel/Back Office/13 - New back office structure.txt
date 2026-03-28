@@ -1,0 +1,114 @@
+Вот полный текст для нового чата:
+
+---
+
+## ЗАДАЧА: Реализовать новую структуру sidebar в Virel V3
+
+**Проект:** `C:\Virel`
+**Репозиторий:** `github.com/adelislamov-star/virel-v3`
+**Продакшн:** `https://virel-v3.vercel.app`
+
+---
+
+### ГДЕ НАХОДИТСЯ SIDEBAR
+
+Файл sidebar скорее всего находится по одному из путей:
+- `components/admin/sidebar.tsx`
+- `components/admin/Sidebar.tsx`
+- `app/admin/layout.tsx`
+- `components/layout/AdminSidebar.tsx`
+
+Найди файл который содержит навигационные пункты бэкофиса и замени структуру.
+
+---
+
+### ТЕКУЩАЯ СТРУКТУРА (как есть сейчас на сайте)
+
+```
+CORE: Action Center, Leads, Inquiries, Clients, Booking Requests, Bookings, Models
+MASTERS: Services, Call Rates, Locations
+CONTENT: Concierge, Blog
+OPERATIONS: Availability, Reviews, Incidents, Fraud Monitor, Lost Revenue, Applications, Alternative Offers
+BUSINESS: Pricing, Membership, Payments, Reports, SEO Health, Retention
+ANALYTICS: Dashboard, Owner Analytics, Unit Economics, Model Performance, Demand, Staff Performance
+SYSTEM: SLA Monitor, Data Quality, Audit Log, Notifications, Jobs, Settings
+```
+
+---
+
+### НОВАЯ СТРУКТУРА (согласованная, реализовать)
+
+```
+🎯  CORE
+├── Models                    → /admin/models
+├── Bookings                  → /admin/bookings
+├── Availability              → /admin/availability
+├── Booking Requests          → /admin/booking-requests  [badge: новые]
+├── Alternative Offers        → /admin/alternative-offers
+├── Reviews                   → /admin/reviews           [badge: новые]
+├── Clients                   → /admin/clients
+├── Fraud Monitor             → /admin/fraud-monitor     [badge: alerts]
+├── Leads                     → /admin/leads             [badge: открытые]
+│   (Leads + Inquiries объединены в один пункт)
+└── Action Center             → /admin/action-center     [badge: alerts]
+
+📋  MANAGEMENT
+├── Applications              → /admin/applications
+├── Incidents                 → /admin/incidents         [badge: открытые]
+└── Payments                  → /admin/payments          [badge: pending]
+
+📊  ANALYTICS
+├── Dashboard                 → /admin/dashboard
+├── Model Performance         → /admin/model-performance
+├── Staff Performance         → /admin/staff-performance
+├── Demand                    → /admin/demand
+└── Owner Analytics           → /admin/owner-analytics
+
+📈  PERFORMANCE
+├── Unit Economics            → /admin/unit-economics
+├── Lost Revenue              → /admin/lost-revenue
+├── Retention                 → /admin/retention
+├── SEO Health                → /admin/seo-health
+└── Reports                   → /admin/reports
+
+💼  COMMERCIAL
+├── Pricing                   → /admin/pricing
+├── Membership                → /admin/membership
+└── Concierge                 → /admin/concierge
+
+📂  CATALOG
+├── Category Groups           → /admin/category-groups
+├── Categories                → /admin/categories
+├── Attributes                → /admin/attributes
+├── Services                  → /admin/services
+├── Call Rates                → /admin/call-rates
+├── Locations                 → /admin/locations
+└── Blog                      → /admin/blog
+
+🔧  SYSTEM
+├── SLA Monitor               → /admin/sla-monitor
+├── Data Quality              → /admin/data-governance
+├── Notifications             → /admin/notifications
+├── Jobs                      → /admin/jobs
+├── Audit Log                 → /admin/audit-log
+└── Settings                  → /admin/settings
+```
+
+---
+
+### ВАЖНЫЕ ПРАВИЛА
+
+1. **Ничего не удалять** — все существующие страницы остаются, меняется только группировка и порядок в sidebar
+2. **Leads объединяет** Leads (`/admin/leads`) и Inquiries (`/admin/inquiries`) — показывать один пункт "Leads" ведущий на `/admin/leads`
+3. **Badges** — там где указано `[badge]` должен отображаться счётчик непрочитанных/открытых записей
+4. **URL маршруты не менять** — только визуальная перегруппировка в sidebar
+5. **Data Quality** в коде может называться `data-governance` — использовать существующий маршрут
+
+---
+
+### ЧТО ПРОВЕРИТЬ ПОСЛЕ РЕАЛИЗАЦИИ
+
+- Все 38 пунктов присутствуют
+- Badges отображаются на нужных пунктах
+- Активный пункт подсвечивается при переходе
+- Мобильная версия sidebar не сломана

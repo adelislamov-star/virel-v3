@@ -11,11 +11,8 @@ import { RichText } from '@/components/public/RichText'
 // categoryContent now loaded from DB (CategoryContent model)
 import '../category.css'
 
-export const revalidate = 3600
-
-export function generateStaticParams() {
-  return categories.map(c => ({ slug: c.slug }))
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

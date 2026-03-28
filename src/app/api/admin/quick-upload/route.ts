@@ -56,6 +56,15 @@ export async function POST(req: NextRequest) {
         const key = buildKey(modelId, `${j}-${Date.now()}.${ext}`)
 
         try {
+          // Skip if a record with same modelId + sortOrder already exists
+          const existing = await prisma.modelMedia.findFirst({
+            where: { modelId, sortOrder: sortOrders[j] ?? j },
+          })
+          if (existing) {
+            console.log(`[admin/quick-upload] Skipping photo ${j} — duplicate sortOrder ${sortOrders[j] ?? j} for model ${modelId}`)
+            continue
+          }
+
           const result = await uploadMedia(buffer, key, file.type || 'image/jpeg')
           await generateThumbnail(buffer, result.key)
 
@@ -96,23 +105,27 @@ export async function POST(req: NextRequest) {
           data: { isPrimary: false }
         })
       }
-      const created = await Promise.all(
-        photos.map((p: any) =>
-          prisma.modelMedia.create({
-            data: {
-              modelId,
-              type: 'photo',
-              storageKey: p.key,
-              url: p.finalUrl,
-              isPrimary: p.isPrimary ?? false,
-              isPublic: true,
-              sortOrder: p.sortOrder,
-              checksum: null,
-            }
-          })
-        )
-      )
-      return NextResponse.json({ success: true, count: created.length })
+      let created = 0
+      for (const p of photos) {
+        const existing = await prisma.modelMedia.findFirst({
+          where: { modelId, sortOrder: p.sortOrder },
+        })
+        if (existing) continue
+        await prisma.modelMedia.create({
+          data: {
+            modelId,
+            type: 'photo',
+            storageKey: p.key,
+            url: p.finalUrl,
+            isPrimary: p.isPrimary ?? false,
+            isPublic: true,
+            sortOrder: p.sortOrder,
+            checksum: null,
+          }
+        })
+        created++
+      }
+      return NextResponse.json({ success: true, count: created })
     }
 
     return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 })

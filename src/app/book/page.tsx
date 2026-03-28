@@ -16,7 +16,6 @@ const DURATION_LABELS: Record<string, { label: string; durationMin: number; sort
   '3hours': { label: '3 Hours', durationMin: 180, sort: 6 },
   '4hours': { label: '4 Hours', durationMin: 240, sort: 7 },
   'overnight': { label: 'Overnight (9 hrs)', durationMin: 540, sort: 8 },
-  'extra_hour': { label: 'Extra Hour', durationMin: 60, sort: 9 },
 }
 
 const DURATION_MIN_MAP: Record<number, string> = {
@@ -138,12 +137,24 @@ function BookingContent() {
   const buildMergedRates = () => {
     if (!modelDetail?.modelRates?.length) return []
 
-    return modelDetail.modelRates
+    // First pass: build all rates and identify 2h + extra-hour for synthesising 3h
+    let twoHourRate: any = null
+    let extraHourRate: any = null
+
+    const baseRates = modelDetail.modelRates
       .map((mr: any) => {
         const master = mr.callRateMaster
         if (!master || !master.isActive) return null
         const price = callType === 'incall' ? mr.incallPrice : mr.outcallPrice
         const durationKey = DURATION_MIN_MAP[master.durationMin] || master.label?.toLowerCase().replace(/\s+/g, '')
+
+        // Track 2-hour and extra-hour rates for 3h synthesis
+        if (durationKey === '2hours') twoHourRate = { price }
+        if (durationKey === 'extrahour' || durationKey === 'extra_hour' || master.label?.toLowerCase().includes('extra hour')) {
+          extraHourRate = { price }
+          return null // exclude Extra Hour from the list
+        }
+
         return {
           id: mr.id,
           callRateMasterId: mr.callRateMasterId,
@@ -157,6 +168,34 @@ function BookingContent() {
       })
       .filter(Boolean)
       .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+
+    // Synthesise or fill a 3-hour price from 2h + extra-hour when possible
+    if (twoHourRate?.price > 0 && extraHourRate?.price > 0) {
+      const threeHourPrice = twoHourRate.price + extraHourRate.price
+      const native3h = baseRates.find((r: any) => r.durationType === '3hours')
+      if (native3h && !native3h.available) {
+        // Native 3h exists but has no price — fill it with computed price
+        native3h.price = threeHourPrice
+        native3h.available = true
+      } else if (!native3h) {
+        // No native 3h at all — insert a synthetic one after 2h
+        const insertIdx = baseRates.findIndex((r: any) => r.sortOrder > 5)
+        const synth = {
+          id: '__3hours_synth',
+          callRateMasterId: null,
+          label: '3 Hours',
+          durationMin: 180,
+          sortOrder: 5.5,
+          price: threeHourPrice,
+          durationType: '3hours',
+          available: true,
+        }
+        if (insertIdx === -1) baseRates.push(synth)
+        else baseRates.splice(insertIdx, 0, synth)
+      }
+    }
+
+    return baseRates
   }
 
   const displayRates = buildMergedRates()
