@@ -271,7 +271,8 @@ export default async function ModelProfilePage({ params }: Props) {
   // Group services by category
   const serviceGroups: Record<string, typeof regularServices> = {}
   for (const svc of regularServices) {
-    const cat = svc.category || 'Other'
+    const cat = svc.category || ''
+    if (!cat) continue
     if (!serviceGroups[cat]) serviceGroups[cat] = []
     serviceGroups[cat].push(svc)
   }

@@ -53,7 +53,8 @@ const Services = forwardRef<ServicesHandle, Props>(function Services({ modelId, 
           const allServices: ServiceItem[] = svcRes.services || [];
           const catMap = new Map<string, ServiceItem[]>();
           for (const s of allServices) {
-            const cat = s.category || 'Other';
+            const cat = s.category || '';
+            if (!cat) continue;
             if (!catMap.has(cat)) catMap.set(cat, []);
             catMap.get(cat)!.push(s);
           }
