@@ -29,7 +29,8 @@ export async function POST(
     const publicName = service.publicName || name;
     const category = service.category;
 
-    const prompt = `You are a senior SEO content strategist specializing in luxury companion agencies in London. You have deep knowledge of how high-intent clients search for escort services online.
+    const buildPrompt = (retryHint?: string) => {
+      let p = `You are a senior SEO content strategist specializing in luxury companion agencies in London. You have deep knowledge of how high-intent clients search for escort services online.
 
 AGENCY CONTEXT:
 - Name: Vaurel
@@ -53,14 +54,16 @@ CONTENT RULES:
 seoTitle: MAX 55 chars, NO "| Vaurel" at the end (added automatically), format "[Service] London | [benefit]", must include "London", must be click-worthy
 seoDescription: MAX 150 chars, first 60 chars must hook, include soft CTA ("book"/"arrange"/"discover"), include "London" and service name
 seoKeywords: 8-10 real search terms, mix head terms and long-tail, include price-related and location variants
-introText: EXACTLY 80-100 words. First sentence: direct definition. Second paragraph: who it's for and what makes Vaurel exceptional. Must feel written by a genuine expert.
-fullDescription: EXACTLY 450-500 words structured as:
-  - Para 1 (~80w): What the service is — direct, informative
-  - Para 2 (~100w): The Vaurel difference — verification, companion quality
-  - Para 3 (~100w): The experience — how booking works, discretion, communication
-  - Para 4 (~80w): Locations and availability across London
-  - Para 5 (~80w): Pricing and booking — include "from £300", mention 24/7
-  - Para 6 (~60w): Soft closing CTA — no hard sell
+
+introText: CRITICAL — MUST be between 80 and 100 words. Count carefully. Not 60, not 70, MINIMUM 80 words. First sentence: direct definition. Second paragraph: who it's for and what makes Vaurel exceptional. Must feel written by a genuine expert. Write 5-6 full sentences to reach 80+ words.
+
+fullDescription: CRITICAL — MUST be between 450 and 500 words. This is a LONG text, approximately 6 substantial paragraphs. Count carefully. Separate paragraphs with double newlines (\\n\\n). Structure:
+  - Para 1 (~80w): What the service is — direct, informative, establish expertise
+  - Para 2 (~100w): The Vaurel difference — verification process, companion quality, selection standards
+  - Para 3 (~100w): The experience — how booking works, discretion protocols, communication channels
+  - Para 4 (~80w): Locations and availability across London — mention specific areas like Mayfair, Knightsbridge, Chelsea, Kensington
+  - Para 5 (~80w): Pricing and booking — include "from £300", mention 24/7 availability, incall and outcall options
+  - Para 6 (~60w): Soft closing CTA — invite to explore, no hard sell, mention the concierge team
 
 STRICT RULES:
 - NEVER use explicit sexual language
@@ -68,8 +71,13 @@ STRICT RULES:
 - DO use: companionship, connection, sophisticated, exclusive, curated, arrangement
 - Every paragraph must contain the service name or a clear synonym
 - Write as if Tatler or GQ would publish this
+- fullDescription MUST use \\n\\n between paragraphs`;
 
-Return ONLY valid JSON, no markdown, no explanation:
+      if (retryHint) {
+        p += `\n\nIMPORTANT — YOUR PREVIOUS ATTEMPT FAILED QUALITY CHECKS:\n${retryHint}\nPlease fix these issues. Write MORE content to hit the required word counts.`;
+      }
+
+      p += `\n\nReturn ONLY valid JSON, no markdown, no explanation:
 {
   "seoTitle": "",
   "seoDescription": "",
@@ -77,48 +85,79 @@ Return ONLY valid JSON, no markdown, no explanation:
   "introText": "",
   "fullDescription": ""
 }`;
+      return p;
+    };
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const callAI = async (prompt: string) => {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const data = await response.json();
+      const text = data.content?.[0]?.text ?? '';
+      try {
+        return JSON.parse(text);
+      } catch {
+        const match = text.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('Invalid AI response');
+        return JSON.parse(match[0]);
+      }
+    };
 
-    const data = await response.json();
-    const text = data.content?.[0]?.text ?? '';
+    const evaluate = (parsed: Record<string, string>) => {
+      const fullText = `${parsed.introText} ${parsed.fullDescription}`.toLowerCase()
+      const serviceLower = name.toLowerCase()
+      const londonMentions = (fullText.match(new RegExp(`${serviceLower}.*london|london.*${serviceLower}`, 'g')) || []).length
+      const vaurelMentions = (fullText.match(/vaurel/g) || []).length
+      const introWords = parsed.introText?.split(/\s+/).filter(Boolean).length ?? 0
+      const descWords = parsed.fullDescription?.split(/\s+/).filter(Boolean).length ?? 0
 
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('Invalid AI response');
-      parsed = JSON.parse(match[0]);
+      const checks = {
+        londonKeyword: londonMentions >= 2,
+        vaurelMentions: vaurelMentions >= 2,
+        introLength: introWords >= 70,
+        descLength: descWords >= 400,
+        hasPrice: fullText.includes('300') || fullText.includes('£'),
+        hasDiscreet: fullText.includes('discreet') || fullText.includes('discretion'),
+      }
+      const score = Object.values(checks).filter(Boolean).length
+
+      const failures: string[] = []
+      if (!checks.introLength) failures.push(`introText is ${introWords} words — MUST be at least 80 words`)
+      if (!checks.descLength) failures.push(`fullDescription is ${descWords} words — MUST be at least 450 words`)
+      if (!checks.londonKeyword) failures.push(`"${name} London" not found enough times`)
+      if (!checks.vaurelMentions) failures.push(`"Vaurel" not mentioned enough`)
+      if (!checks.hasPrice) failures.push(`No price reference (£300) found`)
+      if (!checks.hasDiscreet) failures.push(`No "discreet"/"discretion" found`)
+
+      return { checks, score, failures, introWords, descWords }
     }
 
-    // Validate keyword presence
-    const fullText = `${parsed.introText} ${parsed.fullDescription}`.toLowerCase()
-    const serviceLower = name.toLowerCase()
-    const londonMentions = (fullText.match(new RegExp(`${serviceLower}.*london|london.*${serviceLower}`, 'g')) || []).length
-    const vaurelMentions = (fullText.match(/vaurel/g) || []).length
+    // Try up to 3 times, retrying if word counts fail
+    let parsed = await callAI(buildPrompt());
+    let result = evaluate(parsed);
 
-    const qualityScore = {
-      londonKeyword: londonMentions >= 2,
-      vaurelMentions: vaurelMentions >= 2,
-      introLength: parsed.introText?.split(' ').length >= 70,
-      descLength: parsed.fullDescription?.split(' ').length >= 400,
-      hasPrice: fullText.includes('300') || fullText.includes('£'),
-      hasDiscreet: fullText.includes('discreet') || fullText.includes('discretion'),
+    if (result.score < 5 && (result.failures.some(f => f.includes('words')))) {
+      parsed = await callAI(buildPrompt(result.failures.join('\n')));
+      result = evaluate(parsed);
     }
-    const score = Object.values(qualityScore).filter(Boolean).length
+
+    if (result.score < 5 && (result.failures.some(f => f.includes('words')))) {
+      parsed = await callAI(buildPrompt(result.failures.join('\n')));
+      result = evaluate(parsed);
+    }
+
+    const qualityScore = result.checks;
+    const score = result.score;
 
     const updated = await prisma.service.update({
       where: { id },
