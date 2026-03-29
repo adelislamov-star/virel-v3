@@ -295,6 +295,35 @@ export default function ServicesPage() {
     setConfirmDelete(null);
   };
 
+  // Generate SEO for all services without SEO content
+  const handleGenerateAll = async () => {
+    const noSeo = items.filter(s => !s.seoTitle)
+    if (noSeo.length === 0) {
+      showToast('All services already have SEO content', 'success')
+      return
+    }
+    if (!confirm(`Generate SEO for ${noSeo.length} services? Takes ~${Math.ceil(noSeo.length * 1.5 / 60)} minutes.`)) return
+
+    showToast(`Generating SEO for ${noSeo.length} services...`, 'loading')
+    let success = 0
+    let failed = 0
+
+    for (const service of noSeo) {
+      try {
+        const res = await fetch(`/api/v1/services/${service.id}/generate-seo`, { method: 'POST' })
+        const json = await res.json()
+        if (json.success) success++
+        else failed++
+      } catch {
+        failed++
+      }
+      await new Promise(r => setTimeout(r, 1500))
+    }
+
+    showToast(`Done: ${success} generated, ${failed} failed`, success > 0 ? 'success' : 'error')
+    load()
+  }
+
   // Generate SEO
   const handleGenerateSeo = async (serviceId?: string) => {
     if (!serviceId) {
@@ -320,7 +349,13 @@ export default function ServicesPage() {
           introText: d.introText,
           fullDescription: d.fullDescription,
         } : prev);
-        showToast('SEO generated successfully', 'success');
+        if (json.quality) {
+          const { score, maxScore } = json.quality
+          const emoji = score >= 5 ? '✅' : score >= 3 ? '⚠️' : '❌'
+          showToast(`${emoji} SEO generated — Quality: ${score}/${maxScore}`, score >= 4 ? 'success' : 'error')
+        } else {
+          showToast('SEO generated successfully', 'success')
+        }
       } else {
         showToast(json.error?.message || 'Generation failed', 'error');
       }
@@ -393,12 +428,21 @@ export default function ServicesPage() {
           <h1 className="text-2xl font-bold text-white">Services</h1>
           <p className="text-sm text-zinc-500 mt-1">Manage service catalogue</p>
         </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus size={16} /> Add Service
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleGenerateAll}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <Sparkles size={16} />
+            Generate All SEO
+          </button>
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus size={16} /> Add Service
+          </button>
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -760,7 +804,17 @@ export default function ServicesPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Introduction Text (80-100 words)</label>
+                    <label className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                      <span>Introduction Text (80-100 words)</span>
+                      <span className={
+                        (() => {
+                          const wc = (modal.introText || '').split(' ').filter(Boolean).length
+                          return wc >= 70 && wc <= 110 ? 'text-emerald-400' : 'text-amber-400'
+                        })()
+                      }>
+                        {(modal.introText || '').split(' ').filter(Boolean).length} words
+                      </span>
+                    </label>
                     <textarea
                       value={modal.introText || ''}
                       onChange={(e) => updateModal('introText', e.target.value)}
@@ -769,7 +823,15 @@ export default function ServicesPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Full Description (400-500 words)</label>
+                    <label className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                      <span>Full Description (400-500 words)</span>
+                      <span className={
+                        (modal.fullDescription || '').split(' ').filter(Boolean).length >= 400
+                          ? 'text-emerald-400' : 'text-amber-400'
+                      }>
+                        {(modal.fullDescription || '').split(' ').filter(Boolean).length} words
+                      </span>
+                    </label>
                     <textarea
                       value={modal.fullDescription || ''}
                       onChange={(e) => updateModal('fullDescription', e.target.value)}
@@ -791,6 +853,56 @@ export default function ServicesPage() {
                   </button>
                   {modal._isNew && (
                     <p className="text-xs text-zinc-500">Save first to generate SEO</p>
+                  )}
+                  {(modal.fullDescription || modal.introText) && (
+                    <div className="border border-zinc-700/40 rounded-lg p-3 bg-zinc-800/20 space-y-1.5">
+                      <p className="text-[11px] text-zinc-500 uppercase tracking-wide font-medium">
+                        Content Quality Check
+                      </p>
+                      {[
+                        {
+                          label: `"${modal.title} London" in text`,
+                          ok: `${modal.introText || ''} ${modal.fullDescription || ''}`
+                                .toLowerCase()
+                                .includes(`${(modal.title || '').toLowerCase()} london`)
+                        },
+                        {
+                          label: '"Vaurel" mentioned',
+                          ok: `${modal.introText || ''} ${modal.fullDescription || ''}`
+                                .toLowerCase()
+                                .includes('vaurel')
+                        },
+                        {
+                          label: 'Price reference (£300)',
+                          ok: `${modal.introText || ''} ${modal.fullDescription || ''}`
+                                .includes('300')
+                        },
+                        {
+                          label: '"Discreet" or "discretion"',
+                          ok: `${modal.introText || ''} ${modal.fullDescription || ''}`
+                                .toLowerCase()
+                                .match(/discreet|discretion/) !== null
+                        },
+                        {
+                          label: 'Intro 70-100 words',
+                          ok: (() => {
+                            const wc = (modal.introText || '').split(' ').filter(Boolean).length
+                            return wc >= 70 && wc <= 110
+                          })()
+                        },
+                        {
+                          label: 'Description 400+ words',
+                          ok: (modal.fullDescription || '').split(' ').filter(Boolean).length >= 400
+                        },
+                      ].map(({ label, ok }) => (
+                        <div key={label} className="flex items-center gap-2 text-xs">
+                          <span className={ok ? 'text-emerald-400' : 'text-red-400'}>
+                            {ok ? '✓' : '✗'}
+                          </span>
+                          <span className={ok ? 'text-zinc-300' : 'text-zinc-500'}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </>
               )}
