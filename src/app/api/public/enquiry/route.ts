@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db/client'
 import { notifyReception } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
@@ -14,6 +15,26 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Save to DB as Inquiry
+    await prisma.inquiry.create({
+      data: {
+        source: 'web',
+        status: 'new',
+        priority: 'normal',
+        subject: companion ? `Enquiry for ${companion}` : 'Website Enquiry',
+        message: [
+          `Name: ${name}`,
+          `Contact: ${contact}`,
+          companion ? `Companion: ${companion}` : null,
+          date ? `Date: ${date}` : null,
+          time ? `Time: ${time}` : null,
+          duration ? `Duration: ${duration}` : null,
+          callType ? `Type: ${callType}` : null,
+          message || null,
+        ].filter(Boolean).join(' | '),
+      },
+    })
 
     const lines = [
       `🔔 *New Enquiry — Vaurel*`,
