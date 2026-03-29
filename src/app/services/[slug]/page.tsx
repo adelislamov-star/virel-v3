@@ -8,7 +8,7 @@ import { siteConfig } from '@/../config/site'
 import { ModelCard } from '@/components/public/ModelCard'
 import '../service.css'
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -23,6 +23,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: service.seoTitle || `${displayName} London`,
     description: service.seoDescription || `${displayName} companions in London. Verified, discreet. From £${siteConfig.priceFrom}/hr. ${siteConfig.name} companion agency.`,
     alternates: { canonical: `${siteConfig.domain}/services/${slug}` },
+    openGraph: {
+      title: service.seoTitle || `${displayName} London | Vaurel`,
+      description: service.seoDescription || `${displayName} companions in London. Verified, discreet. From £${siteConfig.priceFrom}/hr.`,
+      url: `${siteConfig.domain}/services/${slug}`,
+      siteName: siteConfig.name,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary',
+      title: service.seoTitle || `${displayName} London | Vaurel`,
+      description: service.seoDescription || `${displayName} companions in London. Verified, discreet.`,
+    },
   }
 }
 
@@ -43,21 +55,36 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
     }),
     prisma.district.findMany({
       where: { isActive: true },
-      select: { name: true, slug: true },
-      orderBy: { sortOrder: 'asc' },
-      take: 8,
+      select: { name: true, slug: true, tier: true },
+      orderBy: [{ tier: 'asc' }, { sortOrder: 'asc' }],
     }),
     prisma.service.findMany({
       where: {
         isActive: true,
         isPublic: true,
         id: { not: service.id },
+        category: service.category,
       },
-      select: { slug: true, publicName: true, title: true, name: true },
-      take: 6,
+      select: { slug: true, publicName: true, title: true, name: true, id: true },
+      take: 4,
       orderBy: { sortOrder: 'asc' },
     }),
   ])
+
+  // Fill related services from other categories if needed
+  if (related.length < 6) {
+    const others = await prisma.service.findMany({
+      where: {
+        isActive: true,
+        isPublic: true,
+        id: { notIn: [service.id, ...related.map(r => r.id)] },
+      },
+      select: { slug: true, publicName: true, title: true, name: true, id: true },
+      take: 6 - related.length,
+      orderBy: { isPopular: 'desc' },
+    })
+    related.push(...others)
+  }
 
   const modelIds = modelServices.map(ms => ms.modelId)
   const models = modelIds.length > 0
@@ -79,16 +106,19 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
   const faqItems = [
     {
       q: `What is ${displayName}?`,
-      a: service.introText
-        || `${displayName} is one of the most popular services offered by our London companions. Each companion providing this service has been personally verified and selected for quality.`,
+      a: service.introText || `${displayName} is a premium service offered by Vaurel companions in London. Each companion providing this service has been personally verified and selected for quality.`,
     },
     {
       q: `How much does ${displayName} cost in London?`,
-      a: `Rates for ${displayName} start from £${siteConfig.priceFrom} per hour. Prices vary depending on the companion, duration, and whether you choose incall or outcall. Check individual profiles for exact rates.`,
+      a: `Rates for ${displayName} with Vaurel start from £${siteConfig.priceFrom} per hour for incall appointments. Outcall to hotels and private addresses across London is also available. Prices vary by companion and duration — see individual profiles for exact rates.`,
     },
     {
-      q: `Can I book ${displayName} for outcall?`,
-      a: `Yes, many of our companions offer ${displayName} as an outcall service to hotels and private residences across London. Outcall rates may differ from incall — see each companion's profile for details.`,
+      q: `How do I book ${displayName} with Vaurel?`,
+      a: `Contact our team via WhatsApp or Telegram — we respond within 15 minutes, 24 hours a day. Simply let us know your preferred date, time, location and duration. All enquiries are handled with complete discretion.`,
+    },
+    {
+      q: `Is ${displayName} available as outcall in London?`,
+      a: `Yes. Many of our companions offering ${displayName} are available for outcall to hotels and private residences across all major London districts including Mayfair, Knightsbridge, Chelsea, Kensington and beyond.`,
     },
   ]
 
@@ -146,8 +176,29 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
           <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 24, fontWeight: 300, color: '#f0e8dc', margin: '0 0 16px' }}>
             About {displayName}
           </h2>
+
+          {/* Intro text — highlighted block */}
+          {service.introText && (
+            <p style={{
+              fontSize: 16,
+              color: '#c5b99a',
+              lineHeight: 1.8,
+              margin: '0 0 24px',
+              fontStyle: 'italic',
+              borderLeft: '2px solid rgba(201,168,76,0.3)',
+              paddingLeft: 16
+            }}>
+              {service.introText}
+            </p>
+          )}
+
+          {/* Full description */}
           {service.fullDescription ? (
-            <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: 0 }}>{service.fullDescription}</p>
+            service.fullDescription.split('\n\n').filter(Boolean).map((para: string, i: number) => (
+              <p key={i} style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: '0 0 16px' }}>
+                {para}
+              </p>
+            ))
           ) : (
             <>
               <p style={{ fontSize: 15, color: '#8a8580', lineHeight: 1.9, margin: '0 0 12px' }}>
