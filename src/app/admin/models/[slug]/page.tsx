@@ -123,7 +123,7 @@ export default function ModelEditPage() {
 
   useEffect(() => {
     if (!modelId) return;
-    fetch(`/api/v1/models/${modelId}/publish-check`, { credentials: 'include' })
+    fetch(`/api/v1/models/${modelId}/publish-check`, { credentials: 'include', cache: 'no-store' })
       .then(r => r.json())
       .then(j => { if (j.success) setPublishAudit(j.data); })
       .catch(() => {});
@@ -196,6 +196,13 @@ export default function ModelEditPage() {
           revalidate('/');
         }
         loadModel();
+        fetch(`/api/v1/models/${modelId}/publish-check`, {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+          .then(r => r.json())
+          .then(j => { if (j.success) setPublishAudit(j.data) })
+          .catch(() => {})
         setTimeout(() => setGlobalSaveState('idle'), 2000);
       } else {
         setGlobalSaveState('error');
