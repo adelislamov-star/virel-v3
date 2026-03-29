@@ -275,13 +275,10 @@ export default async function ModelProfilePage({ params }: Props) {
     if (!serviceGroups[cat]) serviceGroups[cat] = []
     serviceGroups[cat].push(svc)
   }
-  const categoryOrder = ['signature', 'wellness', 'fetish', 'Other']
-  const categoryLabels: Record<string, string> = {
-    signature: 'Signature',
-    wellness: 'Wellness',
-    fetish: 'Fetish & Duo',
-    Other: 'Services',
-  }
+  const categoryOrder = Object.keys(serviceGroups).sort()
+  const categoryLabels: Record<string, string> = Object.fromEntries(
+    categoryOrder.map(cat => [cat, cat.charAt(0).toUpperCase() + cat.slice(1)])
+  )
 
   const waUrl = buildWaUrl(profile.name)
   const tgUrl = buildTgUrl()
