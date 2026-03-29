@@ -214,6 +214,18 @@ html {
 .nav-cta{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#BF9B5A;border:1px solid rgba(191,155,90,0.38);padding:9px 22px;text-decoration:none;transition:all .3s;display:inline-block}
 .nav-cta:hover{background:#BF9B5A;color:#0C0B09}
 
+/* ── NAV LOCATIONS DROPDOWN ── */
+.nav-locations-dropdown{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:16px;background:#0d0d0d;border:1px solid rgba(201,168,76,0.15);padding:28px 32px 20px;min-width:480px;z-index:400;opacity:1;animation:navDropIn .2s ease}
+@keyframes navDropIn{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.nav-loc-cols{display:flex;gap:40px}
+.nav-loc-col{display:flex;flex-direction:column;gap:6px;min-width:180px}
+.nav-loc-heading{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#C5A572;margin-bottom:8px;font-weight:400}
+.nav-loc-link{font-size:12px;color:#8a8580;text-decoration:none;transition:color .2s;padding:3px 0;letter-spacing:.04em}
+.nav-loc-link:hover{color:#f0e8dc}
+.nav-loc-footer{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.nav-loc-all{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#C5A572;text-decoration:none;transition:color .2s}
+.nav-loc-all:hover{color:#f0e8dc}
+
 /* ── HERO ── */
 .hero{height:100vh;min-height:700px;position:relative;display:flex;align-items:flex-end;overflow:hidden;margin-top:-68px;padding-top:68px}
 .hero-img{position:absolute;inset:0}

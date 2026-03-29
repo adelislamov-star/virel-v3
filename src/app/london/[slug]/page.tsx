@@ -9,9 +9,14 @@ import { ModelCard } from '@/components/public/ModelCard'
 import { RichText } from '@/components/public/RichText'
 // districtContent now stored directly on District model in DB
 import '../district.css'
+import { DISTRICTS } from '@/data/districts'
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return DISTRICTS.map(d => ({ slug: `${d.slug}-escorts` }))
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

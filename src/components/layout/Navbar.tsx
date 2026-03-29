@@ -1,18 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useBookingModal } from '@/components/public/BookingModalProvider'
+import { PRIME_DISTRICTS, OTHER_DISTRICTS } from '@/data/districts'
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const [locationsOpen, setLocationsOpen] = useState(false)
   const { openModal } = useBookingModal()
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleMouseEnter = () => {
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null }
+    setLocationsOpen(true)
+  }
+  const handleMouseLeave = () => {
+    closeTimer.current = setTimeout(() => setLocationsOpen(false), 200)
+  }
 
   return (
     <nav className={`vr-nav${scrolled ? ' scrolled' : ''}`}>
@@ -24,7 +35,40 @@ export function Navbar() {
       <ul className="nav-links">
         <li><Link href="/companions">Companions</Link></li>
         <li><Link href="/services">Experiences</Link></li>
-        <li><Link href="/london/mayfair-escorts">Locations</Link></li>
+        <li
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{ position: 'relative' }}
+        >
+          <Link href="/london-escorts">Locations</Link>
+          {locationsOpen && (
+            <div className="nav-locations-dropdown">
+              <div className="nav-loc-cols">
+                <div className="nav-loc-col">
+                  <span className="nav-loc-heading">Prime Locations</span>
+                  {PRIME_DISTRICTS.map(d => (
+                    <Link key={d.slug} href={`/london/${d.slug}-escorts`} className="nav-loc-link">
+                      {d.name}
+                    </Link>
+                  ))}
+                </div>
+                <div className="nav-loc-col">
+                  <span className="nav-loc-heading">Central &amp; Greater</span>
+                  {OTHER_DISTRICTS.map(d => (
+                    <Link key={d.slug} href={`/london/${d.slug}-escorts`} className="nav-loc-link">
+                      {d.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div className="nav-loc-footer">
+                <Link href="/london-escorts" className="nav-loc-all">
+                  View All Locations &rarr;
+                </Link>
+              </div>
+            </div>
+          )}
+        </li>
         <li><Link href="/about">About</Link></li>
         <li><Link href="/discretion">Discretion</Link></li>
       </ul>
