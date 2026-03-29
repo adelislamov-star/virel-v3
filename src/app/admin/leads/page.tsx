@@ -7,11 +7,25 @@ type Inquiry = {
   source: string;
   status: string;
   priority: string;
+  subject: string | null;
   message: string | null;
   createdAt: string;
   client: { fullName: string | null } | null;
   assignedUser: { name: string | null } | null;
 };
+
+function parseLeadMessage(message: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+  message.split(' | ').forEach((part) => {
+    const colonIdx = part.indexOf(': ');
+    if (colonIdx !== -1) {
+      const key = part.substring(0, colonIdx).trim();
+      const value = part.substring(colonIdx + 2).trim();
+      fields[key] = value;
+    }
+  });
+  return fields;
+}
 
 const statusStyles: Record<string, string> = {
   new: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -48,6 +62,9 @@ export default function LeadsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const [selectedLead, setSelectedLead] = useState<Inquiry | null>(null);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Stats
   const [stats, setStats] = useState({ total: 0, new: 0, converted: 0, rate: '0' });
@@ -118,8 +135,51 @@ export default function LeadsPage() {
     debounceRef.current = setTimeout(() => { setSearch(val); setPage(1); }, 300);
   };
 
+  // Close sidebar on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setSelectedLead(null);
+      }
+    }
+    if (selectedLead) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [selectedLead]);
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!selectedLead || statusUpdating) return;
+    setStatusUpdating(true);
+    try {
+      const res = await fetch(`/api/v1/inquiries/${selectedLead.id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newStatus }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSelectedLead({ ...selectedLead, status: newStatus });
+        setItems((prev) =>
+          prev.map((i) => (i.id === selectedLead.id ? { ...i, status: newStatus } : i))
+        );
+      } else {
+        alert(json.error?.message || 'Failed to update status');
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const formatDateTime = (d: string) =>
+    new Date(d).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
 
   return (
     <div className="p-6 space-y-6">
@@ -202,7 +262,10 @@ export default function LeadsPage() {
                 <tr><td colSpan={7} className="px-4 py-12 text-center text-zinc-500">No leads found</td></tr>
               )}
               {!loading && items.map((item) => (
-                <tr key={item.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors">
+                <tr
+                  key={item.id}
+                  onClick={() => setSelectedLead(item)}
+                  className="border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors cursor-pointer">
                   <td className="px-4 py-3">
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${sourceStyles[item.source] ?? 'bg-zinc-700 text-zinc-300'}`}>
                       {item.source}
@@ -249,6 +312,115 @@ export default function LeadsPage() {
           </div>
         )}
       </div>
+
+      {/* Sidebar overlay + panel */}
+      {selectedLead && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" />
+          <div
+            ref={sidebarRef}
+            className="fixed top-0 right-0 h-full w-[420px] max-w-full bg-zinc-900 border-l border-zinc-800 z-50 shadow-2xl overflow-y-auto animate-slide-in-right"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+              <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Lead Details</h2>
+              <button
+                onClick={() => setSelectedLead(null)}
+                className="text-zinc-500 hover:text-zinc-300 text-xl leading-none"
+              >&times;</button>
+            </div>
+
+            <div className="px-6 py-5 space-y-6">
+              {/* Meta badges */}
+              <div className="flex flex-wrap gap-3 items-center">
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${sourceStyles[selectedLead.source] ?? 'bg-zinc-700 text-zinc-300'}`}>
+                  {selectedLead.source}
+                </span>
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs border ${statusStyles[selectedLead.status] ?? 'bg-zinc-700 text-zinc-300'}`}>
+                  {selectedLead.status.replace(/_/g, ' ')}
+                </span>
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs border ${priorityStyles[selectedLead.priority] ?? 'bg-zinc-700 text-zinc-300'}`}>
+                  {selectedLead.priority}
+                </span>
+              </div>
+              <div className="text-xs text-zinc-500">Created: {formatDateTime(selectedLead.createdAt)}</div>
+
+              {/* Subject */}
+              {selectedLead.subject && (
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1">Subject</div>
+                  <div className="text-sm text-zinc-200">{selectedLead.subject}</div>
+                </div>
+              )}
+
+              {/* Enquiry Details */}
+              <div className="border-t border-zinc-800 pt-4">
+                <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Enquiry Details</h3>
+                {selectedLead.message ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const fields = parseLeadMessage(selectedLead.message!);
+                      const fieldOrder = ['Name', 'Contact', 'Companion', 'Date', 'Time', 'Duration', 'Type', 'Message'];
+                      const orderedKeys = [
+                        ...fieldOrder.filter((k) => fields[k]),
+                        ...Object.keys(fields).filter((k) => !fieldOrder.includes(k)),
+                      ];
+                      return orderedKeys.length > 0 ? (
+                        orderedKeys.map((key) => (
+                          <div key={key} className="flex text-sm">
+                            <span className="text-zinc-500 w-28 shrink-0">{key}:</span>
+                            <span className="text-zinc-200 break-all">{fields[key]}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-zinc-400 whitespace-pre-wrap">{selectedLead.message}</p>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-500">No message</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="border-t border-zinc-800 pt-4">
+                <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Actions</h3>
+                <div className="flex flex-wrap gap-3">
+                  <select
+                    value={selectedLead.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    disabled={statusUpdating}
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 disabled:opacity-50"
+                  >
+                    {['new', 'qualified', 'awaiting_client', 'awaiting_deposit', 'converted', 'lost', 'spam'].map((s) => (
+                      <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                  {selectedLead.status === 'new' && (
+                    <button
+                      onClick={() => handleStatusChange('qualified')}
+                      disabled={statusUpdating}
+                      className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 transition-colors"
+                    >
+                      Mark as Contacted
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style jsx>{`
+        @keyframes slideInRight {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slide-in-right {
+          animation: slideInRight 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
