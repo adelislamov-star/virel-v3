@@ -97,8 +97,8 @@ STRICT RULES:
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 2000,
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 4000,
           messages: [{ role: 'user', content: prompt }],
         }),
       });
@@ -124,7 +124,7 @@ STRICT RULES:
       const checks = {
         londonKeyword: londonMentions >= 2,
         vaurelMentions: vaurelMentions >= 2,
-        introLength: introWords >= 70,
+        introLength: introWords >= 80,
         descLength: descWords >= 400,
         hasPrice: fullText.includes('300') || fullText.includes('£'),
         hasDiscreet: fullText.includes('discreet') || fullText.includes('discretion'),
@@ -146,12 +146,13 @@ STRICT RULES:
     let parsed = await callAI(buildPrompt());
     let result = evaluate(parsed);
 
-    if (result.score < 5 && (result.failures.some(f => f.includes('words')))) {
+    // Retry if intro or description word counts fail (regardless of overall score)
+    if (!result.checks.introLength || !result.checks.descLength) {
       parsed = await callAI(buildPrompt(result.failures.join('\n')));
       result = evaluate(parsed);
     }
 
-    if (result.score < 5 && (result.failures.some(f => f.includes('words')))) {
+    if (!result.checks.introLength || !result.checks.descLength) {
       parsed = await callAI(buildPrompt(result.failures.join('\n')));
       result = evaluate(parsed);
     }
