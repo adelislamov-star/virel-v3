@@ -1,0 +1,30 @@
+export const DISTRICTS = [
+  { name: 'Mayfair', slug: 'mayfair', tier: 1 },
+  { name: 'Knightsbridge', slug: 'knightsbridge', tier: 1 },
+  { name: 'Chelsea', slug: 'chelsea', tier: 1 },
+  { name: 'Kensington', slug: 'kensington', tier: 1 },
+  { name: 'South Kensington', slug: 'south-kensington', tier: 1 },
+  { name: 'Belgravia', slug: 'belgravia', tier: 1 },
+  { name: 'Notting Hill', slug: 'notting-hill', tier: 1 },
+  { name: 'Sloane Square', slug: 'sloane-square', tier: 1 },
+  { name: 'Marylebone', slug: 'marylebone', tier: 1 },
+  { name: 'Soho', slug: 'soho', tier: 1 },
+  { name: 'Victoria', slug: 'victoria', tier: 2 },
+  { name: 'Westminster', slug: 'westminster', tier: 2 },
+  { name: 'Covent Garden', slug: 'covent-garden', tier: 2 },
+  { name: 'Paddington', slug: 'paddington', tier: 2 },
+  { name: 'Bayswater', slug: 'bayswater', tier: 2 },
+  { name: 'Earls Court', slug: 'earls-court', tier: 2 },
+  { name: 'Gloucester Road', slug: 'gloucester-road', tier: 2 },
+  { name: 'Fulham', slug: 'fulham', tier: 2 },
+  { name: 'Hyde Park', slug: 'hyde-park', tier: 2 },
+  { name: 'Marble Arch', slug: 'marble-arch', tier: 2 },
+  { name: 'Canary Wharf', slug: 'canary-wharf', tier: 3 },
+  { name: 'Shoreditch', slug: 'shoreditch', tier: 3 },
+  { name: 'Battersea', slug: 'battersea', tier: 3 },
+  { name: 'Maida Vale', slug: 'maida-vale', tier: 3 },
+  { name: 'St Johns Wood', slug: 'st-johns-wood', tier: 3 },
+]
+
+export const PRIME_DISTRICTS = DISTRICTS.filter(d => d.tier === 1)
+export const OTHER_DISTRICTS = DISTRICTS.filter(d => d.tier > 1)

@@ -8,6 +8,7 @@ import { ModelCard } from '@/components/public/ModelCard'
 import { prisma } from '@/lib/db/client'
 import { siteConfig } from '@/../config/site'
 import { BreadcrumbSchema } from '@/components/BreadcrumbSchema'
+import { DISTRICTS } from '@/data/districts'
 
 export const metadata: Metadata = {
   title: 'London Escorts — Discreet Companion Agency',
@@ -43,8 +44,7 @@ export default async function LondonEscortsPage() {
     prisma.district.findMany({
       where: { isActive: true },
       orderBy: [{ tier: 'asc' }, { sortOrder: 'asc' }],
-      select: { name: true, slug: true },
-      take: 12,
+      select: { name: true, slug: true, tier: true },
     }),
   ])
 
@@ -70,30 +70,45 @@ export default async function LondonEscortsPage() {
         </p>
       </section>
 
-      {/* Districts */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 48px' }}>
-        <p style={{ fontSize: 10, letterSpacing: '.25em', color: '#808080', textTransform: 'uppercase', marginBottom: 16 }}>
-          Browse by district
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {districts.map(d => (
-            <Link
-              key={d.slug}
-              href={`/london/${d.slug}-escorts`}
-              style={{
-                padding: '8px 16px',
-                fontSize: 12,
-                color: '#6b6560',
-                border: '1px solid rgba(255,255,255,0.07)',
-                textDecoration: 'none',
-                transition: 'all .2s',
-              }}
-            >
-              {d.name}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Districts — grouped by tier, with static fallback */}
+      {(() => {
+        const tierGroups = [
+          { label: 'Prime Locations', tier: 1 },
+          { label: 'Central London', tier: 2 },
+          { label: 'Greater London', tier: 3 },
+        ]
+        // Use DB districts if available, fall back to static list
+        const allDistricts = districts.length >= 25 ? districts : DISTRICTS
+        return tierGroups.map(g => {
+          const items = allDistricts.filter((d: any) => d.tier === g.tier)
+          if (items.length === 0) return null
+          return (
+            <section key={g.tier} style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 32px' }}>
+              <p style={{ fontSize: 10, letterSpacing: '.25em', color: '#C5A572', textTransform: 'uppercase', marginBottom: 12 }}>
+                {g.label}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {items.map((d: any) => (
+                  <Link
+                    key={d.slug}
+                    href={`/london/${d.slug}-escorts`}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: 12,
+                      color: '#6b6560',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      textDecoration: 'none',
+                      transition: 'all .2s',
+                    }}
+                  >
+                    {d.name}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )
+        })
+      })()}
 
       {/* Companions grid */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>

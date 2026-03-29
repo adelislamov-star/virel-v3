@@ -1,18 +1,12 @@
 import { MetadataRoute } from 'next'
-import { prisma } from '@/lib/db/client'
+import { DISTRICTS } from '@/data/districts'
 import { siteConfig } from '@/../config/site'
 
-const BASE = siteConfig.domain
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const districts = await prisma.district.findMany({
-    where: { isActive: true },
-    select: { slug: true, updatedAt: true },
-  })
-  return districts.map(d => ({
-    url: `${BASE}/london/${d.slug}-escorts`,
-    lastModified: d.updatedAt,
-    changeFrequency: 'weekly',
-    priority: 0.7,
+export default function sitemap(): MetadataRoute.Sitemap {
+  return DISTRICTS.map(d => ({
+    url: `${siteConfig.domain}/london/${d.slug}-escorts`,
+    changeFrequency: 'weekly' as const,
+    priority: d.tier === 1 ? 0.8 : d.tier === 2 ? 0.7 : 0.6,
+    lastModified: new Date(),
   }))
 }

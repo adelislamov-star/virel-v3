@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { PRIME_DISTRICTS, OTHER_DISTRICTS } from '@/data/districts'
 
 export function FooterNew() {
   return (
@@ -41,16 +42,18 @@ export function FooterNew() {
       </div>
       <div className="ft-seo">
         <div className="ft-seo-links">
-          <Link href="/london/mayfair-escorts">Escorts in Mayfair</Link>
-          <Link href="/london/knightsbridge-escorts">Escorts in Knightsbridge</Link>
-          <Link href="/london/chelsea-escorts">Escorts in Chelsea</Link>
-          <Link href="/london/kensington-escorts">Escorts in Kensington</Link>
-          <Link href="/london/belgravia-escorts">Escorts in Belgravia</Link>
-          <Link href="/london/marylebone-escorts">Escorts in Marylebone</Link>
-          <Link href="/london/notting-hill-escorts">Escorts in Notting Hill</Link>
-          <Link href="/london/soho-escorts">Escorts in Soho</Link>
-          <Link href="/london/westminster-escorts">Escorts in Westminster</Link>
-          <Link href="/london/canary-wharf-escorts">Escorts in Canary Wharf</Link>
+          {PRIME_DISTRICTS.map(d => (
+            <Link key={d.slug} href={`/london/${d.slug}-escorts`}>
+              Escorts in {d.name}
+            </Link>
+          ))}
+        </div>
+        <div className="ft-seo-links" style={{ marginTop: 8 }}>
+          {OTHER_DISTRICTS.map(d => (
+            <Link key={d.slug} href={`/london/${d.slug}-escorts`}>
+              Escorts in {d.name}
+            </Link>
+          ))}
         </div>
       </div>
       <div className="ft-bottom">
