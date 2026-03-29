@@ -27,12 +27,33 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
   if (!district) return {}
 
+  const pageTitle = `${district.name} Escorts London | Vaurel`
+  const pageDesc = district.seoDescription || `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`
+  const pageUrl = `${siteConfig.domain}/london/${slug}`
+
   return {
     title: `${district.name} Escorts London`,
-    description:
-      district.seoDescription ||
-      `Premium companions available in ${district.name}, London. Verified, discreet, and elegant.`,
-    alternates: { canonical: `${siteConfig.domain}/london/${slug}` },
+    description: pageDesc,
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: pageTitle,
+      description: pageDesc,
+      url: pageUrl,
+      type: 'website',
+      siteName: 'Vaurel',
+      images: [{
+        url: `${siteConfig.domain}/og-default.jpg`,
+        width: 1200,
+        height: 630,
+        alt: `${district.name} Escorts London — Vaurel`,
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: pageTitle,
+      description: pageDesc,
+      images: [`${siteConfig.domain}/og-default.jpg`],
+    },
   }
 }
 
