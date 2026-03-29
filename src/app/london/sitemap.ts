@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { MetadataRoute } from 'next'
 import { DISTRICTS } from '@/data/districts'
 import { siteConfig } from '@/../config/site'

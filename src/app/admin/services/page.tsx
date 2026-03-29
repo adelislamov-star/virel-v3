@@ -884,7 +884,7 @@ export default function ServicesPage() {
                                 .match(/discreet|discretion/) !== null
                         },
                         {
-                          label: 'Intro 70-100 words',
+                          label: 'Intro 80-100 words',
                           ok: (() => {
                             const wc = (modal.introText || '').split(' ').filter(Boolean).length
                             return wc >= 70 && wc <= 110
