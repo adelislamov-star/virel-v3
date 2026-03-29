@@ -34,13 +34,7 @@ interface ServiceStats {
 
 type ModalData = Partial<Service> & { _isNew?: boolean };
 
-const categoryStyles: Record<string, string> = {
-  signature: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  intimate: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-  wellness: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  fetish: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  bespoke: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-};
+const CATEGORY_STYLE = 'bg-zinc-500/10 text-zinc-300 border-zinc-500/20';
 
 function toSlug(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -234,7 +228,7 @@ export default function ServicesPage() {
       const body: Record<string, unknown> = {
         title: modal.title?.trim(),
         slug: modal.slug || toSlug(modal.title || ''),
-        category: modal.category || 'signature',
+        category: modal.category || '',
         description: modal.description || null,
         publicName: modal.publicName || null,
         name: modal.name || null,
@@ -361,7 +355,7 @@ export default function ServicesPage() {
       name: null,
       publicName: null,
       slug: '',
-      category: 'signature',
+      category: '',
       description: null,
       isPublic: true,
       isPopular: false,
@@ -495,7 +489,7 @@ export default function ServicesPage() {
                   <td className="px-4 py-3 text-zinc-200 font-medium">{item.title}</td>
                   <td className="px-4 py-3 text-zinc-400">{item.publicName || '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs border ${categoryStyles[item.category?.toLowerCase()] ?? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs border ${CATEGORY_STYLE}`}>
                       {item.category}
                     </span>
                   </td>
@@ -637,20 +631,15 @@ export default function ServicesPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Category *</label>
+                    <label className="block text-xs text-zinc-400 mb-1">Category</label>
                     <select
-                      value={modal.category || 'signature'}
+                      value={modal.category || ''}
                       onChange={(e) => updateModal('category', e.target.value)}
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
                     >
-                      {[
-                        { value: 'signature', label: 'Signature' },
-                        { value: 'intimate', label: 'Intimate' },
-                        { value: 'wellness', label: 'Wellness' },
-                        { value: 'fetish', label: 'Fetish' },
-                        { value: 'bespoke', label: 'Bespoke' },
-                      ].map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
+                      <option value="">— select category —</option>
+                      {categories.map((c) => (
+                        <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
                       ))}
                     </select>
                   </div>

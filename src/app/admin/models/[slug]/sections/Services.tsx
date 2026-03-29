@@ -23,12 +23,6 @@ interface ModelServiceState {
   [serviceId: string]: { enabled: boolean; isExtra: boolean; extraPrice: string; isDoublePrice: boolean; isPOA: boolean };
 }
 
-const GROUP_SERVICE_TITLES = ['mmf', 'group', 'duo'];
-
-function isGroupService(svc: ServiceItem): boolean {
-  return GROUP_SERVICE_TITLES.some((t) => svc.title.toLowerCase().includes(t));
-}
-
 export interface ServicesHandle {
   save: () => Promise<boolean>;
 }
@@ -120,21 +114,6 @@ const Services = forwardRef<ServicesHandle, Props>(function Services({ modelId, 
     setDirty(true);
   };
 
-  const toggleDoublePrice = (id: string) => {
-    setState((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], isDoublePrice: !prev[id]?.isDoublePrice, isPOA: false },
-    }));
-    setDirty(true);
-  };
-
-  const togglePOA = (id: string) => {
-    setState((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], isPOA: !prev[id]?.isPOA, isDoublePrice: false },
-    }));
-    setDirty(true);
-  };
 
   const handleSave = useCallback(async (): Promise<boolean> => {
     setSaving(true);
@@ -219,7 +198,6 @@ const Services = forwardRef<ServicesHandle, Props>(function Services({ modelId, 
             const s = state[svc.id];
             const isEnabled = s?.enabled || false;
             const isExtra = s?.isExtra || false;
-            const isGroup = isGroupService(svc);
             return (
               <div key={svc.id} className={`rounded-lg transition-colors ${isEnabled ? 'bg-amber-500/5 border border-amber-500/20' : 'hover:bg-zinc-800/50 border border-transparent'}`}>
                 <div className="flex items-center gap-3 px-3 py-2">
@@ -235,29 +213,7 @@ const Services = forwardRef<ServicesHandle, Props>(function Services({ modelId, 
                   </span>
                   {isEnabled && <span className="ml-auto text-[10px] text-amber-500/70 font-medium uppercase tracking-wide">On</span>}
                 </div>
-                {isEnabled && isGroup && (
-                  <div className="flex items-center gap-4 px-10 pb-2">
-                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={s?.isDoublePrice || false}
-                        onChange={() => toggleDoublePrice(svc.id)}
-                        className="accent-amber-500"
-                      />
-                      Double Price
-                    </label>
-                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={s?.isPOA || false}
-                        onChange={() => togglePOA(svc.id)}
-                        className="accent-amber-500"
-                      />
-                      POA
-                    </label>
-                  </div>
-                )}
-                {isEnabled && !isGroup && (
+                {isEnabled && (
                   <div className="flex items-center gap-4 px-10 pb-2">
                     <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
                       <input

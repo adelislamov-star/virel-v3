@@ -15,18 +15,9 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteConfig.domain}/services` },
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  signature: 'Companion Services',
-  wellness: 'Wellness & Massage',
-  fetish: 'Fetish & Fantasy',
-  classic: 'Classic Services',
-  massage: 'Massage Services',
-  bdsm: 'BDSM & Domination',
-  entertainment: 'Entertainment',
-  companionship: 'Companionship',
+function categoryLabel(cat: string): string {
+  return cat.charAt(0).toUpperCase() + cat.slice(1)
 }
-
-const HIDDEN_CATEGORIES = ['intimate', 'bespoke', 'Intimate', 'Bespoke']
 
 export default async function ServicesPage() {
   const services = await prisma.service.findMany({
@@ -35,11 +26,10 @@ export default async function ServicesPage() {
     include: { _count: { select: { models: true } } },
   })
 
-  // Group by category, exclude intimate/bespoke
+  // Group by category
   const grouped: Record<string, typeof services> = {}
   for (const svc of services) {
     const cat = svc.category || 'other'
-    if (HIDDEN_CATEGORIES.includes(cat)) continue
     if (!grouped[cat]) grouped[cat] = []
     grouped[cat].push(svc)
   }
@@ -63,7 +53,7 @@ export default async function ServicesPage() {
         {/* Category nav */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {categories.map(cat => (
-            <a key={cat} href={`#${cat}`} className="cat-pill">{CATEGORY_LABELS[cat] || cat}</a>
+            <a key={cat} href={`#${cat}`} className="cat-pill">{categoryLabel(cat)}</a>
           ))}
         </div>
       </section>
@@ -80,7 +70,7 @@ export default async function ServicesPage() {
             <div key={cat} id={cat}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 20, marginBottom: 32, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 300, color: '#f0e8dc', margin: 0 }}>
-                  {CATEGORY_LABELS[cat] || cat}
+                  {categoryLabel(cat)}
                 </h2>
                 <span style={{ fontSize: 11, letterSpacing: '.15em', color: '#3a3530', textTransform: 'uppercase' }}>
                   {grouped[cat].length} services
